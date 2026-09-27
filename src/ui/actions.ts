@@ -1,0 +1,201 @@
+import { BUILDINGS, type BuildingId } from '../config/buildings';
+import { RESEARCH, type ResearchId } from '../config/research';
+import { runtime, game } from '../game/runtime';
+import { advanceTutorial, skipTutorial } from '../game/tutorial';
+import {
+  acceptNewcomer,
+  assignVillager,
+  cancelConstruction,
+  moveBuilding,
+  placeBuilding,
+  renameVillage,
+  setActiveResearch,
+  unassignVillager,
+  type CommandResult,
+} from '../sim/commands';
+import { canAfford } from '../sim/economy';
+import { checkBuildable, checkFootprint, nextCost } from '../sim/construction';
+import { rotatedSize } from '../sim/grid';
+import type { Job, Rotation } from '../sim/types';
+import { findBuilding, findVillager } from '../sim/villagerAI';
+import type { PickTarget } from '../rendering/InputController';
+import { ui } from './store';
+
+/**
+ * UI-facing actions. Each wraps a simulation command with player feedback: sounds,
+ * selection changes and a toast when something is refused.
+ */
+
+function feedback<T>(result: CommandResult<T>, success?: () => void): CommandResult<T> {
+  if (result.ok) {
+    success?.();
+  } else {
+    runtime.audio.play('error');
+    ui.toast({ kind: 'warning', title: result.error, icon: 'info' }, 3000);
+  }
+  return result;
+}
+
+export function focus(target: PickTarget, distance?: number): void {
+  runtime.renderer?.focusOn(target, distance);
+}
+
+export function selectAndFocus(target: PickTarget, distance?: number): void {
+  ui.select(target);
+  focus(target, distance);
+  runtime.audio.play('click');
+}
+
+export function assign(villagerId: number, job: Job): void {
+  const res = game().run((s, w, sink) => assignVillager(s, w, villagerId, job, sink));
+  feedback(res, () => {
+    runtime.audio.play('click');
+    const replaced = res.ok ? res.value?.replaced : null;
+    if (replaced) {
+      const v = findVillager(game().state, replaced);
+      if (v) ui.toast({ kind: 'info', title: `${v.name} is now free`, body: 'Replaced on that job.', icon: 'idle', target: { kind: 'villager', id: v.id } }, 3000);
+    }
+  });
+  if (ui.get().mode.kind === 'assign') ui.set({ mode: { kind: 'normal' } });
+}
+
+export function unassign(villagerId: number): void {
+  feedback(game().run((s, w, sink) => unassignVillager(s, w, villagerId, sink)), () => runtime.audio.play('close'));
+}
+
+export function beginAssign(villagerId: number): void {
+  ui.set({ mode: { kind: 'assign', villagerId }, panel: null });
+  runtime.audio.play('open');
+}
+
+export function startPlacing(defId: BuildingId): void {
+  const ok = checkBuildable(game().state, defId);
+  if (!ok.ok) {
+    feedback({ ok: false, error: ok.reason });
+    return;
+  }
+  ui.set({ mode: { kind: 'place', defId, rotation: 0 }, panel: null, placement: null, selection: null });
+  runtime.audio.play('open');
+}
+
+export function startMove(buildingId: number): void {
+  const b = findBuilding(game().state, buildingId);
+  if (!b) return;
+  ui.set({
+    mode: { kind: 'move', buildingId, defId: b.defId, rotation: b.rotation },
+    placement: { cellX: b.cellX, cellZ: b.cellZ, valid: true, reason: null },
+    panel: null,
+  });
+  runtime.audio.play('open');
+}
+
+export function cancelMode(): void {
+  const { mode } = ui.get();
+  if (mode.kind !== 'normal') {
+    ui.set({ mode: { kind: 'normal' }, placement: null });
+    runtime.audio.play('close');
+  }
+}
+
+export function rotatePlacement(): void {
+  const { mode, placement } = ui.get();
+  if (mode.kind !== 'place' && mode.kind !== 'move') return;
+  const rotation = ((mode.rotation + 1) % 4) as Rotation;
+  ui.set({ mode: { ...mode, rotation } });
+  if (placement) updatePlacementCell(placement.cellX, placement.cellZ);
+  runtime.audio.play('click');
+}
+
+/** Converts a ground point under the cursor into a placement cell and validates it. */
+export function updatePlacementFromGround(x: number, z: number): void {
+  const { mode } = ui.get();
+  if (mode.kind !== 'place' && mode.kind !== 'move') return;
+  const { w, d } = rotatedSize(mode.defId, mode.rotation);
+  updatePlacementCell(Math.round(x - w / 2), Math.round(z - d / 2));
+}
+
+export function updatePlacementCell(cellX: number, cellZ: number): void {
+  const { mode } = ui.get();
+  if (mode.kind !== 'place' && mode.kind !== 'move') return;
+  const g = game();
+  const ignore = mode.kind === 'move' ? mode.buildingId : -1;
+  const fit = checkFootprint(g.world, mode.defId, cellX, cellZ, mode.rotation, ignore);
+  let valid = fit.ok;
+  let reason = fit.ok ? null : fit.reason;
+  if (valid && mode.kind === 'place' && !canAfford(g.state, nextCost(g.state, mode.defId).resources)) {
+    valid = false;
+    reason = 'Not enough resources';
+  }
+  const prev = ui.get().placement;
+  if (prev && prev.cellX === cellX && prev.cellZ === cellZ && prev.valid === valid && prev.reason === reason) return;
+  ui.set({ placement: { cellX, cellZ, valid, reason } });
+}
+
+export function confirmPlacement(): void {
+  const { mode, placement } = ui.get();
+  if (!placement) return;
+  if (mode.kind === 'place') {
+    const res = game().run((s, w, sink) => placeBuilding(s, w, mode.defId, placement.cellX, placement.cellZ, mode.rotation, sink));
+    feedback(res, () => {
+      const b = res.ok ? res.value! : null;
+      const def = BUILDINGS[mode.defId];
+      const keepPlacing = def.category === 'decor' && checkBuildable(game().state, mode.defId).ok && canAfford(game().state, nextCost(game().state, mode.defId).resources);
+      if (keepPlacing) {
+        // Decorations can be stamped repeatedly.
+        updatePlacementCell(placement.cellX, placement.cellZ);
+      } else {
+        ui.set({ mode: { kind: 'normal' }, placement: null });
+        if (b) ui.select({ kind: 'building', id: b.id });
+      }
+    });
+  } else if (mode.kind === 'move') {
+    const res = game().run((s, w, sink) => moveBuilding(s, w, mode.buildingId, placement.cellX, placement.cellZ, mode.rotation, sink));
+    feedback(res, () => {
+      runtime.audio.play('place');
+      ui.set({ mode: { kind: 'normal' }, placement: null, selection: { kind: 'building', id: mode.buildingId } });
+    });
+  }
+}
+
+export function cancelSite(buildingId: number): void {
+  feedback(game().run((s, w, sink) => cancelConstruction(s, w, buildingId, sink)), () => {
+    runtime.audio.play('close');
+    ui.select(null);
+  });
+}
+
+export function chooseResearch(id: ResearchId | null): void {
+  feedback(game().run((s, w, sink) => setActiveResearch(s, w, id, sink)), () => {
+    runtime.audio.play('click');
+    if (id) ui.toast({ kind: 'info', title: `Researching ${RESEARCH[id].name}`, icon: 'research' }, 2500);
+  });
+}
+
+export function welcomeNewcomer(index: number): void {
+  const res = game().run((s, w, sink) => acceptNewcomer(s, w, index, sink));
+  feedback(res, () => {
+    if (res.ok && res.value) {
+      ui.set({ newcomersHidden: false });
+      selectAndFocus({ kind: 'villager', id: res.value.id }, 16);
+    }
+  });
+}
+
+export function rename(name: string): void {
+  feedback(game().run((s) => renameVillage(s, name)));
+}
+
+export function tutorialNext(): void {
+  game().mutate((s, _w, sink) => advanceTutorial(s, sink));
+  runtime.audio.play('click');
+}
+
+export function tutorialSkip(): void {
+  game().mutate((s) => skipTutorial(s));
+}
+
+export function tutorialRestart(): void {
+  game().mutate((s) => {
+    s.tutorial = { step: 0, done: false, skipped: false };
+  });
+}

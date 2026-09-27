@@ -1,0 +1,103 @@
+import { game, runtime } from '../../game/runtime';
+import { summarizeAway } from '../../game/offline';
+import { devCommands } from '../../sim/dev';
+import { Icon } from '../common/Icon';
+import { useGameState } from '../hooks';
+import { ui, useUI } from '../store';
+
+const SPEEDS = [1, 2, 5, 10, 50];
+
+function skip(seconds: number, summary: boolean): void {
+  const g = game();
+  const before = { ...g.state.resources };
+  const events = g.skip(seconds);
+  if (summary) ui.set({ away: summarizeAway(before, g.state, events, seconds, seconds) });
+}
+
+/** Developer tools. The component (and its import) only exists in development builds. */
+export function DevPanel() {
+  const state = useGameState();
+  const open = useUI((s) => s.panel === 'dev');
+  const selection = useUI((s) => s.selection);
+  if (!open) return null;
+  const g = game();
+  return (
+    <div className="dev-panel panel pop-in">
+      <header>
+        <h3>
+          <Icon name="wrench" size={20} /> Developer
+        </h3>
+        <button className="icon-btn" onClick={() => ui.closePanel()} aria-label="Close">
+          <Icon name="close" size={18} />
+        </button>
+      </header>
+      <section>
+        <h4>Simulation speed</h4>
+        <div className="seg">
+          {SPEEDS.map((s) => (
+            <button key={s} className={g.speed === s ? 'active' : ''} onClick={() => (g.speed = s)}>
+              {s}×
+            </button>
+          ))}
+          <button className={g.paused ? 'active' : ''} onClick={() => (g.paused = !g.paused)}>
+            {g.paused ? 'Resume' : 'Pause'}
+          </button>
+        </div>
+        <p className="small muted">Sim time: {Math.floor(state.time)}s</p>
+      </section>
+      <section>
+        <h4>Skip time</h4>
+        <div className="seg">
+          <button onClick={() => skip(60, false)}>+1m</button>
+          <button onClick={() => skip(600, true)}>+10m</button>
+          <button onClick={() => skip(3600, true)}>+1h</button>
+          <button onClick={() => skip(8 * 3600, true)}>+8h</button>
+        </div>
+      </section>
+      <section>
+        <h4>Resources</h4>
+        <div className="seg">
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.addResources(s, w, 100, sink))}>+100 all</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.addResources(s, w, 1000, sink))}>+1000 all</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.fillStorage(s, w, sink))}>Fill</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.addResources(s, w, -100000, sink))}>Empty</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.addResources(s, w, -100000, sink, 'stew'))}>No stew</button>
+        </div>
+      </section>
+      <section>
+        <h4>Progression</h4>
+        <div className="seg">
+          <button onClick={() => g.mutate((s, _w, sink) => devCommands.levelUp(s, sink))}>Level up</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.completeActiveResearch(s, w, sink))}>Finish research</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.unlockAllResearch(s, w, sink))}>Unlock all research</button>
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.completeConstructions(s, w, sink))}>Finish buildings</button>
+        </div>
+      </section>
+      <section>
+        <h4>Villagers</h4>
+        <div className="seg">
+          <button onClick={() => g.mutate((s, w, sink) => devCommands.addVillager(s, w, runtime.renderer?.cameraCtl.target ?? { x: 32, z: 34 }, sink))}>Add villager</button>
+          <button
+            disabled={selection?.kind !== 'villager'}
+            onClick={() => {
+              const sel = ui.get().selection;
+              const t = runtime.renderer?.cameraCtl.target;
+              if (sel?.kind === 'villager' && t) g.mutate((s, w, sink) => devCommands.teleportVillager(s, w, sel.id, { x: t.x, z: t.z }, sink));
+            }}
+          >
+            Teleport selected to view
+          </button>
+        </div>
+      </section>
+      <section>
+        <h4>Session</h4>
+        <div className="seg">
+          <button onClick={() => skip(3600, true)}>Simulate 1h offline</button>
+          <button className="danger" onClick={() => ui.set({ panel: 'settings', confirmReset: true })}>
+            Reset game…
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}

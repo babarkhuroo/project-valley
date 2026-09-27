@@ -1,0 +1,64 @@
+import { lazy, Suspense } from 'react';
+import { IDENTITY } from '../config/identity';
+import { BuildMenu } from './build/BuildMenu';
+import { AwayDialog, LevelUpBanner, NewcomerDialog } from './dialogs/Dialogs';
+import { SettingsPanel } from './dialogs/SettingsPanel';
+import { GameView } from './GameView';
+import { ActionBar } from './hud/ActionBar';
+import { NextSteps } from './hud/NextSteps';
+import { NotificationsPanel, Toasts } from './hud/Toasts';
+import { TopBar } from './hud/TopBar';
+import { WorkerList } from './hud/WorkerList';
+import { SelectionPanel } from './panels/SelectionPanel';
+import { ResearchScreen } from './research/ResearchScreen';
+import { useUI } from './store';
+import { TutorialCoach } from './tutorial/TutorialCoach';
+
+// Compiled out of production builds entirely.
+const DevPanel = import.meta.env.DEV ? lazy(() => import('./dev/DevPanel').then((m) => ({ default: m.DevPanel }))) : null;
+
+function LoadingScreen({ error }: { error: string | null }) {
+  return (
+    <div className="loading">
+      <div className="loading-card">
+        <h1>{IDENTITY.gameTitle}</h1>
+        <p>{error ? `Something went wrong: ${error}` : 'Waking the villagers…'}</p>
+        {!error ? <div className="loading-dots"><i /><i /><i /></div> : <button className="btn" onClick={() => window.location.reload()}>Try again</button>}
+      </div>
+    </div>
+  );
+}
+
+export function App() {
+  const booted = useUI((s) => s.booted);
+  const error = useUI((s) => s.bootError);
+  if (!booted) return <LoadingScreen error={error} />;
+  return (
+    <div className="app">
+      <GameView />
+      <div className="hud">
+        <TopBar />
+        <WorkerList />
+        <div className="left-stack">
+          <NextSteps />
+          <TutorialCoach />
+        </div>
+        <SelectionPanel />
+        <ActionBar />
+        <Toasts />
+        <NotificationsPanel />
+        <SettingsPanel />
+        {DevPanel ? (
+          <Suspense fallback={null}>
+            <DevPanel />
+          </Suspense>
+        ) : null}
+      </div>
+      <BuildMenu />
+      <ResearchScreen />
+      <NewcomerDialog />
+      <AwayDialog />
+      <LevelUpBanner />
+    </div>
+  );
+}

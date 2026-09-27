@@ -1,0 +1,44 @@
+export type ResourceId = 'timber' | 'clay' | 'stew' | 'knowledge';
+
+export interface ResourceDef {
+  id: ResourceId;
+  name: string;
+  description: string;
+  /** Accent colour used by HUD chips, floating numbers and particles. */
+  color: string;
+  /** Whether the resource is shown in the top resource bar. */
+  hud: boolean;
+}
+
+export const RESOURCES: Record<ResourceId, ResourceDef> = {
+  timber: {
+    id: 'timber',
+    name: 'Timber',
+    description: 'Felled logs. The backbone of every early building.',
+    color: '#b7773f',
+    hud: true,
+  },
+  clay: {
+    id: 'clay',
+    name: 'Clay',
+    description: 'Dug from the creek banks. Needed for sturdier homes and storage.',
+    color: '#d0673f',
+    hud: true,
+  },
+  stew: {
+    id: 'stew',
+    name: 'Stew',
+    description: 'Hearty food cooked at the Cookhouse. Working villagers eat it to keep up their pace.',
+    color: '#e8a93a',
+    hud: true,
+  },
+  knowledge: {
+    id: 'knowledge',
+    name: 'Knowledge',
+    description: 'Earned by studying at the Academy. Spent on research.',
+    color: '#6f8fe0',
+    hud: true,
+  },
+};
+
+export const RESOURCE_ORDER: ResourceId[] = ['timber', 'clay', 'stew', 'knowledge'];
