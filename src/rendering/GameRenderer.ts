@@ -18,6 +18,7 @@ import { InputController, type InteractionHandler, type PickResult, type PickTar
 import { NatureView } from './NatureView';
 import { Particles } from './Particles';
 import { SelectionView, type GhostSpec } from './SelectionView';
+import { SmokeSystem } from './SmokeSystem';
 import { TerrainView } from './TerrainView';
 import { VillagersView } from './VillagersView';
 import { createWater } from './WaterView';
@@ -69,6 +70,7 @@ export class GameRenderer {
   private readonly buildings: BuildingsView;
   private readonly villagers: VillagersView;
   private readonly particles = new Particles();
+  private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
   private readonly selection: SelectionView;
   private readonly overlay: WorldOverlay;
@@ -130,8 +132,8 @@ export class GameRenderer {
     if (bridges) this.scene.add(bridges);
     this.nature = new NatureView(world.terrain, world.grid, game.state);
     this.scene.add(this.nature.group);
-    this.buildings = new BuildingsView(world.terrain, this.particles);
-    this.scene.add(this.buildings.group);
+    this.buildings = new BuildingsView(world.terrain, this.particles, this.smoke);
+    this.scene.add(this.buildings.group, this.smoke.mesh);
     this.villagers = new VillagersView(world.terrain);
     this.villagers.onImpact = (e) => {
       if (e.anim === 'chop') {
@@ -178,6 +180,7 @@ export class GameRenderer {
     this.unsubscribe();
     this.input.dispose();
     this.resizeObserver.disconnect();
+    this.smoke.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

@@ -53,9 +53,10 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 | `TerrainView` | One vertex-coloured mesh (grass variation, forest floor, meadows, roads, sand, clay earth, rock, snow) + placement-grid overlay driven by a data texture |
 | `WaterView` | Single plane; shader reads a baked depth texture for shallow→deep colour and an animated foam line |
 | `NatureView` | Instanced trees/clay/stumps (instance → node id for picking), instanced grass/flowers/bushes/reeds/lilies/rocks with a wind vertex shader; decoration hides under new buildings |
-| `BuildingsView` | Procedural models; construction = foundation → scaffold → clipping plane rising with progress; storage fill shown as stacked logs/blocks; chimney smoke, steam, flags, telescope |
+| `BuildingsView` | Procedural models; construction = foundation → scaffold → clipping plane rising with progress; storage fill shown as stacked logs/blocks; registers chimney/cauldron anchors with `SmokeSystem`; flags, telescope |
 | `VillagersView` | Primitive rigs merged per pivot (≈8 draw calls each); pose from sim state (walk/carry/chop/dig/cook/read/hammer/celebrate); impact callbacks drive chips, sounds and tree shake — cosmetic only |
 | `Particles` | Two pooled instanced meshes (puffs, bits), live particles packed so only they are drawn |
+| `SmokeSystem` | Chimney smoke and cauldron steam in one draw call: emitter slots × looping billboard puffs animated entirely in the vertex shader from `uTime`; intensity changes are latched per puff at birth so smoke fades out naturally; CPU only touches attributes when emitters change |
 | `WorldOverlay` | HTML badges pinned to world points (status icons, names, site progress, +N floaters, tutorial arrow), updated via transforms only |
 | `CameraController` | Damped orbit around a ground target, pitch 34°→56° with zoom, grab-to-pan, zoom-to-cursor, inertia, bounds, terrain clearance |
 

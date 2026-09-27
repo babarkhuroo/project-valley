@@ -10,6 +10,7 @@ import type { Terrain } from '../world/terrain';
 import { PALETTE, mat } from './materials';
 import { createBuildingModel, type BuildingModel } from './models/buildingModels';
 import type { Particles } from './Particles';
+import type { SmokeSystem } from './SmokeSystem';
 
 interface ConstructionParts {
   foundation: THREE.Group;
@@ -27,13 +28,21 @@ interface Visual {
   construction: ConstructionParts | null;
   baseY: number;
   bounce: number;
-  smokeClock: number;
-  steamClock: number;
+  /** GPU smoke emitter handles (completed buildings only) and the intensities last sent. */
+  smokeHandles: number[];
+  steamHandles: number[];
+  smokeLevel: number;
+  steamLevel: number;
   sparkleClock: number;
   lastFill: number;
 }
 
 const hitMaterial = new THREE.MeshBasicMaterial({ visible: false });
+const scratch = new THREE.Vector3();
+
+/** Chimney smoke intensity for a lit hearth, and for the cookhouse while someone cooks. */
+const SMOKE_IDLE = 1;
+const SMOKE_COOKING = 1.8;
 
 /** Keeps one visual per building in sync with state: placement, construction stages, storage fill and ambient life. */
 export class BuildingsView {
@@ -41,7 +50,11 @@ export class BuildingsView {
   private readonly visuals = new Map<number, Visual>();
   private hiddenId: number | null = null;
 
-  constructor(private readonly terrain: Terrain, private readonly particles: Particles) {}
+  constructor(
+    private readonly terrain: Terrain,
+    private readonly particles: Particles,
+    private readonly smoke: SmokeSystem,
+  ) {}
 
   get hitboxes(): THREE.Object3D[] {
     return [...this.visuals.values()].filter((v) => v.group.visible).map((v) => v.hitbox);
@@ -102,6 +115,16 @@ export class BuildingsView {
     if (b.status === 'construction') construction = this.decorateConstruction(group, model, w, d, def.height);
 
     this.group.add(group);
+
+    // Chimney and cauldron anchors become GPU smoke emitters once the building stands.
+    const smokeHandles: number[] = [];
+    const steamHandles: number[] = [];
+    const smokeLevel = b.id === this.hiddenId ? 0 : SMOKE_IDLE;
+    if (b.status === 'complete' && (model.smoke.length > 0 || model.steam.length > 0)) {
+      group.updateMatrixWorld(true);
+      for (const p of model.smoke) smokeHandles.push(this.smoke.addEmitter(model.root.localToWorld(scratch.copy(p)), 'chimney', smokeLevel));
+      for (const p of model.steam) steamHandles.push(this.smoke.addEmitter(model.root.localToWorld(scratch.copy(p)), 'steam', 0));
+    }
     return {
       id: b.id,
       key: this.keyFor(b),
@@ -111,8 +134,10 @@ export class BuildingsView {
       construction,
       baseY,
       bounce: 0,
-      smokeClock: Math.random(),
-      steamClock: Math.random(),
+      smokeHandles,
+      steamHandles,
+      smokeLevel,
+      steamLevel: 0,
       sparkleClock: Math.random(),
       lastFill: -1,
     };
@@ -217,6 +242,9 @@ export class BuildingsView {
 
   private dispose(v: Visual): void {
     this.group.remove(v.group);
+    // Removed emitters stop spawning; their last puffs drift off on their own.
+    for (const h of v.smokeHandles) this.smoke.removeEmitter(h);
+    for (const h of v.steamHandles) this.smoke.removeEmitter(h);
     if (v.construction) for (const m of v.construction.materials) m.dispose();
     v.group.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -268,21 +296,19 @@ export class BuildingsView {
         fl.scale.set(s, 1 + (s - 1) * 2, s);
       }
       const activeJob = working.get(b.id);
-      // Chimney smoke: homes always, the cookhouse harder while someone cooks.
-      if (model.smoke.length > 0) {
-        const rate = activeJob === 'cook' ? 0.28 : 0.6;
-        v.smokeClock -= dt;
-        if (v.smokeClock <= 0) {
-          v.smokeClock = rate + Math.random() * 0.2;
-          for (const p of model.smoke) this.particles.emit('smoke', model.root.localToWorld(p.clone()), 1, 0.08);
-        }
+      // Chimney smoke: homes always, the cookhouse harder while someone cooks; steam only while cooking.
+      // Off while the building is being moved. Only changes reach the GPU.
+      const shown = b.id !== this.hiddenId;
+      const cooking = shown && activeJob === 'cook';
+      const smokeLevel = shown ? (cooking ? SMOKE_COOKING : SMOKE_IDLE) : 0;
+      if (smokeLevel !== v.smokeLevel) {
+        v.smokeLevel = smokeLevel;
+        for (const h of v.smokeHandles) this.smoke.setIntensity(h, smokeLevel);
       }
-      if (model.steam.length > 0 && activeJob === 'cook') {
-        v.steamClock -= dt;
-        if (v.steamClock <= 0) {
-          v.steamClock = 0.18 + Math.random() * 0.1;
-          for (const p of model.steam) this.particles.emit('steam', model.root.localToWorld(p.clone()), 1, 0.3);
-        }
+      const steamLevel = cooking ? 1 : 0;
+      if (steamLevel !== v.steamLevel) {
+        v.steamLevel = steamLevel;
+        for (const h of v.steamHandles) this.smoke.setIntensity(h, steamLevel);
       }
       if (activeJob === 'research') {
         v.sparkleClock -= dt;
