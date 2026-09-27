@@ -7,6 +7,8 @@ import { WATER_LEVEL, type Terrain } from '../world/terrain';
 import { PALETTE } from './materials';
 
 const STEP = 0.5;
+/** The ground is split into TILES×TILES meshes so off-screen tiles are frustum-culled. */
+const TILES = 4;
 
 function inForest(map: VillageMapDef, x: number, z: number): boolean {
   return map.forests.some((f) => pointInPolygon(x, z, f.polygon));
@@ -17,7 +19,7 @@ function inForest(map: VillageMapDef, x: number, z: number): boolean {
  * roads, sandy banks, clay earth and mountain rock), plus the placement grid overlay.
  */
 export class TerrainView {
-  readonly mesh: THREE.Mesh;
+  readonly mesh: THREE.Group;
   readonly gridOverlay: THREE.Mesh;
   private readonly gridTexture: THREE.DataTexture;
   private readonly gridData: Uint8Array;
@@ -30,14 +32,35 @@ export class TerrainView {
     this.gridData = data;
   }
 
-  private buildGround(): THREE.Mesh {
+  private buildGround(): THREE.Group {
     const { map } = this.terrain;
     const sizeX = map.width + map.margin * 2;
     const sizeZ = map.height + map.margin * 2;
+    const group = new THREE.Group();
+    group.name = 'terrain';
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+    const tileX = sizeX / TILES;
+    const tileZ = sizeZ / TILES;
+    for (let tz = 0; tz < TILES; tz++) {
+      for (let tx = 0; tx < TILES; tx++) {
+        const x0 = -map.margin + tx * tileX;
+        const z0 = -map.margin + tz * tileZ;
+        const mesh = new THREE.Mesh(this.buildTile(x0, z0, tileX, tileZ), material);
+        mesh.receiveShadow = true;
+        mesh.name = `terrain-${tx}-${tz}`;
+        group.add(mesh);
+      }
+    }
+    return group;
+  }
+
+  private buildTile(x0: number, z0: number, sizeX: number, sizeZ: number): THREE.BufferGeometry {
+    const { map } = this.terrain;
     const geo = new THREE.PlaneGeometry(sizeX, sizeZ, Math.round(sizeX / STEP), Math.round(sizeZ / STEP));
     geo.rotateX(-Math.PI / 2);
-    geo.translate(map.width / 2, 0, map.height / 2);
+    geo.translate(x0 + sizeX / 2, 0, z0 + sizeZ / 2);
     const pos = geo.attributes.position;
+    const normals = geo.attributes.normal;
     const colors = new Float32Array(pos.count * 3);
     const c = new THREE.Color();
     const tmp = new THREE.Color();
@@ -59,6 +82,12 @@ export class TerrainView {
       const z = pos.getZ(i);
       const h = this.terrain.heightAt(x, z);
       pos.setY(i, h);
+      // Analytic normals from the height field: identical on both sides of a tile seam.
+      const e = STEP;
+      const nx = this.terrain.heightAt(x - e, z) - this.terrain.heightAt(x + e, z);
+      const nz = this.terrain.heightAt(x, z - e) - this.terrain.heightAt(x, z + e);
+      const len = Math.hypot(nx, 2 * e, nz);
+      normals.setXYZ(i, nx / len, (2 * e) / len, nz / len);
       const slope = Math.max(
         Math.abs(this.terrain.heightAt(x + 0.5, z) - this.terrain.heightAt(x - 0.5, z)),
         Math.abs(this.terrain.heightAt(x, z + 0.5) - this.terrain.heightAt(x, z - 0.5)),
@@ -90,11 +119,9 @@ export class TerrainView {
       colors[i * 3 + 2] = c.b;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geo.computeVertexNormals();
-    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
-    mesh.receiveShadow = true;
-    mesh.name = 'terrain';
-    return mesh;
+    geo.computeBoundingSphere();
+    geo.computeBoundingBox();
+    return geo;
   }
 
   private buildGridOverlay(): { overlay: THREE.Mesh; texture: THREE.DataTexture; data: Uint8Array } {

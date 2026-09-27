@@ -38,6 +38,9 @@ interface Visual {
 }
 
 const hitMaterial = new THREE.MeshBasicMaterial({ visible: false });
+
+/** Decorations farther than this from the camera are not drawn. */
+const DECOR_LOD_DISTANCE = 60;
 const scratch = new THREE.Vector3();
 
 /** Chimney smoke intensity for a lit hearth, and for the cookhouse while someone cooks. */
@@ -258,7 +261,7 @@ export class BuildingsView {
     return out.copy(v.group.position);
   }
 
-  update(state: GameState, dt: number, realTime: number): void {
+  update(state: GameState, dt: number, realTime: number, camera: THREE.Vector3, lod = true): void {
     const working = new Map<number, string>();
     for (const vill of state.villagers) {
       if (vill.activity !== 'working' || !vill.job || vill.job.kind === 'gather') continue;
@@ -270,6 +273,8 @@ export class BuildingsView {
       const v = this.visuals.get(b.id);
       if (!v) continue;
       const group = v.group;
+      // Distance LOD: small decorations are sub-pixel from far away; skip drawing them.
+      if (lod && group.visible && BUILDINGS[b.defId].category === 'decor' && group.position.distanceTo(camera) > DECOR_LOD_DISTANCE) group.visible = false;
       // Construction stages: foundation → frame → walls rising → finished.
       if (v.construction) {
         const f = constructionFraction(state, b);

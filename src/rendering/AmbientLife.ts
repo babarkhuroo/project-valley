@@ -131,8 +131,9 @@ function wrapAngle(a: number): number {
 function makeInstanced(geo: THREE.BufferGeometry, material: THREE.Material, count: number, castShadow: boolean): THREE.InstancedMesh {
   const m = new THREE.InstancedMesh(geo, material, count);
   m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  // Instances roam the whole map; skip the (static) instanced bounding-sphere cull.
-  m.frustumCulled = false;
+  // Creatures roam, so the bounding sphere is refreshed every frame in update() and the
+  // mesh is frustum-culled as a whole (e.g. no birds drawn when they are all off-screen).
+  m.frustumCulled = true;
   m.castShadow = castShadow;
   m.receiveShadow = false;
   return m;
@@ -161,6 +162,7 @@ export class AmbientLife {
   /** Runtime randomness (perch timers, dart targets); seeded so a session replays the same. */
   private readonly rng: () => number;
   private lastTime = Number.NaN;
+  private culled: THREE.InstancedMesh[] = [];
 
   // Scratch objects — nothing is allocated per frame.
   private readonly base = new THREE.Matrix4();
@@ -330,6 +332,7 @@ export class AmbientLife {
       this.dragonBody,
       this.dragonWing,
     );
+    this.culled = [this.birdBody, this.birdBeak, this.birdInner, this.birdOuter, this.flyBody, this.flyWing, this.dragonBody, this.dragonWing];
     this.update(0);
   }
 
@@ -347,6 +350,7 @@ export class AmbientLife {
     this.flyWing.instanceMatrix.needsUpdate = true;
     this.dragonBody.instanceMatrix.needsUpdate = true;
     this.dragonWing.instanceMatrix.needsUpdate = true;
+    for (const m of this.culled) m.computeBoundingSphere();
   }
 
   // ---------------------------------------------------------------------------------

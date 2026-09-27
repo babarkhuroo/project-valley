@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { ToolId } from '../../config/jobs';
 import type { Appearance } from '../../config/villagers';
-import { PALETTE, mat } from '../materials';
+import { PALETTE, mat, paint } from '../materials';
 
 /**
  * A chunky, friendly villager built from primitives. The rig exposes pivots that the
@@ -272,4 +272,32 @@ function mergeParts(parent: THREE.Object3D, meshes: THREE.Mesh[]): THREE.Mesh {
   merged.castShadow = true;
   parent.add(merged);
   return merged;
+}
+
+const farMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+
+/**
+ * Distant-LOD villager: one low-poly, vertex-coloured mesh (a single draw call instead
+ * of the rig's ~8) that keeps the silhouette and colours readable from far away.
+ */
+export function createVillagerFarMesh(a: Appearance): THREE.Mesh {
+  const part = (geo: THREE.BufferGeometry, color: string, x: number, y: number, z: number): THREE.BufferGeometry => {
+    geo.translate(x, y, z);
+    return paint(geo, color);
+  };
+  const cap = a.hat === 0 ? a.hair : a.hatColor;
+  const parts = [
+    part(new THREE.CylinderGeometry(0.1, 0.12, 0.26, 6), a.trousers, 0, 0.13, 0),
+    part(new THREE.CylinderGeometry(0.13, 0.17, 0.32, 6), a.shirt, 0, 0.4, 0),
+    part(new THREE.IcosahedronGeometry(0.17, 1), a.skin, 0, 0.69, 0),
+    part(new THREE.SphereGeometry(0.185, 7, 3, 0, Math.PI * 2, 0, Math.PI * 0.5), cap, 0, 0.71, -0.01),
+  ];
+  if (a.hat === 1) parts.push(part(new THREE.CylinderGeometry(0.29, 0.3, 0.03, 8), PALETTE.thatch, 0, 0.81, 0));
+  const geo = mergeGeometries(parts, false)!;
+  parts.forEach((g) => g.dispose());
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, farMaterial);
+  mesh.castShadow = true;
+  mesh.visible = false;
+  return mesh;
 }

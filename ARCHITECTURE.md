@@ -52,7 +52,7 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 | --- | --- |
 | `TerrainView` | One vertex-coloured mesh (grass variation, forest floor, meadows, roads, sand, clay earth, rock, snow) + placement-grid overlay driven by a data texture |
 | `WaterView` | Single plane; shader reads a baked depth texture for shallow→deep colour and an animated foam line |
-| `NatureView` | Instanced trees/clay/stumps (instance → node id for picking), instanced grass/flowers/bushes/reeds/lilies/rocks with a wind vertex shader; decoration hides under new buildings |
+| `NatureView` | Trees/clay/stumps (instance → node id for picking) and grass/flowers/bushes/reeds/lilies/rocks as culled `InstanceField`s with a wind vertex shader; decoration hides under new buildings |
 | `BuildingsView` | Procedural models; construction = foundation → scaffold → clipping plane rising with progress; storage fill shown as stacked logs/blocks; registers chimney/cauldron anchors with `SmokeSystem`; flags, telescope |
 | `VillagersView` | Primitive rigs merged per pivot (≈8 draw calls each); pose from sim state (walk/carry/chop/dig/cook/read/hammer/celebrate); impact callbacks drive chips, sounds and tree shake — cosmetic only |
 | `Particles` | Two pooled instanced meshes (puffs, bits), live particles packed so only they are drawn |
@@ -62,7 +62,15 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 
 Models are procedural placeholders built behind stable interfaces (`createBuildingModel`, `createVillagerRig`), so authored glTF assets can replace them without touching gameplay. Building models merge static parts per material at build time. Thumbnails (portraits, build-menu icons) are rendered from the same models by an offscreen renderer.
 
-Performance budget (current village, desktop): ~250 draw calls, ~640k triangles, 60 fps. Shadows use a frustum that follows the camera target with texel snapping.
+### Culling and LOD (`rendering/culling/`)
+
+- **`ChunkGrid`** partitions the world (including the scenic margin) into 12-tile chunks. Each frame it tests every chunk's bounds — grown by a shadow margin so off-screen casters still shadow the view — against the camera frustum, records the closest camera distance, and drops chunks beyond the fog.
+- **`InstanceField`** is one instanced layer. Instances are stored sorted by chunk; each LOD level is a *single* `InstancedMesh`, and the instances of chunks visible at that level are packed into its buffer (only when visibility, LOD or an instance changes). Draw calls stay constant while submitted triangles follow what the camera sees. Trees: detailed canopy → low-poly beyond 38 units; small decoration fades out per layer (mushrooms 34 … lilies 60). A small hysteresis band stops LOD flicker; packed indices map back to source instances for picking.
+- **`OcclusionQueries`**: WebGL2 `ANY_SAMPLES_PASSED_CONSERVATIVE` queries on invisible proxy boxes drawn after opaque geometry. Results are read a frame later (no GPU stalls); a chunk hides after two negative answers, hidden chunks are re-tested every frame, visible ones round-robin (6/frame), and anything leaving the frustum or containing the camera is reset to visible. Verified pixel-identical to rendering without occlusion.
+- Terrain is split into 4×4 tiles (normals from the height field, so seams are invisible) for frustum culling; wildlife meshes refresh bounds each frame; villagers swap to a one-draw-call far model beyond 46 units; decoration buildings hide beyond 60.
+- The dev panel shows live draw calls/triangles/chunk counts with a toggle per feature.
+
+Measured (village from the slice, desktop, triangles include the shadow pass): mid zoom 602k → 305k triangles with all three features; close zoom 572k → 201k; full zoom-out 642k → 367k. Shadows use a frustum that follows the camera target with texel snapping.
 
 ## UI
 

@@ -13,6 +13,8 @@ import { ICONS } from '../ui/icons';
 import { AmbientLife } from './AmbientLife';
 import { BuildingsView } from './BuildingsView';
 import { createBridges } from './BridgeView';
+import { ChunkGrid, type CullingSettings } from './culling/ChunkGrid';
+import { OcclusionQueries } from './culling/OcclusionQueries';
 import { CameraController } from './CameraController';
 import { InputController, type InteractionHandler, type PickResult, type PickTarget } from './InputController';
 import { NatureView } from './NatureView';
@@ -65,6 +67,10 @@ export class GameRenderer {
   private lastResources: Record<string, number> = {};
   private lastRealDt = 0;
 
+  /** Spatial partition driving frustum culling, LOD and occlusion for instanced layers. */
+  readonly chunks: ChunkGrid;
+  private readonly occlusion: OcclusionQueries;
+  private lastInfo = { calls: 0, triangles: 0 };
   private readonly terrainView: TerrainView;
   private readonly nature: NatureView;
   private readonly buildings: BuildingsView;
@@ -130,8 +136,12 @@ export class GameRenderer {
     this.scene.add(createWater(world.terrain));
     const bridges = createBridges(world.terrain);
     if (bridges) this.scene.add(bridges);
-    this.nature = new NatureView(world.terrain, world.grid, game.state);
+    this.chunks = new ChunkGrid(-map.margin, -map.margin, map.width + map.margin, map.height + map.margin, 12);
+    this.nature = new NatureView(world.terrain, world.grid, this.chunks, game.state);
     this.scene.add(this.nature.group);
+    this.occlusion = new OcclusionQueries(this.renderer.getContext() as WebGL2RenderingContext, this.chunks);
+    this.occlusion.build();
+    this.scene.add(this.occlusion.group);
     this.buildings = new BuildingsView(world.terrain, this.particles, this.smoke);
     this.scene.add(this.buildings.group, this.smoke.mesh);
     this.villagers = new VillagersView(world.terrain);
@@ -181,6 +191,7 @@ export class GameRenderer {
     this.input.dispose();
     this.resizeObserver.disconnect();
     this.smoke.dispose();
+    this.occlusion.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -411,10 +422,21 @@ export class GameRenderer {
       this.nature.refreshDecor();
       this.terrainView.refreshGrid();
     }
+    // Fog bounds how far anything can be seen, so it also bounds culling.
+    const fog = this.scene.fog as THREE.Fog;
+    fog.near = this.cameraCtl.distance * 1.3 + 18;
+    fog.far = this.cameraCtl.distance * 2.6 + 70;
+    this.chunks.maxDistance = fog.far + 6;
+    this.chunks.update(this.camera);
+    this.occlusion.update();
+
+    const eye = this.camera.position;
+    const lod = this.chunks.settings.lod;
     this.buildings.setHidden(this.view.movingBuildingId);
-    this.buildings.update(state, dt, this.realTime);
+    this.buildings.update(state, dt, this.realTime, eye, lod);
     this.nature.update(state, this.realTime);
-    this.villagers.update(state, dt, this.realTime, this.game.speed);
+    this.nature.sync();
+    this.villagers.update(state, dt, this.realTime, this.game.speed, eye, lod);
     this.ambient.update(this.realTime);
     this.particles.update(dt);
 
@@ -447,14 +469,22 @@ export class GameRenderer {
     this.sun.target.position.set(sx, 0, sz);
     this.sun.target.updateMatrixWorld();
 
-    const fog = this.scene.fog as THREE.Fog;
-    fog.near = this.cameraCtl.distance * 1.3 + 18;
-    fog.far = this.cameraCtl.distance * 2.6 + 70;
-
     this.audio.setListener(target, this.cameraCtl.distance);
     this.renderer.render(this.scene, this.camera);
+    this.lastInfo.calls = this.renderer.info.render.calls;
+    this.lastInfo.triangles = this.renderer.info.render.triangles;
     this.lastResources = { ...state.resources };
     this.onFrame?.(this.realTime);
+  }
+
+  /** Culling switches (dev panel). */
+  get culling(): CullingSettings {
+    return this.chunks.settings;
+  }
+
+  /** Rendering counters from the last frame (includes the shadow pass). */
+  renderStats(): { calls: number; triangles: number; natureTriangles: number; chunks: number; inView: number; occluded: number; visible: number } {
+    return { ...this.lastInfo, natureTriangles: Math.round(this.nature.triangles()), ...this.chunks.stats };
   }
 
   private updateOverlay(): void {

@@ -45,6 +45,7 @@ export function DevPanel() {
         </div>
         <p className="small muted">Sim time: {Math.floor(state.time)}s</p>
       </section>
+      <RenderingSection />
       <section>
         <h4>Skip time</h4>
         <div className="seg">
@@ -99,5 +100,33 @@ export function DevPanel() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Live draw-call / triangle counters and switches to compare the culling features. */
+function RenderingSection() {
+  useGameState();
+  const r = runtime.renderer;
+  if (!r) return null;
+  const st = r.renderStats();
+  const c = r.culling;
+  const toggle = (key: 'frustum' | 'lod' | 'occlusion') => (
+    <label className="toggle" key={key}>
+      <input type="checkbox" checked={c[key]} onChange={(e) => (c[key] = e.target.checked)} />
+      {key === 'frustum' ? 'Frustum culling' : key === 'lod' ? 'Level of detail' : 'Occlusion culling'}
+    </label>
+  );
+  return (
+    <section>
+      <h4>Rendering</h4>
+      <p className="small">
+        {st.calls} draw calls · {(st.triangles / 1000).toFixed(0)}k triangles (incl. shadows)
+        <br />
+        Nature: {(st.natureTriangles / 1000).toFixed(0)}k tris · chunks {st.visible}/{st.chunks} drawn, {st.inView} in view, {st.occluded} occluded
+      </p>
+      {toggle('frustum')}
+      {toggle('lod')}
+      {toggle('occlusion')}
+    </section>
   );
 }

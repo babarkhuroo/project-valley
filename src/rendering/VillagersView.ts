@@ -5,7 +5,7 @@ import { sampleRoute } from '../sim/pathfinding';
 import type { GameState, Villager } from '../sim/types';
 import { findBuilding, findNode, jobTypeOf, villagerPosition, workRate } from '../sim/villagerAI';
 import type { Terrain } from '../world/terrain';
-import { createVillagerRig, type VillagerRig } from './models/villagerModel';
+import { createVillagerFarMesh, createVillagerRig, type VillagerRig } from './models/villagerModel';
 
 type Anim = WorkAnim | 'idle' | 'walk' | 'carry' | 'carryIdle' | 'celebrate';
 
@@ -16,8 +16,13 @@ export interface ImpactEvent {
   nodeId: number | null;
 }
 
+/** Beyond this camera distance villagers swap to their single-mesh far model. */
+const FAR_LOD_DISTANCE = 46;
+
 interface Visual {
   rig: VillagerRig;
+  far: THREE.Mesh;
+  isFar: boolean;
   heading: number;
   phase: number;
   lastPhase: number;
@@ -81,19 +86,30 @@ export class VillagersView {
       const rig = createVillagerRig(v.appearance);
       rig.hitbox.userData.villagerId = v.id;
       rig.root.scale.setScalar(1.12);
+      const far = createVillagerFarMesh(v.appearance);
+      rig.root.add(far);
       this.group.add(rig.root);
-      vis = { rig, heading: 0, phase: Math.random(), lastPhase: 0, seed: (v.id * 0.618) % 1, celebrateUntil: 0 };
+      vis = { rig, far, isFar: false, heading: 0, phase: Math.random(), lastPhase: 0, seed: (v.id * 0.618) % 1, celebrateUntil: 0 };
       this.visuals.set(v.id, vis);
     }
     return vis;
   }
 
-  update(state: GameState, dt: number, realTime: number, speed: number): void {
+  update(state: GameState, dt: number, realTime: number, speed: number, camera: THREE.Vector3, lod = true): void {
     const seen = new Set<number>();
     for (const v of state.villagers) {
       seen.add(v.id);
       const vis = this.ensure(v);
       this.pose(state, v, vis, dt, realTime, speed);
+      // Distance LOD with a little hysteresis so villagers don't flicker at the boundary.
+      const d = vis.rig.root.position.distanceTo(camera);
+      const far = lod && (vis.isFar ? d > FAR_LOD_DISTANCE * 0.94 : d > FAR_LOD_DISTANCE);
+      if (far !== vis.isFar) {
+        vis.isFar = far;
+        vis.rig.body.visible = !far;
+        vis.far.visible = far;
+      }
+      if (far) vis.far.position.y = vis.rig.body.position.y;
     }
     for (const [id, vis] of this.visuals) {
       if (!seen.has(id)) {
