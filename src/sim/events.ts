@@ -34,6 +34,8 @@ export type SimEvent =
   | { type: 'villagerJoined'; villagerId: number }
   | { type: 'autoContinue'; villagerId: number; nodeId: number }
   | { type: 'valleySent'; building: ValleyBuildingId; resources: Partial<Record<ResourceId, number>> }
+  | { type: 'trainingStarted'; villagerId: number; skill: SkillId; level: number }
+  | { type: 'trainingDone'; villagerId: number; skill: SkillId; level: number }
   | { type: 'shipArrived'; merchant: number; crates: number }
   | { type: 'shipLeft'; merchant: number; filled: number }
   | { type: 'crateFilled'; resource: ResourceId; amount: number; coins: number; reputation: number }

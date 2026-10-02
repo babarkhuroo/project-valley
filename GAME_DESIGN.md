@@ -123,7 +123,7 @@ Start with two founders in the Founders' Lodge (a third bed once extended with *
 
 ## Skills
 
-Skill level multiplies work rate (+10 % per level early on). Villagers gain practice XP from every batch, up to level 2 (3 with *Apprenticeship*); beyond that is guild training in the Valley (milestone 3).
+Skill level multiplies work rate (+10 % per level early on). Villagers gain practice XP from every batch, up to level 2 (3 with *Apprenticeship*); beyond that is guild training in the Valley (see *Guild training*).
 
 ## Offline progress
 
@@ -169,6 +169,12 @@ Restoring the Valley's **Trading Post** (Saltreach Harbour) brings merchant ship
 
 **Coins** buy **tonics** from the ship (two on offer, limited stock) and, next, guild training. Tonics are the boost system: Woodworker Tonic, Miner's Meal, Farmer's Tea, Research Brew, Builder's Brew, Crafter's Oil — +50% to their trade for 30 minutes; another dose extends it. They show in the work-rate formula like any other factor.
 
+## Guild training
+
+Practice teaches a skill up to level 2 (3 with *Apprenticeship*). Past that, a villager must train at the matching Valley guild — Foresters' Lodge (woodcutting), Miners' Guild (mining), Cooks' Guild (farming/cooking), Scholars' Guild (research), Builders' Guild (construction), Craftsfolk's Guild (crafting). Each guild level opens one more skill level (4 / 5 / 6).
+
+Training is a real trade-off: the lesson costs coins (100 → 480) and the villager leaves the village — walking out along the road, then away for 1–8 hours — so their job sits empty. They come home a level higher (+10–15% speed) and walk straight back to their old job if nobody took the slot. Lessons are offered on the villager panel and on each guild's Valley panel; trainees are seen standing at their guild, and lessons finish during offline time like everything else.
+
 ## Reputation Road
 
 Reputation (from Valley deliveries and trade) unlocks a road of twelve rewards claimed in order: coins, tonics, bundles of planks/bricks/stone, and two decorations only it gives (the Valley Banner and the Fountain). Nothing on it is paid; it rewards taking part.
@@ -189,6 +195,6 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 ## Roadmap
 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
-- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ⏳ guild training · ⏳ Valley research, cooperative crafting and events.
+- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ⏳ Valley research, cooperative crafting and events.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

@@ -4,7 +4,11 @@ import { RESOURCES, type ResourceId } from '../../config/resources';
 import { isValleyUnlocked } from '../../sim/modifiers';
 import { canClaimRoad, tradeOpen } from '../../sim/trade';
 import type { GameState } from '../../sim/types';
-import { buyFromMerchant, claimRoad, drinkTonic, fillMerchantCrate } from '../actions';
+import { buyFromMerchant, claimRoad, drinkTonic, fillMerchantCrate, trainVillager } from '../actions';
+import { SKILLS, type SkillId } from '../../config/skills';
+import { TRAINING } from '../../config/training';
+import { trainingOffer } from '../../sim/training';
+import { Portrait } from '../common/Portrait';
 import { Bar, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
 import { formatDuration, formatNumber, useGameState } from '../hooks';
@@ -260,6 +264,62 @@ export function MerchantSection() {
           </li>
         ))}
       </ul>
+    </Section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Training at a guild
+// ---------------------------------------------------------------------------
+
+/** Who could train here, who is training now, and what it costs. */
+export function GuildTrainingSection({ skill }: { skill: SkillId }) {
+  const state = useGameState();
+  const here = state.villagers.filter((v) => v.training?.skill === skill);
+  const offers = state.villagers.filter((v) => !v.training).map((v) => ({ v, offer: trainingOffer(state, v, skill) }));
+  const able = offers.filter((o) => o.offer.ok);
+  const practising = offers.filter((o) => !o.offer.ok && /Practice/.test(o.offer.reason)).length;
+  return (
+    <Section title={`${SKILLS[skill].name} lessons`} aside={<small className="muted">{state.trade.coins} coins</small>}>
+      {here.map((v) => {
+        const t = v.training!;
+        const total = TRAINING.lessons[t.toLevel].hours * 3600;
+        return (
+          <div key={v.id} className="trainee">
+            <Portrait appearance={v.appearance} size={34} />
+            <span className="tonic-name">
+              <strong>
+                {v.name} → level {t.toLevel}
+              </strong>
+              {t.until !== null ? <Bar value={1 - (t.until - state.time) / total} tone="blue" thin /> : <small>On the road here…</small>}
+            </span>
+            {t.until !== null ? <small className="muted">{formatDuration(t.until - state.time)}</small> : null}
+          </div>
+        );
+      })}
+      {able.map(({ v, offer }) =>
+        offer.ok ? (
+          <div key={v.id} className="trainee">
+            <Portrait appearance={v.appearance} size={34} />
+            <span className="tonic-name">
+              <strong>{v.name}</strong>
+              <small>
+                {SKILLS[skill].name} {v.skills[skill].level} → {offer.toLevel} · away {offer.hours}h
+              </small>
+            </span>
+            <button className="btn small green" disabled={state.trade.coins < offer.coins} onClick={() => trainVillager(v.id, skill)}>
+              <Icon name="coin" size={16} />
+              {offer.coins}
+            </button>
+          </div>
+        ) : null,
+      )}
+      {here.length === 0 && able.length === 0 ? (
+        <p className="small muted">
+          {practising > 0 ? `Your villagers are still learning ${SKILLS[skill].name.toLowerCase()} by practice.` : `Nobody in ${state.player.villageName} is ready for the next lesson here.`}
+        </p>
+      ) : null}
+      <p className="small muted">Villagers in training are away from work. They come back to their old job if it’s still free.</p>
     </Section>
   );
 }

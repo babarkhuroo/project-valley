@@ -3412,3 +3412,41 @@ h4 {
   letter-spacing: 0.06em;
   color: var(--ink-soft);
 }
+
+/* ---------- Guild training ---------- */
+
+.lessons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lessons li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--paper-3);
+}
+
+.lessons .sk-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.lessons li small {
+  text-align: right;
+}
+
+.trainee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--paper-3);
+}
+
+.trainee .bar {
+  margin: 4px 0 0;
+}

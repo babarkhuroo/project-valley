@@ -96,6 +96,16 @@ export function attachNotifications(game: Game): () => void {
           if (v) ui.toast({ kind: 'success', title: `${v.name} joined ${state.player.villageName}!`, body: 'Give them something to do.', icon: 'villager', target: { kind: 'villager', id: v.id } });
           break;
         }
+        case 'trainingStarted': {
+          const v = findVillager(state, e.villagerId);
+          if (v) ui.toast({ kind: 'info', title: `${v.name} set off for the Valley`, body: `Back with ${SKILLS[e.skill].name} ${e.level} after the lesson.`, icon: 'travel', target: { kind: 'villager', id: v.id } });
+          break;
+        }
+        case 'trainingDone': {
+          const v = findVillager(state, e.villagerId);
+          if (v) ui.toast({ kind: 'success', title: `${v.name} is back from the guild`, body: `${SKILLS[e.skill].name} level ${e.level}!${v.job ? ' Back at work.' : ' Ready for a job.'}`, icon: 'xp', target: { kind: 'villager', id: v.id } }, 6000);
+          break;
+        }
         case 'shipArrived': {
           const m = MERCHANTS[e.merchant];
           ui.toast({ kind: 'info', title: `${m.name} has docked at Saltreach Harbour`, body: `${m.ship} wants ${e.crates} crates filled — and has tonics for sale.`, icon: 'ship' }, 7000);
@@ -126,6 +136,8 @@ export function attachNotifications(game: Game): () => void {
           break;
         }
         case 'skillUp': {
+          // Lessons announce themselves (trainingDone); don't double up.
+          if (events.some((x) => x.type === 'trainingDone' && x.villagerId === e.villagerId)) break;
           const v = findVillager(state, e.villagerId);
           if (v) ui.toast({ kind: 'info', title: `${v.name} improved at ${SKILLS[e.skill].name}`, body: `Now level ${e.level} — works faster.`, icon: 'xp', target: { kind: 'villager', id: v.id } });
           break;

@@ -11,7 +11,7 @@ import { Icon } from '../common/Icon';
 import { formatDuration, formatNumber, useGameState, useValley } from '../hooks';
 import { useUI } from '../store';
 import { agoText, describeLog } from './format';
-import { MerchantSection, roadProgress } from './TradeUi';
+import { GuildTrainingSection, MerchantSection, roadProgress } from './TradeUi';
 import { ui as uiStore } from '../store';
 
 function statusText(b: ValleyBuildingState, serverNow: number): string {
@@ -253,6 +253,7 @@ export function ValleyProjectPanel() {
         ))}
       </div>
       {id === 'tradingPost' && b.level > 0 ? <MerchantSection /> : null}
+      {def.trains && b.level > 0 ? <GuildTrainingSection skill={def.trains} /> : null}
       {b.status === 'locked' ? (
         <p className="vp-note">
           <Icon name="lock" size={18} /> {statusText(b, serverNow)}.

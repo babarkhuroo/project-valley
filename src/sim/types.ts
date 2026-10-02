@@ -86,8 +86,9 @@ export type Job =
   | { kind: 'operate'; buildingId: number }
   | { kind: 'construct'; buildingId: number };
 
-export type Activity = 'idle' | 'walking' | 'working' | 'blocked';
-export type WalkPurpose = 'toWork' | 'toStorage' | 'toRest';
+/** `away`: off in the Valley (guild training) — not in the village at all. */
+export type Activity = 'idle' | 'walking' | 'working' | 'blocked' | 'away';
+export type WalkPurpose = 'toWork' | 'toStorage' | 'toRest' | 'toValley';
 export type BlockReason = 'storageFull' | 'noStorage' | 'knowledgeFull' | 'unreachable' | 'noOrders' | 'noInputs';
 
 /** A time-parameterised walk: `times[i]` is the absolute sim time the villager reaches `points[i]`. */
@@ -130,6 +131,17 @@ export interface Villager {
   blockedReason: BlockReason | null;
   /** Sim time the villager joined the village. */
   joinedAt: number;
+  /** Guild training in progress (walking out, or away in the Valley). */
+  training: Training | null;
+}
+
+export interface Training {
+  skill: SkillId;
+  toLevel: number;
+  /** Sim time the lesson ends (set when the villager reaches the Valley road). */
+  until: number | null;
+  /** Job to go back to afterwards, if its slot is still free. */
+  resumeJob: Job | null;
 }
 
 export interface NewcomerCandidate {
@@ -165,6 +177,8 @@ export interface ValleyBonuses {
   mealDurationMult: number;
   /** Trading Post level in the Valley (0 = no merchants yet). */
   tradeLevel: number;
+  /** Level of the Valley guild that trains each skill (missing = not restored). */
+  guildLevels: Partial<Record<SkillId, number>>;
 }
 
 export interface MerchantCrate {

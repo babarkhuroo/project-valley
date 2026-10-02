@@ -1,3 +1,6 @@
+import { TRAINING } from '../config/training';
+import { VALLEY_BUILDINGS } from '../config/valley';
+import { guildFor } from './training';
 import { canClaimRoad } from './trade';
 import { IDENTITY } from '../config/identity';
 import { isValleyUnlocked } from './modifiers';
@@ -34,7 +37,7 @@ import type { World } from './world';
  * Read-only derived views of the state for the UI. Nothing here mutates the game.
  */
 
-export type TaskIcon = 'idle' | JobType | 'carry' | 'walk' | 'hungry' | 'blocked';
+export type TaskIcon = 'idle' | JobType | 'carry' | 'walk' | 'hungry' | 'blocked' | 'travel';
 
 export interface TaskInfo {
   label: string;
@@ -57,6 +60,18 @@ export function jobTargetName(state: GameState, job: Job): string {
 export function villagerTask(state: GameState, v: Villager): TaskInfo {
   const jt = v.job ? jobTypeOf(state, v.job) : null;
   const warning = v.hungry && jt && JOBS[jt].consumesFood ? 'Hungry — working slowly' : null;
+  if (v.training) {
+    const guild = VALLEY_BUILDINGS[guildFor(v.training.skill)].name;
+    const left = v.training.until !== null ? v.training.until - state.time : null;
+    const lesson = TRAINING.lessons[v.training.toLevel].hours * 3600;
+    return {
+      label: left === null ? `Setting off for the ${guild}` : `Training at the ${guild}`,
+      icon: 'travel',
+      progress: left === null ? null : Math.max(0, Math.min(1, 1 - left / lesson)),
+      warning: null,
+      idle: false,
+    };
+  }
   if (!v.job || !jt) {
     return {
       label: v.activity === 'walking' ? 'Idle — heading home' : 'Idle',
@@ -106,7 +121,7 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
 }
 
 export function idleVillagers(state: GameState): Villager[] {
-  return state.villagers.filter((v) => !v.job);
+  return state.villagers.filter((v) => !v.job && !v.training);
 }
 
 // ---------------------------------------------------------------------------

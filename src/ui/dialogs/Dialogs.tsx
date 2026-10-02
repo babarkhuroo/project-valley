@@ -93,6 +93,11 @@ export function AwayDialog() {
               <Icon name="xp" size={20} /> Reached village level {l}
             </li>
           ))}
+          {away.trained.map((t) => (
+            <li key={t}>
+              <Icon name="xp" size={20} /> Back from guild training — {t}
+            </li>
+          ))}
           {away.shipInPort ? (
             <li>
               <Icon name="coin" size={20} /> A merchant ship is in port at Saltreach Harbour

@@ -185,24 +185,24 @@ Shared projects restored by every member. Costs are Valley-wide totals. Reputati
 | Trading Post | 1 | 2000 Timber, 1000 Clay | 2h | Merchant ships call on every member: 3 crates a ship | Hearth Hall 1 |
 |  | 2 | 4000 Timber, 1500 Stone, 800 Planks | 6h | 4 crates a ship, pay +10%, ships return sooner |  |
 |  | 3 | 8000 Timber, 3000 Stone, 1500 Planks, 1500 Bricks | 12h | 5 crates a ship, pay +20%, ships return sooner still |  |
-| Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% in every member's village | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting +5% more (×1.10 in all) |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting +5% more (×1.16 in all) |  |
-| Miners' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Digging and quarrying +5% in every member's village | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Digging and quarrying +5% more (×1.10 in all) |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Digging and quarrying +5% more (×1.16 in all) |  |
-| Cooks' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Cooking +5% in every member's village | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Cooking +5% more (×1.10 in all) |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Cooking +5% more (×1.16 in all) |  |
-| Scholars' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Study +5% in every member's village | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Study +5% more (×1.10 in all) |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Study +5% more (×1.16 in all) |  |
-| Builders' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Construction +5% in every member's village | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Construction +5% more (×1.10 in all) |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Construction +5% more (×1.16 in all) |  |
-| Craftsfolk's Guild | 1 | 2400 Timber, 1200 Clay | 2h | Crafting +5% in every member's village | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Crafting +5% more (×1.10 in all) |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Crafting +5% more (×1.16 in all) |  |
+| Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting ×1.16 in all; trains up to level 6 |  |
+| Miners' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Digging and quarrying +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Digging and quarrying ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Digging and quarrying ×1.16 in all; trains up to level 6 |  |
+| Cooks' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Cooking +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Cooking ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Cooking ×1.16 in all; trains up to level 6 |  |
+| Scholars' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Study +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Study ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Study ×1.16 in all; trains up to level 6 |  |
+| Builders' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Construction +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Construction ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Construction ×1.16 in all; trains up to level 6 |  |
+| Craftsfolk's Guild | 1 | 2400 Timber, 1200 Clay | 2h | Crafting +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Crafting ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Crafting ×1.16 in all; trains up to level 6 |  |
 
 Simulated neighbours (7): a delivery worth 50–150 value × generosity every 25–70 min while awake (16h a day), growing 4% per finished Valley level. A new Valley starts with Hearth Hall 55.00000000000001% supplied.
 
@@ -234,6 +234,26 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | 14.6 days | Foresters' Lodge → level 3 |
 | 14.8 days | Craftsfolk's Guild → level 3 |
 | 15.4 days | Hearth Hall → level 3 |
+
+## Guild training
+
+Practice stops at level 2 (3 with Apprenticeship); beyond that a villager must be at the practice cap and travel to the restored Valley guild for their skill. Guild level 1/2/3 teaches up to skill level 4/5/6. The villager is away (no work) for the lesson and returns to their old job if the slot is free.
+
+| To skill level | Coins | Time away | Work-rate multiplier |
+| --- | --- | --- | --- |
+| 3 | 100 | 1h | ×1.3 |
+| 4 | 180 | 2h | ×1.42 |
+| 5 | 300 | 4h | ×1.55 |
+| 6 | 480 | 8h | ×1.7 |
+
+| Skill | Guild |
+| --- | --- |
+| Woodcutting | Foresters' Lodge |
+| Mining | Miners' Guild |
+| Farming | Cooks' Guild |
+| Research | Scholars' Guild |
+| Construction | Builders' Guild |
+| Crafting | Craftsfolk's Guild |
 
 ## Merchants & coins
 

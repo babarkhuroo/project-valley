@@ -1,6 +1,7 @@
 import type { Appearance } from './villagers';
 import type { JobType } from './jobs';
 import type { ResourceId } from './resources';
+import type { SkillId } from './skills';
 
 /**
  * The shared Valley: districts, communal buildings restored through contributions,
@@ -83,28 +84,31 @@ export interface ValleyBuildingDef {
   /** Must reach this before restoration can start. */
   requires: { building: ValleyBuildingId; level: number } | null;
   levels: ValleyLevelDef[];
+  /** The skill this guild trains villagers in, once restored. */
+  trains?: SkillId;
   /** Where the camera looks when focusing this building, if not its centre. */
   view?: { x: number; z: number };
 }
 
 const guildLevels = (jobs: JobType[], craft: ResourceId, label: string): ValleyLevelDef[] => [
+  // Each level also lets the guild train one skill level higher (see config/training.ts).
   {
     cost: { timber: 2400, clay: 1200 },
     buildHours: 2,
     effects: [{ type: 'jobRate', jobs, mult: 1.05 }],
-    summary: `${label} +5% in every member's village`,
+    summary: `${label} +5% for every member; trains skills up to level 4`,
   },
   {
     cost: { timber: 5000, stone: 2000, [craft]: 800 },
     buildHours: 6,
     effects: [{ type: 'jobRate', jobs, mult: 1.05 }],
-    summary: `${label} +5% more (×1.10 in all)`,
+    summary: `${label} ×1.10 in all; trains up to level 5`,
   },
   {
     cost: { timber: 9000, stone: 4000, planks: 1500, bricks: 1500 },
     buildHours: 12,
     effects: [{ type: 'jobRate', jobs, mult: 1.05 }],
-    summary: `${label} +5% more (×1.16 in all)`,
+    summary: `${label} ×1.16 in all; trains up to level 6`,
   },
 ];
 
@@ -175,6 +179,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     z: 46,
     radius: 3,
     facing: Math.PI / 2,
+    trains: 'woodcutting',
     requires: { building: 'hearthHall', level: 1 },
     levels: guildLevels(['chop'], 'planks', 'Woodcutting'),
   },
@@ -189,6 +194,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     z: 53,
     radius: 3,
     facing: Math.PI / 2,
+    trains: 'mining',
     requires: { building: 'hearthHall', level: 1 },
     levels: guildLevels(['dig', 'quarry'], 'bricks', 'Digging and quarrying'),
   },
@@ -203,6 +209,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     z: 46,
     radius: 3,
     facing: -Math.PI / 2,
+    trains: 'farming',
     requires: { building: 'hearthHall', level: 1 },
     levels: guildLevels(['cook'], 'bricks', 'Cooking'),
   },
@@ -217,6 +224,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     z: 53,
     radius: 3,
     facing: -Math.PI / 2,
+    trains: 'research',
     requires: { building: 'hearthHall', level: 1 },
     levels: guildLevels(['study'], 'planks', 'Study'),
   },
@@ -231,6 +239,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     z: 60,
     radius: 3,
     facing: Math.PI / 2,
+    trains: 'construction',
     requires: { building: 'hearthHall', level: 1 },
     levels: guildLevels(['build'], 'planks', 'Construction'),
   },
@@ -245,6 +254,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     z: 60,
     radius: 3,
     facing: -Math.PI / 2,
+    trains: 'crafting',
     requires: { building: 'hearthHall', level: 1 },
     levels: guildLevels(['craft'], 'bricks', 'Crafting'),
   },

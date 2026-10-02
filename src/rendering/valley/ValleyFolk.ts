@@ -29,6 +29,8 @@ const PARCELS: ResourceId[] = ['timber', 'clay'];
 export class ValleyFolk {
   private readonly walkers: Walker[] = [];
   private readonly rng = createRng(4049);
+  /** The player's own villagers away training, shown at their guild. Keyed by village id. */
+  private readonly trainees = new Map<number, { villager: Villager; label: string }>();
 
   constructor(
     private readonly world: World,
@@ -50,6 +52,7 @@ export class ValleyFolk {
 
   /** Name tag for a walker ("Rowan of Brackenford"). */
   labelFor(v: Villager): string {
+    for (const t of this.trainees.values()) if (t.villager === v) return t.label;
     const w = this.walkers.find((x) => x.villager === v);
     return w ? `${v.name} of ${w.village}` : v.name;
   }
@@ -129,6 +132,31 @@ export class ValleyFolk {
           break;
         }
       }
+    }
+  }
+
+  /** Mirrors the player's villagers who are away training: they stand at their guild's door. */
+  syncTrainees(villagers: readonly Villager[], villageName: string): void {
+    const away = villagers.filter((v) => v.activity === 'away' && v.training);
+    const keep = new Set<number>();
+    for (const v of away) {
+      keep.add(v.id);
+      if (this.trainees.has(v.id)) continue;
+      const guild = VALLEY_BUILDING_ORDER.find((id) => VALLEY_BUILDINGS[id].trains === v.training!.skill)!;
+      const def = VALLEY_BUILDINGS[guild];
+      const n = [...this.trainees.values()].length;
+      const fx = Math.sin(def.facing);
+      const fz = Math.cos(def.facing);
+      const side = ((n % 3) - 1) * 0.9;
+      const spot = { x: def.x + fx * (def.radius + 0.6) + fz * side, z: def.z + fz * (def.radius + 0.6) - fx * side };
+      const copy = createVillager(this.scenery, { name: v.name, appearance: v.appearance }, null, spot);
+      this.scenery.villagers.push(copy);
+      this.trainees.set(v.id, { villager: copy, label: `${v.name} of ${villageName} · training` });
+    }
+    for (const [id, t] of this.trainees) {
+      if (keep.has(id)) continue;
+      this.scenery.villagers.splice(this.scenery.villagers.indexOf(t.villager), 1);
+      this.trainees.delete(id);
     }
   }
 

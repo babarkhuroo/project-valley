@@ -16,6 +16,7 @@ import { RESOURCES, RESOURCE_ORDER } from '../src/config/resources.ts';
 import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../src/config/valley.ts';
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
+import { TRAINING } from '../src/config/training.ts';
 import { BOOSTS, BOOST_ORDER, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS } from '../src/config/trade.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -230,6 +231,13 @@ out();
   out();
   table(['Valley time', 'Finished'], finished);
 }
+
+out('## Guild training');
+out();
+out(`Practice stops at level ${BALANCE.skills.practiceCap} (${BALANCE.skills.practiceCap + 1} with Apprenticeship); beyond that a villager must be at the practice cap and travel to the restored Valley guild for their skill. Guild level 1/2/3 teaches up to skill level ${TRAINING.maxLevelByGuild.slice(1).join('/')}. The villager is away (no work) for the lesson and returns to their old job if the slot is free.`);
+out();
+table(['To skill level', 'Coins', 'Time away', 'Work-rate multiplier'], Object.entries(TRAINING.lessons).map(([lvl, l]) => [lvl, l.coins, `${l.hours}h`, `×${BALANCE.skills.levelMultipliers[Number(lvl)]}`]));
+table(['Skill', 'Guild'], VALLEY_BUILDING_ORDER.filter((id) => VALLEY_BUILDINGS[id].trains).map((id) => [SKILLS[VALLEY_BUILDINGS[id].trains!].name, VALLEY_BUILDINGS[id].name]));
 
 out('## Merchants & coins');
 out();

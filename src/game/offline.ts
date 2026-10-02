@@ -1,3 +1,4 @@
+import { SKILLS } from '../config/skills';
 import { BALANCE } from '../config/balance';
 import { BUILDINGS } from '../config/buildings';
 import { RESEARCH } from '../config/research';
@@ -20,6 +21,8 @@ export interface AwaySummary {
   /** Merchant ships that came and went unvisited, and whether one is in port now. */
   shipsMissed: number;
   shipInPort: boolean;
+  /** "Wren: Woodcutting 3" for lessons finished while away. */
+  trained: string[];
 }
 
 export function clampOffline(seconds: number): number {
@@ -43,6 +46,7 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
   let newcomers = false;
   let wentHungry = false;
   let shipsMissed = 0;
+  const trained: string[] = [];
   for (const e of events) {
     switch (e.type) {
       case 'constructionComplete':
@@ -69,6 +73,11 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
       case 'villagerIdle':
         if (e.reason !== 'unassigned') idleIds.add(e.villagerId);
         break;
+      case 'trainingDone': {
+        const v = state.villagers.find((x) => x.id === e.villagerId);
+        if (v) trained.push(`${v.name}: ${SKILLS[e.skill].name} ${e.level}`);
+        break;
+      }
       case 'shipLeft':
         if (e.filled === 0) shipsMissed += 1;
         break;
@@ -76,8 +85,8 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
         break;
     }
   }
-  const idle = state.villagers.filter((v) => idleIds.has(v.id) && !v.job).map((v) => v.name);
-  return { seconds, cappedSeconds, gained, spent, built, researched, levels, newcomers, fullStorage: [...full], wentHungry, idle, shipsMissed, shipInPort: state.trade.ship !== null };
+  const idle = state.villagers.filter((v) => idleIds.has(v.id) && !v.job && !v.training).map((v) => v.name);
+  return { seconds, cappedSeconds, gained, spent, built, researched, levels, newcomers, fullStorage: [...full], wentHungry, idle, shipsMissed, shipInPort: state.trade.ship !== null, trained };
 }
 
 export function summaryIsInteresting(s: AwaySummary): boolean {

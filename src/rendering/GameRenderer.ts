@@ -510,6 +510,7 @@ export class GameRenderer {
     const tmp = new THREE.Vector3();
     const zoomedIn = this.cameraCtl.distance < 20;
     for (const v of state.villagers) {
+      if (v.activity === 'away') continue;
       const p = villagerPosition(v, state.time);
       tmp.set(p.x, this.game.world.terrain.groundHeightAt(p.x, p.z) + 1.45, p.z);
       const task = villagerTask(state, v);

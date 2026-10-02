@@ -346,10 +346,12 @@ export function snapshotOf(v: ValleyState): ValleySnapshot {
 
 /** Village-side bonuses from every finished Valley level. */
 export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
-  const out: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 };
+  const out: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {} };
   if (!v) return out;
   for (const id of VALLEY_BUILDING_ORDER) {
     const def = VALLEY_BUILDINGS[id];
+    if (!v.buildings[id]) continue;
+    if (def.trains && v.buildings[id].level > 0) out.guildLevels[def.trains] = v.buildings[id].level;
     for (let l = 0; l < v.buildings[id].level; l++) {
       for (const e of def.levels[l].effects) {
         if (e.type === 'jobRate') for (const j of e.jobs) out.jobRate[j] = (out.jobRate[j] ?? 1) * e.mult;
@@ -362,7 +364,7 @@ export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
   return out;
 }
 
-export const NO_VALLEY_BONUSES: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 };
+export const NO_VALLEY_BONUSES: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {} };
 
 /**
  * Development aid: makes the Valley `ms` older, as if that much time had passed with

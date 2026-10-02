@@ -1,5 +1,6 @@
 import type { EventSink } from './events';
 import { processTrade, tradeNextEvent } from './trade';
+import { returnFromTraining } from './training';
 import type { GameState } from './types';
 import { EPS, integrateVillager, processVillager, regrowNode, settleVillagers, villagerNextEvent } from './villagerAI';
 import type { World } from './world';
@@ -35,6 +36,13 @@ function processDue(state: GameState, world: World, sink: EventSink): void {
       }
     }
     for (const v of state.villagers) {
+      if (v.activity === 'away') {
+        if (v.training?.until != null && v.training.until <= state.time + EPS) {
+          returnFromTraining(state, world, v, sink);
+          acted = true;
+        }
+        continue;
+      }
       if (villagerNextEvent(state, v) <= state.time + EPS && processVillager(state, world, v, sink)) acted = true;
     }
     settleVillagers(state, world, sink);

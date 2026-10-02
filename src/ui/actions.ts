@@ -5,6 +5,8 @@ import type { ValleyBuildingId } from '../config/valley';
 import { isValleyUnlocked } from '../sim/modifiers';
 import type { BoostId } from '../config/trade';
 import { buyWare, claimRoadReward, fillCrate, useBoost } from '../sim/trade';
+import { startTraining } from '../sim/training';
+import type { SkillId } from '../config/skills';
 import { RESEARCH, type ResearchId } from '../config/research';
 import type { RecipeId } from '../config/recipes';
 import { runtime, game } from '../game/runtime';
@@ -309,4 +311,10 @@ export function drinkTonic(boost: BoostId): void {
 export function claimRoad(): void {
   const res = game().run((s, _w, sink) => claimRoadReward(s, sink));
   feedback(res, () => runtime.audio.play('levelUp'));
+}
+
+/** Sends a villager to their Valley guild for a lesson. */
+export function trainVillager(villagerId: number, skill: SkillId): void {
+  const res = game().run((s, w, sink) => startTraining(s, w, villagerId, skill, sink));
+  feedback(res, () => runtime.audio.play('newcomer'));
 }

@@ -149,7 +149,7 @@ describe('village side of the valley', () => {
     const baseRate = workRateBreakdown(h.state, v, 'chop').rate;
     const baseCap = capacity(h.state, 'timber');
     const baseMeal = mealDuration(h.state);
-    setValleyBonuses(h.state, { jobRate: { chop: 1.1 }, storageMult: 1.1, mealDurationMult: 1.1, tradeLevel: 0 });
+    setValleyBonuses(h.state, { jobRate: { chop: 1.1 }, storageMult: 1.1, mealDurationMult: 1.1, tradeLevel: 0, guildLevels: {} });
     const after = workRateBreakdown(h.state, v, 'chop');
     expect(after.rate).toBeCloseTo(baseRate * 1.1);
     expect(after.factors.some((f) => f.label === 'Valley guild')).toBe(true);

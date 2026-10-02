@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -33,6 +33,14 @@ export const MIGRATIONS: Record<number, Migration> = {
     const valley = (d.valley ?? newValleyState()) as GameState['valley'];
     return { ...d, valley: { ...valley, bonuses: { ...valley.bonuses, tradeLevel: 0 } }, trade: newTradeState() };
   },
+  // v6: guild training (villagers can be away in the Valley); guild levels in the bonuses.
+  5: (d) => {
+    const out = { ...d };
+    if (Array.isArray(d.villagers)) out.villagers = (d.villagers as Record<string, unknown>[]).map((v) => ({ training: null, ...v }));
+    const valley = d.valley as GameState['valley'] | undefined;
+    if (valley) out.valley = { ...valley, bonuses: { ...valley.bonuses, guildLevels: valley.bonuses.guildLevels ?? {} } };
+    return out;
+  },
 };
 
 export function newTradeState(): GameState['trade'] {
@@ -40,7 +48,7 @@ export function newTradeState(): GameState['trade'] {
 }
 
 export function newValleyState(): GameState['valley'] {
-  return { valleyId: null, reputation: 0, outbox: [], given: {}, bonuses: { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 } };
+  return { valleyId: null, reputation: 0, outbox: [], given: {}, bonuses: { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {} } };
 }
 
 export class SaveError extends Error {}

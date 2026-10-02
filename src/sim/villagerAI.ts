@@ -1,3 +1,4 @@
+import { TRAINING } from '../config/training';
 import { boostFor } from './trade';
 import { BALANCE } from '../config/balance';
 import { BUILDINGS } from '../config/buildings';
@@ -223,6 +224,19 @@ function stopWalking(v: Villager, at: Vec2): void {
   v.pos = { x: at.x, z: at.z };
   v.route = null;
   v.purpose = null;
+}
+
+/** On reaching the Valley road: the villager is away until the lesson ends. */
+export function beginLesson(state: GameState, v: Villager): void {
+  const t = v.training!;
+  v.activity = 'away';
+  t.until = state.time + TRAINING.lessons[t.toLevel].hours * 3600;
+}
+
+/** Where villagers leave for (and return from) the Valley: the village's road in. */
+export function valleyRoadSpot(world: World): Vec2 {
+  const [x, z] = world.map.entrance;
+  return world.grid.nearestWalkable({ x, z }, 6) ?? { x, z };
 }
 
 export function goRest(state: GameState, world: World, v: Villager): void {
@@ -558,6 +572,7 @@ function needsFood(state: GameState, v: Villager): boolean {
 /** Absolute sim time of this villager's next state change, or Infinity. */
 export function villagerNextEvent(state: GameState, v: Villager): number {
   if (v.activity === 'walking') return v.route ? routeEnd(v.route) : state.time;
+  if (v.activity === 'away') return v.training?.until ?? Infinity;
   if (v.activity !== 'working' || !v.job) return Infinity;
   const jt = jobTypeOf(state, v.job);
   if (!jt) return state.time;
@@ -589,6 +604,7 @@ export function processVillager(state: GameState, world: World, v: Villager, sin
     stopWalking(v, end);
     if (purpose === 'toWork') arriveAtWork(state, world, v, sink);
     else if (purpose === 'toStorage') deliver(state, world, v, sink);
+    else if (purpose === 'toValley' && v.training) beginLesson(state, v);
     else v.activity = 'idle';
     return true;
   }
@@ -659,6 +675,7 @@ export function refreshAfterGridChange(state: GameState, world: World, sink: Eve
     if (v.activity === 'walking') {
       if (v.purpose === 'toWork') goToWork(state, world, v, sink);
       else if (v.purpose === 'toStorage') headToStorage(state, world, v, sink);
+      else if (v.purpose === 'toValley') walkTo(state, world, v, valleyRoadSpot(world), 'toValley');
       else goRest(state, world, v);
     } else if ((v.activity === 'working' || v.activity === 'blocked') && v.job && v.job.kind !== 'gather') {
       const spot = workSpot(state, world, v);

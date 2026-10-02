@@ -10,13 +10,16 @@ import { game } from '../../game/runtime';
 import { jobBlocker, jobSlots, workersOn } from '../../sim/commands';
 import { capacity } from '../../sim/economy';
 import { buildingCenter } from '../../sim/grid';
-import { mealDuration, practiceCap } from '../../sim/modifiers';
+import { isValleyUnlocked, mealDuration, practiceCap } from '../../sim/modifiers';
+import { MAX_SKILL_LEVEL, trainingOffer } from '../../sim/training';
+import { VALLEY_BUILDINGS } from '../../config/valley';
 import { residents } from '../../sim/population';
 import { practiceProgress } from '../../sim/progression';
 import { researchProgress } from '../../sim/research';
 import { constructionEta, constructionFraction, estimateJob, productionSummary, villagerTask, type JobEstimate } from '../../sim/selectors';
 import type { BuildingInstance, GameState, Job, Villager } from '../../sim/types';
 import { findBuilding, findNode, findVillager, jobTypeOf, villagerPosition } from '../../sim/villagerAI';
+import { trainVillager } from '../actions';
 import { assign, beginAssign, cancelBuildingUpgrade, cancelOrder, cancelSite, focus, moveOrder, orderCraft, selectAndFocus, startMove, unassign, upgradeBuilding } from '../actions';
 import { RECIPES, REPEAT_ORDER } from '../../config/recipes';
 import { buildingStats, canAffordUpgrade, maxLevel, nextUpgrade, upgradeBlocker } from '../../sim/levels';
@@ -227,10 +230,19 @@ function VillagerPanel({ v }: { v: Villager }) {
         <Icon name={task.icon as IconName} size={30} />
         <span>
           <strong>{task.label}</strong>
-          <small>{task.idle ? 'Waiting for your instructions.' : `Near ${nearbyPlace(state, v)}`}</small>
+          <small>
+            {v.training
+              ? v.training.until !== null
+                ? `Back with ${SKILLS[v.training.skill].name} ${v.training.toLevel} in ${formatDuration(v.training.until - state.time)}`
+                : 'Walking out along the Valley road'
+              : task.idle
+                ? 'Waiting for your instructions.'
+                : `Near ${nearbyPlace(state, v)}`}
+          </small>
           {task.progress !== null ? <Bar value={task.progress} thin /> : null}
         </span>
       </div>
+      {v.training ? null : (
       <div className="row-buttons">
         <button className="btn green" onClick={() => beginAssign(v.id)}>
           <Icon name="target" size={18} /> {v.job ? 'Change job' : 'Choose a job'}
@@ -246,6 +258,7 @@ function VillagerPanel({ v }: { v: Villager }) {
           </>
         ) : null}
       </div>
+      )}
       {eats ? (
         <Section title="Appetite">
           {v.hungry ? (
@@ -278,13 +291,50 @@ function VillagerPanel({ v }: { v: Villager }) {
                     <i key={i} className={i < s.level ? 'on' : ''} />
                   ))}
                 </span>
-                <span className="sk-prog">{prog === null ? <small className="muted">Guild training</small> : <Bar value={prog} thin tone="blue" />}</span>
+                <span className="sk-prog">{prog === null ? <small className="muted">{s.level >= MAX_SKILL_LEVEL ? 'Mastered' : 'Guild training'}</small> : <Bar value={prog} thin tone="blue" />}</span>
               </li>
             );
           })}
         </ul>
       </Section>
+      <GuildTraining v={v} />
     </>
+  );
+}
+
+/** Lessons at the Valley guilds for skills practice can't raise any further. */
+function GuildTraining({ v }: { v: Villager }) {
+  const state = useGameState();
+  if (!isValleyUnlocked(state) || v.training) return null;
+  const cap = practiceCap(state);
+  const ready = SKILL_ORDER.filter((k) => v.skills[k].level >= cap && v.skills[k].level < MAX_SKILL_LEVEL);
+  return (
+    <Section title="Guild training" aside={<small className="muted">{state.trade.coins} coins</small>}>
+      {ready.length === 0 ? (
+        <p className="small muted">Practice raises skills to level {cap}. Beyond that, villagers train at the Valley guilds.</p>
+      ) : (
+        <ul className="lessons">
+          {ready.map((k) => {
+            const offer = trainingOffer(state, v, k);
+            return (
+              <li key={k}>
+                <span className="sk-name" style={{ color: SKILLS[k].color }}>
+                  {SKILLS[k].name}
+                </span>
+                {offer.ok ? (
+                  <button className="btn small green" disabled={state.trade.coins < offer.coins} onClick={() => trainVillager(v.id, k)} title={`At the ${VALLEY_BUILDINGS[offer.guild].name}. ${v.name} is away from work meanwhile.`}>
+                    Level {offer.toLevel} · <Icon name="coin" size={16} />
+                    {offer.coins} · {offer.hours}h
+                  </button>
+                ) : (
+                  <small className="muted">{offer.reason}</small>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Section>
   );
 }
 

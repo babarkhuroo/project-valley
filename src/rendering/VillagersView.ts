@@ -65,7 +65,7 @@ export class VillagersView {
   constructor(private readonly terrain: Terrain) {}
 
   get hitboxes(): THREE.Object3D[] {
-    return [...this.visuals.values()].map((v) => v.rig.hitbox);
+    return [...this.visuals.values()].filter((v) => v.rig.root.visible).map((v) => v.rig.hitbox);
   }
 
   villagerIdFor(obj: THREE.Object3D): number | null {
@@ -102,6 +102,9 @@ export class VillagersView {
     for (const v of state.villagers) {
       seen.add(v.id);
       const vis = this.ensure(v);
+      // Away training in the Valley: not in the village at all.
+      vis.rig.root.visible = v.activity !== 'away';
+      if (v.activity === 'away') continue;
       this.pose(state, v, vis, dt, realTime, speed);
       // Distance LOD with a little hysteresis so villagers don't flicker at the boundary.
       const d = vis.rig.root.position.distanceTo(camera);
