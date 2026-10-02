@@ -10,7 +10,7 @@ import { game } from '../../game/runtime';
 import { jobBlocker, jobSlots, workersOn } from '../../sim/commands';
 import { capacity } from '../../sim/economy';
 import { buildingCenter } from '../../sim/grid';
-import { mealDuration } from '../../sim/modifiers';
+import { mealDuration, practiceCap } from '../../sim/modifiers';
 import { residents } from '../../sim/population';
 import { practiceProgress } from '../../sim/progression';
 import { researchProgress } from '../../sim/research';
@@ -267,7 +267,7 @@ function VillagerPanel({ v }: { v: Villager }) {
         <ul className="skills">
           {SKILL_ORDER.map((k) => {
             const s = v.skills[k];
-            const prog = practiceProgress(v, k);
+            const prog = practiceProgress(v, k, practiceCap(state));
             return (
               <li key={k} className={jt && JOBS[jt].skill === k ? 'active' : ''}>
                 <span className="sk-name" style={{ color: SKILLS[k].color }}>

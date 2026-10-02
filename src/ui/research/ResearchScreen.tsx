@@ -49,6 +49,8 @@ function effectText(e: ResearchEffect): string {
       return `${NODES[e.node].name}s regrow ${e.mult}× faster`;
     case 'upgradeTier':
       return `Buildings can be upgraded to level ${e.level}`;
+    case 'practiceCap':
+      return `Practice can raise skills ${e.add} level${e.add > 1 ? 's' : ''} higher`;
   }
 }
 

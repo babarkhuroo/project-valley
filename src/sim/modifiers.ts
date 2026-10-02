@@ -15,6 +15,8 @@ export interface Modifiers {
   storageMult: Partial<Record<ResourceId, number>>;
   mealDurationMult: number;
   regrowMult: Partial<Record<NodeKind, number>>;
+  /** Extra levels villagers can reach through practice alone. */
+  practiceCapBonus: number;
 }
 
 const cache = new WeakMap<GameState, { key: string; mods: Modifiers }>();
@@ -31,6 +33,7 @@ export function getModifiers(state: GameState): Modifiers {
     storageMult: {},
     mealDurationMult: 1,
     regrowMult: {},
+    practiceCapBonus: 0,
   };
   for (const id of state.research.completed) {
     for (const e of RESEARCH[id].effects) {
@@ -57,6 +60,9 @@ export function getModifiers(state: GameState): Modifiers {
           break;
         case 'regrow':
           mods.regrowMult[e.node] = (mods.regrowMult[e.node] ?? 1) * e.mult;
+          break;
+        case 'practiceCap':
+          mods.practiceCapBonus += e.add;
           break;
       }
     }
@@ -85,4 +91,9 @@ export function mealDuration(state: GameState): number {
 
 export function regrowSeconds(state: GameState, kind: NodeKind): number {
   return NODES[kind].regrowSeconds / (getModifiers(state).regrowMult[kind] ?? 1);
+}
+
+/** Highest skill level reachable through practice right now. */
+export function practiceCap(state: GameState): number {
+  return BALANCE.skills.practiceCap + getModifiers(state).practiceCapBonus;
 }

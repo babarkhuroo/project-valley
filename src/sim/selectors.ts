@@ -14,11 +14,12 @@ import { mealDuration } from './modifiers';
 import { findPath, pathLength } from './pathfinding';
 import { housingCapacity } from './population';
 import { researchStatus } from './research';
-import type { BuildingInstance, GameState, Job, Villager } from './types';
+import type { BuildingInstance, GameState, Job, Vec2, Villager } from './types';
 import {
   findBuilding,
   findNode,
   jobTypeOf,
+  frontSpot,
   nearestPerimeterSpot,
   nodeWorkSpot,
   workRateBreakdown,
@@ -134,15 +135,13 @@ const STORE_FOR: Record<'timber' | 'clay' | 'stone', BuildingId> = {
   stone: 'stoneYard',
 };
 
-function roundTripSeconds(state: GameState, world: World, nodeId: number, resource: ResourceId): { seconds: number; storage: BuildingInstance | null } {
-  const node = findNode(state, nodeId);
-  if (!node) return { seconds: 0, storage: null };
-  const store = nearestStorage(state, resource, node);
+/** Walking time from a work spot to the nearest storage for `resource` and back (cached per layout). */
+function roundTripSeconds(state: GameState, world: World, from: Vec2, cacheKey: string, resource: ResourceId): { seconds: number; storage: BuildingInstance | null } {
+  const store = nearestStorage(state, resource, from);
   if (!store) return { seconds: 0, storage: null };
-  const key = `${nodeId}:${store.id}:${store.cellX},${store.cellZ},${store.rotation}`;
+  const key = `${cacheKey}:${store.id}:${store.cellX},${store.cellZ},${store.rotation}`;
   let len = travelCache.get(key);
   if (len === undefined) {
-    const from = nodeWorkSpot(world, node);
     const to = nearestPerimeterSpot(world, store, from) ?? buildingCenter(store);
     const pts = findPath(world.grid, from, to);
     len = pts ? pathLength(pts) : Math.hypot(to.x - from.x, to.z - from.z);
@@ -174,8 +173,14 @@ export function estimateJob(state: GameState, world: World, v: Villager, job: Jo
   let travelSeconds = 0;
   let destination: string | null = null;
   const out = def.output;
+  const site = job.kind === 'operate' && out?.delivery === 'carry' ? findBuilding(state, job.buildingId) : undefined;
   if (job.kind === 'gather' && out) {
-    const trip = roundTripSeconds(state, world, job.nodeId, out.resource);
+    const node = findNode(state, job.nodeId);
+    const trip = node ? roundTripSeconds(state, world, nodeWorkSpot(world, node), `n${node.id}`, out.resource) : { seconds: 0, storage: null };
+    travelSeconds = trip.seconds;
+    destination = trip.storage ? BUILDINGS[trip.storage.defId].name : null;
+  } else if (site && out) {
+    const trip = roundTripSeconds(state, world, frontSpot(world, site), `b${site.id}:${site.cellX},${site.cellZ},${site.rotation}`, out.resource);
     travelSeconds = trip.seconds;
     destination = trip.storage ? BUILDINGS[trip.storage.defId].name : null;
   } else if (out) {

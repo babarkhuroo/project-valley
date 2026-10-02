@@ -26,9 +26,10 @@ export function skillMultiplier(level: number): number {
 }
 
 /** Practice XP from doing a job. Practice tops out at `practiceCap`; guilds go further. */
-export function practiceSkill(villager: Villager, skill: SkillId, sink: EventSink): void {
+export function practiceSkill(villager: Villager, skill: SkillId, sink: EventSink, cap: number = BALANCE.skills.practiceCap): void {
   const s = villager.skills[skill];
-  const { practiceXpPerBatch, practiceThresholds, practiceCap } = BALANCE.skills;
+  const { practiceXpPerBatch, practiceThresholds } = BALANCE.skills;
+  const practiceCap = Math.min(cap, practiceThresholds.length - 1);
   if (s.level >= practiceCap) return;
   s.xp += practiceXpPerBatch;
   while (s.level < practiceCap && s.xp >= practiceThresholds[s.level + 1]) {
@@ -38,10 +39,10 @@ export function practiceSkill(villager: Villager, skill: SkillId, sink: EventSin
 }
 
 /** Progress (0..1) towards the next practice level, or null when practice is capped. */
-export function practiceProgress(villager: Villager, skill: SkillId): number | null {
+export function practiceProgress(villager: Villager, skill: SkillId, cap: number = BALANCE.skills.practiceCap): number | null {
   const s = villager.skills[skill];
-  const { practiceThresholds, practiceCap } = BALANCE.skills;
-  if (s.level >= practiceCap) return null;
+  const { practiceThresholds } = BALANCE.skills;
+  if (s.level >= Math.min(cap, practiceThresholds.length - 1)) return null;
   const from = practiceThresholds[s.level];
   const to = practiceThresholds[s.level + 1];
   return Math.max(0, Math.min(1, (s.xp - from) / (to - from)));

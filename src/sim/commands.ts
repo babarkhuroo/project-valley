@@ -73,7 +73,13 @@ export function jobBlocker(state: GameState, job: Job): string | null {
     case 'operate': {
       const b = findBuilding(state, job.buildingId);
       if (!b || b.status !== 'complete') return 'Building is not finished';
-      if (!BUILDINGS[b.defId].operate) return 'Nobody works here';
+      const operate = BUILDINGS[b.defId].operate;
+      if (!operate) return 'Nobody works here';
+      const out = JOBS[operate.job].output;
+      if (out?.delivery === 'carry' && !nearestStorage(state, out.resource, b ? { x: b.cellX, z: b.cellZ } : { x: 0, z: 0 })) {
+        const store = BUILD_MENU_ORDER.find((id) => BUILDINGS[id].storage?.[out.resource]);
+        return store ? `Build a ${BUILDINGS[store].name} to store ${RESOURCES[out.resource].name.toLowerCase()}` : `Build storage for ${RESOURCES[out.resource].name}`;
+      }
       return null;
     }
     case 'construct': {

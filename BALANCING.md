@@ -58,7 +58,11 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Sawmill | 3×2 | 1 | #1: 120 Timber, 30 Stone | 60 | 45 | stores 40 Planks; 1 × crafting | Carpentry |
 | Brickworks | 3×2 | 1 | #1: 100 Timber, 60 Clay, 40 Stone, 20 Planks | 70 | 55 | stores 40 Bricks; 1 × crafting | Brickmaking |
 | Warehouse | 3×3 | 2 | #1: 100 Timber, 40 Stone, 40 Planks<br>#2: 140 Timber, 80 Stone, 60 Planks, 40 Bricks | 60 / 80 | 40 | stores 100 Planks, 100 Bricks | Brickmaking |
+| Woodlot | 3×3 | 2 | #1: 80 Timber, 20 Planks<br>#2: 120 Timber, 20 Stone, 40 Planks | 50 / 60 | 40 | 2 × cutting timber | Managed Woodland |
+| Clay Pit | 2×2 | 2 | #1: 80 Timber, 20 Stone, 20 Planks<br>#2: 120 Timber, 40 Stone, 40 Planks | 45 / 55 | 40 | 2 × digging clay | Clay Pits |
+| Quarry | 3×3 | 1 | #1: 120 Timber, 40 Planks, 20 Bricks | 70 | 60 | 2 × quarrying stone | Stone Quarry |
 | Cottage | 2×2 | 1 | #1: 100 Timber<br>#2: 120 Timber, 50 Clay<br>#3: 120 Timber, 60 Clay, 40 Planks, 30 Bricks | 60 / 75 / 90 | 50 | houses 1 | Cottage Craft |
+| House | 3×2 | 1 | #1: 160 Timber, 40 Stone, 60 Planks, 40 Bricks<br>#2: 200 Timber, 60 Stone, 80 Planks, 60 Bricks | 100 / 120 | 80 | houses 2 | Family Homes |
 | Flower Bed | 1×1 | 24 | #1: 5 Timber | instant | 1 | decoration | — |
 | Lantern Post | 1×1 | 16 | #1: 12 Timber | instant | 1 | decoration | — |
 | Garden Bench | 1×1 | 12 | #1: 15 Timber | instant | 1 | decoration | — |
@@ -91,6 +95,9 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | Stone Yard | 2 → 3 | 100 Timber, 60 Clay, 100 Stone, 20 Planks | 50 | Masonry, village level 3 | stores 260 Stone | 40 |
 | Sawmill | 1 → 2 | 140 Timber, 60 Stone, 30 Planks | 60 | — | stores 80 Planks; 2 worker slots; work ×1.2 | 45 |
 | Brickworks | 1 → 2 | 120 Timber, 60 Stone, 30 Planks, 30 Bricks | 70 | — | stores 80 Bricks; 2 worker slots; work ×1.2 | 55 |
+| Woodlot | 1 → 2 | 120 Timber, 40 Stone, 40 Planks | 60 | — | 3 worker slots; work ×1.2 | 40 |
+| Clay Pit | 1 → 2 | 100 Timber, 40 Planks, 20 Bricks | 55 | — | 3 worker slots; work ×1.2 | 40 |
+| Quarry | 1 → 2 | 160 Timber, 60 Planks, 40 Bricks | 80 | — | 3 worker slots; work ×1.2 | 60 |
 
 ## Research
 
@@ -111,7 +118,17 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 3 | Masonry | 100 | 100 | Stonecutting | Mortar, footings and true walls. Buildings can be raised to level 3, and the Founders’ Lodge can grow a third bed. |
 | 3 | Woodland Tending | 110 | 110 | Sharpened Axes | Replant as you go. Felled trees regrow three times faster. |
 | 3 | Builder's Plans | 90 | 90 | Study Notes | Drawn plans and measured timber. Construction is 25% faster. |
-| 3 | Brickmaking | 110 | 110 | Carpentry, Clay Digging | Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods. |
+| 3 | Brickmaking | 110 | 110 | Carpentry | Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods. |
+| 4 | Family Homes | 180 | 180 | Village Commons | Two storeys, a brick chimney and room for two. Unlocks the House. |
+| 4 | Clay Pits | 160 | 160 | Iron-shod Spades | Dig a proper pit wherever the ground is good. Unlocks the Clay Pit — clay that never runs out. |
+| 4 | Organised Stores | 170 | 170 | Masonry | Labelled bays and tidy stacks. Stone, plank and brick storage +50%. |
+| 4 | Preserved Food | 150 | 150 | Field Rations | Salted, smoked and sealed. Each bowl of Stew fuels another 30% more work. |
+| 4 | Managed Woodland | 160 | 160 | Woodland Tending | Coppice and replant on purpose. Unlocks the Woodlot — timber that never runs out, placed where you like. |
+| 4 | Apprenticeship | 170 | 170 | Study Notes | Elders teach while they work. Villagers can practise any skill up to level 3. |
+| 4 | Master Crafts | 190 | 190 | Brickmaking | Jigs, moulds and better kilns. Workshops produce 25% faster. |
+| 5 | Townhouses | 260 | 260 | Family Homes | Shared walls and tidy lanes: room for a second House. |
+| 5 | Stone Quarry | 240 | 240 | Clay Pits | Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out. |
+| 5 | Master Builders | 240 | 240 | Apprenticeship | Cranes, templates and practised crews. Construction is 30% faster. |
 
 - Tier 1: 60 Knowledge in total ≈ 6 scholar-minutes.
 - Tier 2: 340 Knowledge in total ≈ 34 scholar-minutes.
@@ -124,8 +141,8 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 1 | 0 | Research tier 1: Cottage Craft, Clay Digging, Hearty Recipes |
 | 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Carpentry, Stonecutting |
 | 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans |
-| 4 | 550 | — |
-| 5 | 1000 | — |
+| 4 | 550 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
+| 5 | 1000 | Research tier 5: Townhouses, Stone Quarry, Master Builders |
 | 6 | 1700 | — |
 | 7 | 2600 | — |
 

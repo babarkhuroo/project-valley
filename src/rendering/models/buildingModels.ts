@@ -530,6 +530,135 @@ function warehouse(): BuildingModel {
   return m;
 }
 
+/** Little leafy sapling built from primitives (woodlot planting). */
+function sapling(parent: THREE.Object3D, x: number, z: number, s: number, m: BuildingModel): void {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.scale.setScalar(s * 0.72);
+  cyl(g, 0.05, 0.07, 0.7, mat(PALETTE.bark), 0, 0.35, 0, 6);
+  const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 0), mat(PALETTE.leafLight, { flat: true }));
+  crown.position.y = 0.9;
+  g.add(crown);
+  parent.add(g);
+  m.wavers.push({ obj: g, amp: 0.05, speed: 1.2 + x * 0.7, base: 0 });
+}
+
+function woodlot(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  // Mulched ground inside a split-rail fence.
+  box(r, 2.8, 0.06, 2.8, mat('#6b5a3a'), 0, 0.03, 0);
+  const rail = mat(PALETTE.woodLight);
+  for (const [w, d, x, z] of [[2.8, 0.06, 0, 1.38], [2.8, 0.06, 0, -1.38], [0.06, 2.8, 1.38, 0], [0.06, 2.8, -1.38, 0]] as const) {
+    box(r, w, 0.06, d, rail, x, 0.32, z);
+    box(r, w, 0.06, d, rail, x, 0.16, z);
+  }
+  for (const x of [-1.38, 0, 1.38]) for (const z of [-1.38, 1.38]) box(r, 0.09, 0.5, 0.09, mat(PALETTE.woodDark), x, 0.25, z);
+  // Rows of young trees at different ages, a few stumps and a chopping block.
+  sapling(r, -0.8, -0.8, 1.2, m);
+  sapling(r, 0.1, -0.85, 0.9, m);
+  sapling(r, 0.85, -0.6, 1.35, m);
+  sapling(r, -0.75, 0.15, 0.7, m);
+  sapling(r, 0.8, 0.3, 1.0, m);
+  for (const [x, z] of [[0.05, 0.1], [-0.15, 0.85]]) {
+    cyl(r, 0.13, 0.16, 0.2, mat(PALETTE.bark), x, 0.1, z, 8);
+    cyl(r, 0.12, 0.12, 0.02, mat(PALETTE.woodLight), x, 0.21, z, 8);
+  }
+  // Tool shed in the corner.
+  box(r, 0.6, 0.6, 0.45, mat(PALETTE.wood), 0.9, 0.3, 0.95);
+  const roof = box(r, 0.72, 0.05, 0.6, mat(PALETTE.woodDark, { flat: true }), 0.9, 0.65, 0.95);
+  roof.rotation.x = 0.25;
+  return m;
+}
+
+function clayPit(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  // Rim of dug earth around a reddish pit; the pit floor sits just above ground so it reads from above.
+  const rim = mat('#9a6a48', { flat: true });
+  for (const [w, d, x, z] of [[1.9, 0.3, 0, 0.8], [1.9, 0.3, 0, -0.8], [0.3, 1.3, 0.8, 0], [0.3, 1.3, -0.8, 0]] as const) box(r, w, 0.22, d, rim, x, 0.11, z);
+  box(r, 1.3, 0.04, 1.3, mat('#b5603c', { flat: true }), 0, 0.03, 0);
+  const puddle = new THREE.Mesh(new THREE.CircleGeometry(0.28, 12), mat('#6aa7b8', { emissive: '#2a5a66', emissiveIntensity: 0.2 }));
+  puddle.rotation.x = -Math.PI / 2;
+  puddle.position.set(-0.25, 0.06, 0.2);
+  r.add(puddle);
+  // Ladder leaning on the rim, a sluice board and a heap of fresh clay.
+  const ladder = new THREE.Group();
+  ladder.position.set(0.45, 0.05, -0.45);
+  ladder.rotation.set(-0.5, 0.6, 0);
+  for (const x of [-0.12, 0.12]) box(ladder, 0.04, 0.9, 0.04, mat(PALETTE.woodLight), x, 0.45, 0);
+  for (let i = 0; i < 4; i++) box(ladder, 0.24, 0.03, 0.03, mat(PALETTE.woodLight), 0, 0.15 + i * 0.2, 0);
+  r.add(ladder);
+  const heap = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), mat(PALETTE.clay, { flat: true }));
+  heap.scale.set(1.2, 0.55, 1);
+  heap.position.set(0.55, 0.18, 0.6);
+  r.add(heap);
+  box(r, 0.7, 0.05, 0.16, mat(PALETTE.wood), -0.55, 0.26, -0.6);
+  return m;
+}
+
+function quarry(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  // Terraced rock face at the back, a cut-block apron at the front.
+  const rock = mat('#9aa1ab', { flat: true });
+  const rockDark = mat('#868d98', { flat: true });
+  box(r, 2.8, 1.6, 0.9, rock, 0, 0.8, -0.95);
+  box(r, 2.8, 0.9, 0.7, rockDark, 0, 0.45, -0.2);
+  box(r, 2.8, 0.35, 0.6, rock, 0, 0.175, 0.4);
+  for (const [x, y, z] of [[-1.0, 1.65, -1.0], [0.6, 1.62, -0.9], [-0.2, 0.95, -0.25]] as const) {
+    const lump = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28, 0), rock);
+    lump.position.set(x, y, z);
+    r.add(lump);
+  }
+  box(r, 2.8, 0.06, 0.55, mat('#c4c8cf', { flat: true }), 0, 0.03, 1.1);
+  for (const [x, z] of [[-0.9, 1.1], [-0.45, 1.15], [0.95, 1.05]] as const) box(r, 0.36, 0.22, 0.3, mat('#b8bdc6', { flat: true }), x, 0.14, z);
+  // Timber crane with a slowly swinging jib.
+  const post = mat(PALETTE.woodDark);
+  box(r, 0.14, 2.6, 0.14, post, 1.15, 1.3, 0.75);
+  const jib = new THREE.Group();
+  jib.position.set(1.15, 2.55, 0.75);
+  box(jib, 1.3, 0.1, 0.1, post, -0.55, 0, 0);
+  cyl(jib, 0.012, 0.012, 0.9, mat(PALETTE.iron), -1.1, -0.45, 0, 4);
+  box(jib, 0.26, 0.18, 0.22, mat('#b8bdc6', { flat: true }), -1.1, -0.95, 0);
+  r.add(jib);
+  m.busy.push({ obj: jib, axis: 'y', speed: 0.35 });
+  return m;
+}
+
+function house(variant: number): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 2.75, 0.2, 1.75, mat(PALETTE.stoneDark), 0, 0.1, 0);
+  // Brick ground floor, timber-framed upper floor jettied out a little.
+  box(r, 2.4, 1.05, 1.4, mat('#c4704f', { flat: true }), 0, 0.72, -0.05);
+  box(r, 2.55, 0.1, 1.55, mat(PALETTE.woodDark), 0, 1.29, -0.05);
+  box(r, 2.5, 0.85, 1.5, mat(PALETTE.plaster), 0, 1.76, -0.05);
+  const beam = mat(PALETTE.woodDark);
+  for (const x of [-1.2, -0.4, 0.4, 1.2]) box(r, 0.08, 0.85, 0.06, beam, x, 1.76, 0.71);
+  for (const [x, rot] of [[-0.8, 0.6], [0.8, -0.6]] as const) {
+    const brace = box(r, 0.06, 0.85, 0.05, beam, x, 1.76, 0.72);
+    brace.rotation.z = rot;
+  }
+  const roofColors = [PALETTE.slate, PALETTE.terracotta, '#7aa35a', PALETTE.slateDark];
+  gableRoof(r, 1.95, 1.0, 2.85, mat(roofColors[variant % roofColors.length], { flat: true }), 2.18, true, 0, -0.05);
+  box(r, 0.34, 1.3, 0.34, mat('#a8452f', { flat: true }), 0.9, 2.6, -0.35);
+  m.smoke.push(new THREE.Vector3(0.9, 3.35, -0.35));
+  door(r, -0.45, 0.67, 0.42, 0.74, 0.2);
+  windowPane(r, 0.55, 0.75, 0.67, 0.34, 0.3);
+  windowPane(r, -0.75, 1.78, 0.73, 0.26, 0.26);
+  windowPane(r, 0.05, 1.78, 0.73, 0.26, 0.26);
+  windowPane(r, 0.8, 1.78, 0.73, 0.26, 0.26);
+  // Window box and a bench by the door.
+  box(r, 0.4, 0.08, 0.1, mat(PALETTE.wood), 0.55, 0.52, 0.78);
+  ['#e86b8a', '#f2c14e', '#ffffff'].forEach((c, i) => {
+    const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat(c, { flat: true }));
+    f.position.set(0.43 + i * 0.12, 0.6, 0.78);
+    r.add(f);
+  });
+  return m;
+}
+
 /** Small flag that tells the building's level at a glance (blue = 2, gold = 3). */
 function levelPennant(m: BuildingModel, level: number, x: number, z: number, height: number): void {
   const pole = new THREE.Group();
@@ -664,6 +793,18 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
       break;
     case 'warehouse':
       model = warehouse();
+      break;
+    case 'woodlot':
+      model = woodlot();
+      break;
+    case 'clayPit':
+      model = clayPit();
+      break;
+    case 'quarry':
+      model = quarry();
+      break;
+    case 'house':
+      model = house(variant);
       break;
     case 'academy':
       model = academy();

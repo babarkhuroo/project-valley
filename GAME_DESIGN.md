@@ -79,6 +79,16 @@ Storage is shared across buildings of a kind; building more storage raises the c
 
 Costs are paid when placed; a builder then contributes work (up to two per site). Visual stages: foundation slab → scaffold → walls rising (clipping plane) → finished bounce with confetti. Cancelling refunds everything. Moving any building is free and instant; decorations place instantly.
 
+## Permanent production areas
+
+Natural trees, clay banks and outcrops are finite and regrow slowly. Mid-game research unlocks buildings that never run out and can be placed anywhere — the decision becomes *where*: close to the matching store, because gatherers still carry every load.
+
+| Building | Research (tier) | Job | Workers | Level 2 |
+| --- | --- | --- | --- | --- |
+| Woodlot | Managed Woodland (4) | Cutting timber | 2 | 3 workers, ×1.2 |
+| Clay Pit | Clay Pits (4) | Digging clay | 2 | 3 workers, ×1.2 |
+| Quarry | Stone Quarry (5) | Quarrying stone | 2 | 3 workers, ×1.2 |
+
 ## Workshops & crafting
 
 Processing moves the economy from gathering to manufacturing. A workshop (Sawmill, Brickworks) holds up to 4 **orders** — 1–50 items or *keep making* — that can be reordered or cancelled. Its assigned crafter (Crafting skill) works through them one item per batch: an item's inputs are taken when it starts (cancelling refunds a started item) and its output is stored when it finishes. Everything is part of the deterministic sim, so workshops keep producing while you are away.
@@ -105,15 +115,15 @@ Two intertwined progressions:
 - **Village level** (XP from construction, research, tutorial beats) opens research **tiers**.
 - **Research** decides what is actually unlocked. Knowledge flows into the active project; switching keeps progress; with no project it banks up to the Academy's capacity and the scholar pauses when full.
 
-Tier 1 offers a real choice from minute five: more villagers (*Cottage Craft*), a new resource (*Clay Digging*), or faster food (*Hearty Recipes*). Tiers 2–3 branch into storage, food efficiency, woodcutting/clay speed, faster regrowth, faster construction and more homes.
+Tier 1 offers a real choice from minute five: more villagers (*Cottage Craft*), a new resource (*Clay Digging*), or faster food (*Hearty Recipes*). Tiers 2–3 branch into stone, workshops, storage, food efficiency, gathering speed, faster regrowth, faster construction and more homes. Tiers 4–5 (village levels 4–5) bring permanent production areas, Houses, Organised Stores, Preserved Food, Apprenticeship (practice up to skill level 3), Master Crafts and Master Builders.
 
 ## Population
 
-Start with two founders in the Founders' Lodge. Each Cottage (limited by research: 1 → 2 → 3) adds a bed; a free bed brings three travellers to choose from, each already practised (level 1) in one skill. Newcomers walk in along the southern road.
+Start with two founders in the Founders' Lodge (a third bed once extended with *Masonry*). Each Cottage (limited by research: 1 → 2 → 3) adds a bed and each House (*Family Homes*, a second with *Townhouses*) adds two — at most 10 villagers in this milestone; a free bed brings three travellers to choose from, each already practised (level 1) in one skill. Newcomers walk in along the southern road.
 
 ## Skills
 
-Skill level multiplies work rate (+10 % per level early on). Villagers gain practice XP from every batch, up to level 2; beyond that is guild training in the Valley (milestone 3).
+Skill level multiplies work rate (+10 % per level early on). Villagers gain practice XP from every batch, up to level 2 (3 with *Apprenticeship*); beyond that is guild training in the Valley (milestone 3).
 
 ## Offline progress
 
@@ -138,7 +148,7 @@ Contextual coach card + world arrow, each beat completes by doing the thing (and
 
 ## Roadmap
 
-- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ⏳ research tiers 4–5, more homes, permanent production areas · ⏳ economy simulation / balancing tools.
+- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ⏳ economy simulation / balancing tools.
 - **Milestone 3:** The Hearthlands (shared Valley) map, Valley buildings & research, contributions, guild training, merchants, reputation — with simulated neighbours first.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

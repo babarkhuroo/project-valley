@@ -29,8 +29,8 @@ export const BALANCE = {
     /** Practice XP gained per finished batch in the job's skill. */
     practiceXpPerBatch: 1,
     /** Cumulative practice XP needed to reach each level (index = level). */
-    practiceThresholds: [0, 30, 90],
-    /** Practice alone cannot raise a skill beyond this; guild training (Valley) goes further. */
+    practiceThresholds: [0, 30, 90, 200],
+    /** Practice alone cannot raise a skill beyond this (Apprenticeship research adds 1); guild training (Valley) goes further. */
     practiceCap: 2,
   },
   progression: {

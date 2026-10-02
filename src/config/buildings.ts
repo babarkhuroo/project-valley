@@ -12,6 +12,10 @@ export type BuildingId =
   | 'sawmill'
   | 'brickworks'
   | 'warehouse'
+  | 'woodlot'
+  | 'clayPit'
+  | 'quarry'
+  | 'house'
   | 'academy'
   | 'cottage'
   | 'flowerBed'
@@ -237,6 +241,78 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     model: 'warehouse',
     height: 3.6,
   },
+  woodlot: {
+    id: 'woodlot',
+    name: 'Woodlot',
+    description: 'A fenced, managed grove. Woodcutters work it forever — it never runs out. Place it near a Timber Yard.',
+    category: 'production',
+    footprint: { w: 3, d: 3 },
+    buildable: true,
+    requiresResearch: 'woodlots',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 80, planks: 20 }, work: 50 },
+      { resources: { timber: 120, planks: 40, stone: 20 }, work: 60 },
+    ],
+    xp: 40,
+    operate: { job: 'chop', slots: 2 },
+    model: 'woodlot',
+    height: 2.8,
+    upgrades: [{ cost: { resources: { timber: 120, planks: 40, stone: 40 }, work: 60 }, slots: 3, outputMult: 1.2, xp: 40 }],
+  },
+  clayPit: {
+    id: 'clayPit',
+    name: 'Clay Pit',
+    description: 'A dug pit with ladders and a sluice. Diggers work it forever. Place it near a Clay Shed.',
+    category: 'production',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresResearch: 'clayPits',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 80, planks: 20, stone: 20 }, work: 45 },
+      { resources: { timber: 120, planks: 40, stone: 40 }, work: 55 },
+    ],
+    xp: 40,
+    operate: { job: 'dig', slots: 2 },
+    model: 'clayPit',
+    height: 1.4,
+    upgrades: [{ cost: { resources: { timber: 100, planks: 40, bricks: 20 }, work: 55 }, slots: 3, outputMult: 1.2, xp: 40 }],
+  },
+  quarry: {
+    id: 'quarry',
+    name: 'Quarry',
+    description: 'A cut rock face with a crane. Quarrymen work it forever. Place it near a Stone Yard.',
+    category: 'production',
+    footprint: { w: 3, d: 3 },
+    buildable: true,
+    requiresResearch: 'stoneQuarry',
+    maxCount: 1,
+    costs: [{ resources: { timber: 120, planks: 40, bricks: 20 }, work: 70 }],
+    xp: 60,
+    operate: { job: 'quarry', slots: 2 },
+    model: 'quarry',
+    height: 2.6,
+    upgrades: [{ cost: { resources: { timber: 160, planks: 60, bricks: 40 }, work: 80 }, slots: 3, outputMult: 1.2, xp: 60 }],
+  },
+  house: {
+    id: 'house',
+    name: 'House',
+    description: 'A two-storey family home with a brick chimney. Room for two villagers.',
+    category: 'homes',
+    footprint: { w: 3, d: 2 },
+    buildable: true,
+    requiresResearch: 'familyHomes',
+    maxCount: 1,
+    costs: [
+      { resources: { timber: 160, stone: 40, planks: 60, bricks: 40 }, work: 100 },
+      { resources: { timber: 200, stone: 60, planks: 80, bricks: 60 }, work: 120 },
+    ],
+    xp: 80,
+    housing: 2,
+    model: 'house',
+    height: 3.6,
+  },
   academy: {
     id: 'academy',
     name: 'Academy',
@@ -324,7 +400,11 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'sawmill',
   'brickworks',
   'warehouse',
+  'woodlot',
+  'clayPit',
+  'quarry',
   'cottage',
+  'house',
   'flowerBed',
   'lantern',
   'bench',

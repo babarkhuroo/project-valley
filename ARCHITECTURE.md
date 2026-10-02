@@ -34,6 +34,8 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 
 **Building levels** (`sim/levels.ts`): `buildingStats(defId, level)` folds the base definition and its `upgrades` into effective storage, housing, worker slots and output multiplier; capacity, housing, job slots and work rates all read it. An upgrade lives on the instance as `upgrade: { toLevel, progress, workRequired, paid }`; builders reuse the `construct` job (`siteWork()` treats new sites and upgrades alike) and the building stays operational until `completeUpgrade` bumps the level.
 
+**Production areas** reuse the `operate` job: when the building's job has `delivery: 'carry'` (Woodlot, Clay Pit, Quarry) a finished batch becomes a carried load that walks to storage exactly like gathering from a node, and multi-worker crews are spread around the footprint (`spreadSpot`).
+
 **Crafting** (`sim/crafting.ts`, recipes in `config/recipes.ts`): workshops carry `craft: { orders, current }`. The crafter's `operate` job runs one batch per item — `startNextItem` checks output space and takes the inputs (setting `current`), `finishItem` stores the output and counts the head order down (`-1` = keep making). Blocked states (`noOrders`, `noInputs`, `storageFull`) are re-checked in `settleVillagers`, so workshops resume on their own and offline catch-up stays exact.
 
 **Commands** (`sim/commands.ts`) are the only player mutations: assign/unassign, place/move/cancel building, choose research, accept newcomer, rename. Each validates and returns a readable refusal reason. **Events** (`sim/events.ts`) are transient facts (`deposit`, `constructionComplete`, `hungry`, `levelUp`, …) consumed by rendering (particles, sound), UI (toasts) and offline summaries.

@@ -10,6 +10,16 @@ export type ResearchId =
   | 'masonry'
   | 'carpentry'
   | 'brickmaking'
+  | 'familyHomes'
+  | 'clayPits'
+  | 'organisedStores'
+  | 'preservedFood'
+  | 'woodlots'
+  | 'apprenticeship'
+  | 'masterCrafts'
+  | 'townhouses'
+  | 'stoneQuarry'
+  | 'masterBuilders'
   | 'heartyRecipes'
   | 'growingHamlet'
   | 'sturdyRacks'
@@ -31,6 +41,7 @@ export type ResearchEffect =
   | { type: 'storage'; resources: ResourceId[]; mult: number }
   | { type: 'mealDuration'; mult: number }
   | { type: 'regrow'; node: NodeKind; mult: number }
+  | { type: 'practiceCap'; add: number }
   /** Informational: opens building upgrades up to this level (checked by upgrade definitions). */
   | { type: 'upgradeTier'; level: number };
 
@@ -180,7 +191,7 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     category: 'crafting',
     tier: 3,
     cost: 110,
-    prereqs: ['carpentry', 'clayDigging'],
+    prereqs: ['carpentry'],
     effects: [
       { type: 'unlockBuilding', building: 'brickworks' },
       { type: 'unlockBuilding', building: 'warehouse' },
@@ -264,6 +275,128 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     prereqs: ['studyNotes'],
     effects: [{ type: 'jobRate', job: 'build', mult: 1.25 }],
     xp: 90,
+    row: 5,
+  },
+  // ---------------------------------------------------------------- Tier 4 (level 4)
+  familyHomes: {
+    id: 'familyHomes',
+    name: 'Family Homes',
+    description: 'Two storeys, a brick chimney and room for two. Unlocks the House.',
+    category: 'villagers',
+    tier: 4,
+    cost: 180,
+    prereqs: ['villageCommons'],
+    effects: [{ type: 'unlockBuilding', building: 'house' }],
+    xp: 180,
+    row: 0,
+  },
+  clayPits: {
+    id: 'clayPits',
+    name: 'Clay Pits',
+    description: 'Dig a proper pit wherever the ground is good. Unlocks the Clay Pit — clay that never runs out.',
+    category: 'resources',
+    tier: 4,
+    cost: 160,
+    prereqs: ['claySpades'],
+    effects: [{ type: 'unlockBuilding', building: 'clayPit' }],
+    xp: 160,
+    row: 1,
+  },
+  organisedStores: {
+    id: 'organisedStores',
+    name: 'Organised Stores',
+    description: 'Labelled bays and tidy stacks. Stone, plank and brick storage +50%.',
+    category: 'storage',
+    tier: 4,
+    cost: 170,
+    prereqs: ['masonry'],
+    effects: [{ type: 'storage', resources: ['stone', 'planks', 'bricks'], mult: 1.5 }],
+    xp: 170,
+    row: 2,
+  },
+  preservedFood: {
+    id: 'preservedFood',
+    name: 'Preserved Food',
+    description: 'Salted, smoked and sealed. Each bowl of Stew fuels another 30% more work.',
+    category: 'food',
+    tier: 4,
+    cost: 150,
+    prereqs: ['fieldRations'],
+    effects: [{ type: 'mealDuration', mult: 1.3 }],
+    xp: 150,
+    row: 3,
+  },
+  woodlots: {
+    id: 'woodlots',
+    name: 'Managed Woodland',
+    description: 'Coppice and replant on purpose. Unlocks the Woodlot — timber that never runs out, placed where you like.',
+    category: 'resources',
+    tier: 4,
+    cost: 160,
+    prereqs: ['woodlandTending'],
+    effects: [{ type: 'unlockBuilding', building: 'woodlot' }],
+    xp: 160,
+    row: 4,
+  },
+  apprenticeship: {
+    id: 'apprenticeship',
+    name: 'Apprenticeship',
+    description: 'Elders teach while they work. Villagers can practise any skill up to level 3.',
+    category: 'knowledge',
+    tier: 4,
+    cost: 170,
+    prereqs: ['studyNotes'],
+    effects: [{ type: 'practiceCap', add: 1 }],
+    xp: 170,
+    row: 5,
+  },
+  masterCrafts: {
+    id: 'masterCrafts',
+    name: 'Master Crafts',
+    description: 'Jigs, moulds and better kilns. Workshops produce 25% faster.',
+    category: 'crafting',
+    tier: 4,
+    cost: 190,
+    prereqs: ['brickmaking'],
+    effects: [{ type: 'jobRate', job: 'craft', mult: 1.25 }],
+    xp: 190,
+    row: 6,
+  },
+  // ---------------------------------------------------------------- Tier 5 (level 5)
+  townhouses: {
+    id: 'townhouses',
+    name: 'Townhouses',
+    description: 'Shared walls and tidy lanes: room for a second House.',
+    category: 'villagers',
+    tier: 5,
+    cost: 260,
+    prereqs: ['familyHomes'],
+    effects: [{ type: 'maxCount', building: 'house', add: 1 }],
+    xp: 260,
+    row: 0,
+  },
+  stoneQuarry: {
+    id: 'stoneQuarry',
+    name: 'Stone Quarry',
+    description: 'Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out.',
+    category: 'resources',
+    tier: 5,
+    cost: 240,
+    prereqs: ['clayPits'],
+    effects: [{ type: 'unlockBuilding', building: 'quarry' }],
+    xp: 240,
+    row: 1,
+  },
+  masterBuilders: {
+    id: 'masterBuilders',
+    name: 'Master Builders',
+    description: 'Cranes, templates and practised crews. Construction is 30% faster.',
+    category: 'production',
+    tier: 5,
+    cost: 240,
+    prereqs: ['apprenticeship'],
+    effects: [{ type: 'jobRate', job: 'build', mult: 1.3 }],
+    xp: 240,
     row: 5,
   },
 };

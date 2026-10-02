@@ -5,7 +5,7 @@ import { NODES } from '../config/nodes';
 import { addResource, bumpStat, capacity, nearestStorage } from './economy';
 import type { EventSink } from './events';
 import { buildingCenter, frontDirection, perimeterCells, rotatedSize } from './grid';
-import { getModifiers, isNodeUnlocked, mealDuration, regrowSeconds } from './modifiers';
+import { getModifiers, isNodeUnlocked, mealDuration, practiceCap, regrowSeconds } from './modifiers';
 import { buildRoute, findPath, routeEnd, sampleRoute } from './pathfinding';
 import { practiceSkill, skillMultiplier } from './progression';
 import { produceKnowledge } from './research';
@@ -154,9 +154,10 @@ export function nearestPerimeterSpot(world: World, b: BuildingInstance, from: Ve
   return best;
 }
 
-function builderSpot(state: GameState, world: World, v: Villager, b: BuildingInstance): Vec2 {
+/** Spreads several workers of one kind around a building instead of stacking them on one tile. */
+function spreadSpot(state: GameState, world: World, v: Villager, b: BuildingInstance, kind: 'construct' | 'operate'): Vec2 {
   const builders = state.villagers
-    .filter((o) => o.job?.kind === 'construct' && o.job.buildingId === b.id)
+    .filter((o) => o.job?.kind === kind && o.job.buildingId === b.id)
     .sort((a, c) => a.id - c.id);
   const index = Math.max(0, builders.findIndex((o) => o.id === v.id));
   const front = frontSpot(world, b);
@@ -178,7 +179,11 @@ export function workSpot(state: GameState, world: World, v: Villager): Vec2 | nu
   }
   const b = findBuilding(state, job.buildingId);
   if (!b) return null;
-  return job.kind === 'construct' ? builderSpot(state, world, v, b) : frontSpot(world, b);
+  if (job.kind === 'construct') return spreadSpot(state, world, v, b, 'construct');
+  // Multi-worker production areas spread their crew around the edge; single-slot buildings use the door.
+  return buildingStats(b.defId, b.level).slots > 1 && JOBS[BUILDINGS[b.defId].operate?.job ?? 'cook'].output?.delivery === 'carry'
+    ? spreadSpot(state, world, v, b, 'operate')
+    : frontSpot(world, b);
 }
 
 /** Where an idle villager hangs out: in front of their home, spread out a little. */
@@ -347,7 +352,7 @@ function completeBatch(state: GameState, world: World, v: Villager, sink: EventS
   const jt = jobTypeOf(state, job);
   if (!jt) return;
   const def = JOBS[jt];
-  practiceSkill(v, def.skill, sink);
+  practiceSkill(v, def.skill, sink, practiceCap(state));
   sink.push({ type: 'batch', villagerId: v.id, job: jt });
 
   switch (job.kind) {
@@ -380,6 +385,14 @@ function completeBatch(state: GameState, world: World, v: Villager, sink: EventS
         return;
       }
       const { resource, amount } = def.output;
+      if (def.output.delivery === 'carry') {
+        // Production areas (Woodlot, Clay Pit, Quarry): gatherers haul each load to storage.
+        v.workProgress = 0;
+        v.batchWork = 0;
+        v.carrying = { resource, amount };
+        headToStorage(state, world, v, sink);
+        return;
+      }
       if (resource === 'knowledge') produceKnowledge(state, amount, sink);
       else addResource(state, resource, amount);
       sink.push({ type: 'produced', villagerId: v.id, buildingId: b.id, resource, amount });
