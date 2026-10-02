@@ -3,6 +3,7 @@ import type { JobType } from '../config/jobs';
 import type { ResearchId } from '../config/research';
 import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
+import type { ValleyBuildingId } from '../config/valley';
 
 /**
  * Transient facts emitted while the simulation advances. They are not saved: the
@@ -30,7 +31,9 @@ export type SimEvent =
   | { type: 'skillUp'; villagerId: number; skill: SkillId; level: number }
   | { type: 'newcomersAvailable' }
   | { type: 'villagerJoined'; villagerId: number }
-  | { type: 'autoContinue'; villagerId: number; nodeId: number };
+  | { type: 'autoContinue'; villagerId: number; nodeId: number }
+  | { type: 'valleySent'; building: ValleyBuildingId; resources: Partial<Record<ResourceId, number>> }
+  | { type: 'valleyAccepted'; building: ValleyBuildingId; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number };
 
 export type IdleReason = 'depleted' | 'unassigned' | 'finished' | 'unreachable' | 'removed';
 

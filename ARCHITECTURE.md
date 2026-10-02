@@ -7,16 +7,17 @@ src/
   config/      static, data-driven definitions (buildings, research, jobs, map, balance, names)
   world/       pure terrain math: heights, water, paths, noise
   sim/         deterministic simulation — plain data in, plain data out, no three.js, no DOM
+  valley/      shared-Valley simulation (server-owned): projects, contributions, simulated neighbours
   game/        orchestration: Game (tick/commands/events), clock, persistence, offline, tutorial
   rendering/   three.js views that *read* sim state; input → camera + picks
   audio/       synthesised sound (no sample files)
   ui/          React HUD/panels; Zustand holds UI-only state
-server/        persistence API (Node http middleware + file store)
+server/        persistence + Valley API (Node http middleware, ValleyService, file stores)
 scripts/       balance-doc generator, pacing simulator, map probe, headless-Chrome driver
 tests/         economy tests (vitest)
 ```
 
-Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. The simulation never imports rendering or UI, which is what makes offline catch-up, fast-forward, unit tests and future server-side validation possible.
+Dependency direction: `config ← world ← sim ← valley ← game ← {rendering, ui}`, and `server` imports `config`/`valley` only. The simulation never imports rendering or UI, which is what makes offline catch-up, fast-forward, unit tests and future server-side validation possible.
 
 ## Simulation
 
@@ -45,6 +46,25 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 **Economy simulation** (`sim/autoplay.ts`, `sim/economySim.ts`): a deterministic scripted player (a build/upgrade priority list, a research order and a priority-role allocator for cooking, building, studying, crafting and gathering whatever is scarcest) acts only through the normal commands every 15 s of sim time while `advance` runs in between. `runEconomySim(seconds)` returns a `PacingReport`: milestone times, per-minute samples and per-hour idle/waiting/hungry shares. Since it shares the real sim, every config change shows up in it immediately. It drives `npm run simulate`, the *Simulated pacing* section of BALANCING.md, the dev panel's *Economy simulation* chart, and `tests/pacing.test.ts`, which guards early-game speed and late-game length.
 
 **ECS?** Deliberately not. Entity counts are small, behaviours are few and state must serialise cleanly; plain data plus focused system functions (`villagerAI`, `construction`, `research`, `population`, `economy`) is simpler. Revisit if Valley scenes need thousands of heterogeneous entities.
+
+## The Valley (milestone 3)
+
+The Valley is a second, independent simulation whose state is **owned by the server** and advanced by the **server's wall clock** (ms), never by a player's village clock.
+
+- **State** (`valley/types.ts`): members (players and simulated neighbours), one record per communal building (`level`, `status` locked → collecting → building → collecting/complete, `delivered`, per-member `shares`, `doneAt`), a capped news log (deliveries make way before milestones), seeded RNG, and per-member op results for idempotency.
+- **Simulation** (`valley/valleySim.ts`): discrete-event like the village — `advanceValley(v, now)` jumps between neighbour visits and build completions; neighbours wake, sleep (8 h a day at their own hour), and deliver seeded parcels to the projects closest to done. One big advance equals many small ones (tested), so a Valley left alone for a week replays exactly.
+- **Server** (`server/valleyService.ts`): every read or write first advances the Valley to `Date.now()`; calls on one Valley are serialised by a promise lock so concurrent members can't overwrite each other. `ValleyStore` has file and in-memory implementations (Postgres later). Until matchmaking (milestone 4) each player founds their own Valley shared with seven simulated neighbours.
+- **Village side** (`sim/valley.ts`): `sendToValley` takes resources out of the village at once and queues a `ValleyOp` in the saved **outbox**; `game/valleyClient.ts` posts ops oldest-first with their `opId` (the server returns the stored result for a repeat, so retries after a dropped connection are safe) and applies the answer with `settleValleyOp` — reputation for what was accepted, anything no longer needed comes home. Nothing is ever lost or double-counted, even across reloads and offline play.
+- **Bonuses** from restored buildings (guild job rates, storage, meal length) are copied from each snapshot into `state.valley.bonuses`, so village offline catch-up stays deterministic: it uses the bonuses known when the save was made.
+
+```
+GET  /api/valley/:playerId              → { valley, memberId, now } | 404
+POST /api/valley/:playerId/join         ← { name, villageName }
+POST /api/valley/:playerId/contribute   ← { opId, building, resources } → { result, valley, now } | 422
+POST /api/valley/:playerId/dev-skip     ← { hours }   (dev server only: ages the Valley)
+```
+
+Rendering: `rendering/valley/ValleyRenderer` is a second scene built from the same parts — the Valley map uses the village map format (`config/valleyMap.ts`), so `Terrain`, `TerrainView`, water, bridges, `NatureView` and ambient wildlife are reused; `ValleyBuildingsView` shows each communal building as a ruin, under scaffolding (with a crane) or restored with visible levels; `ValleyFolk` walks the neighbours (reusing `VillagersView` over a scenery-only state) between projects and districts. Travelling swaps renderers (only one WebGL context exists at a time); the village keeps ticking while you visit.
 
 ## Game layer
 
@@ -96,7 +116,7 @@ DELETE /api/save/:playerId
 - The **server clock is authoritative** for offline time: elapsed = `serverNow − serverSavedAt`, both stamped by the server.
 - Saves carry a monotonically increasing `revision`; the server rejects stale writes (409), and the client prefers a newer local cache only when the server copy is older (offline play).
 - `localStorage` is a cache, never the only copy.
-- **Schema versions:** `SAVE_VERSION` + an ordered `MIGRATIONS` table; loading walks old saves forward one version at a time and rejects saves from the future. v2 added stone and building upgrades; v3 added planks, bricks and workshop queues. Map content that needs the world to place (new resource nodes) is reconciled after loading by `ensureMapNodes`, which appends missing nodes without touching existing ids.
+- **Schema versions:** `SAVE_VERSION` + an ordered `MIGRATIONS` table; loading walks old saves forward one version at a time and rejects saves from the future. v2 added stone and building upgrades; v3 added planks, bricks and workshop queues; v4 added Valley membership, reputation and the delivery outbox. Map content that needs the world to place (new resource nodes) is reconciled after loading by `ensureMapNodes`, which appends missing nodes without touching existing ids.
 
 The API is Connect-style middleware mounted in Vite for development and in `server/index.ts` for production, over a `SaveStore` interface (file-backed today).
 
@@ -107,7 +127,7 @@ Static definitions stay in code/config; only per-player and shared runtime state
 ```
 User(id, auth…)                       Player(id, userId, name, level, xp)
 Village(playerId, stateJson, revision, savedAt)   -- the personal sim stays a versioned document
-Valley(id, name, seed, stateJson, revision)
+Valley(id, name, seed, stateJson, revision)   -- today: server/data/valleys/<id>.json
 ValleyMember(valleyId, playerId, joinedAt, role)
 ValleyBuilding(valleyId, defId, level, status, progress)
 ValleyContribution(valleyId, buildingId, playerId, resource, amount, at)
@@ -120,10 +140,10 @@ Personal villages remain single documents (their state is highly interlinked and
 
 ## Multiplayer direction
 
-- The Valley server is authoritative for shared resources, contributions, Valley research, trades, events and timers; clients send intents, the server validates and broadcasts deltas over WebSockets.
+- The Valley server is authoritative for shared resources, contributions, Valley research, trades, events and timers; clients send intents, the server validates and broadcasts deltas over WebSockets. Milestone 3 already works this way over polling (12 s while visiting, 45 s otherwise); WebSockets replace the poll in milestone 4, and real players replace simulated neighbours one membership at a time.
 - Villager transforms are **not** streamed: routes are deterministic functions of time, so clients can render other players' villagers from job assignments alone.
 - Because the personal sim is deterministic and dependency-free, the server can re-run it to validate a client's claimed state (anti-cheat) before accepting contributions.
 
 ## Testing
 
-`npm test` covers production, storage caps and resumption, food/hunger, skill and research bonuses, construction (costs, builders, cancel, move), research (flow, switching, banking, gating), offline determinism and long catch-ups, pathfinding (obstacles, water, bridges, re-planning), XP/levels, population, save round-trip/migrations, upgrades, crafting, tiers 4–5, culling, and simulated pacing (`tests/pacing.test.ts`: e.g. Academy < 5 min, level 2 < 12 min, Quarry not before 2 h).
+`npm test` covers production, storage caps and resumption, food/hunger, skill and research bonuses, construction (costs, builders, cancel, move), research (flow, switching, banking, gating), offline determinism and long catch-ups, pathfinding (obstacles, water, bridges, re-planning), XP/levels, population, save round-trip/migrations, upgrades, crafting, tiers 4–5, culling, the Valley (founding, determinism, neighbour pacing, idempotent contributions, build phases, bonuses in the village, outbox settle-once, the server service's locking), and simulated pacing (`tests/pacing.test.ts`: e.g. Academy < 5 min, level 2 < 12 min, Quarry not before 2 h).

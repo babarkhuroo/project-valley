@@ -1,6 +1,7 @@
 import { game, runtime } from '../../game/runtime';
 import { summarizeAway } from '../../game/offline';
 import { devCommands } from '../../sim/dev';
+import { playerId } from '../../game/persistence';
 import { Icon } from '../common/Icon';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
@@ -91,6 +92,7 @@ export function DevPanel() {
           </button>
         </div>
       </section>
+      <ValleySection />
       <EconomySimSection />
       <section>
         <h4>Session</h4>
@@ -129,6 +131,30 @@ function RenderingSection() {
       {toggle('frustum')}
       {toggle('lod')}
       {toggle('occlusion')}
+    </section>
+  );
+}
+
+/** Asks the dev server to age the Valley by `hours`, then re-syncs. */
+async function skipValley(hours: number): Promise<void> {
+  await fetch(`/api/valley/${playerId()}/dev-skip`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hours }) });
+  await runtime.valley?.refresh();
+}
+
+/** Lets Valley time pass on the dev server (neighbours deliver, builds finish). */
+function ValleySection() {
+  const state = useGameState();
+  if (!runtime.valley || !state.valley.valleyId) return null;
+  return (
+    <section>
+      <h4>Valley time</h4>
+      <div className="seg">
+        <button onClick={() => void skipValley(1)}>+1h</button>
+        <button onClick={() => void skipValley(6)}>+6h</button>
+        <button onClick={() => void skipValley(24)}>+1 day</button>
+        <button onClick={() => void skipValley(24 * 7)}>+1 week</button>
+      </div>
+      <p className="small muted">Ages the server-side Valley; your village clock is untouched.</p>
     </section>
   );
 }

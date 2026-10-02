@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { SaveStore } from './saveStore.ts';
+import type { ResourceBag } from '../src/valley/types.ts';
+import type { ValleyService } from './valleyService.ts';
 
 const PLAYER_ID = /^[a-z0-9-]{8,64}$/;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -38,11 +40,14 @@ function readBody(req: IncomingMessage): Promise<string> {
  *   GET    /api/save/:playerId   -> { revision, serverSavedAt, payload, now } | 404
  *   PUT    /api/save/:playerId   <- { revision, payload }   (POST accepted for sendBeacon)
  *   DELETE /api/save/:playerId
+ *   GET    /api/valley/:playerId              -> { valley, memberId, now } | 404
+ *   POST   /api/valley/:playerId/join         <- { name, villageName }
+ *   POST   /api/valley/:playerId/contribute   <- { opId, building, resources } -> { result, valley, … }
  *
  * The server clock is authoritative for offline progression: the client never
  * supplies the timestamp used to compute elapsed time.
  */
-export function createApiMiddleware(store: SaveStore) {
+export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, options: { dev?: boolean } = {}) {
   return async (req: IncomingMessage, res: ServerResponse, next: Next): Promise<void> => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (!url.pathname.startsWith('/api/')) {
@@ -52,6 +57,11 @@ export function createApiMiddleware(store: SaveStore) {
     try {
       if (url.pathname === '/api/time' && req.method === 'GET') {
         sendJson(res, 200, { now: Date.now() });
+        return;
+      }
+      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|contribute|dev-skip))?$/.exec(url.pathname);
+      if (valleyMatch && valleys) {
+        await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false);
         return;
       }
       const match = /^\/api\/save\/([^/]+)$/.exec(url.pathname);
@@ -103,4 +113,52 @@ export function createApiMiddleware(store: SaveStore) {
       sendJson(res, 500, { error: err instanceof Error ? err.message : 'server error' });
     }
   };
+}
+
+async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: ValleyService, playerId: string, action: string | null, dev: boolean): Promise<void> {
+  if (!PLAYER_ID.test(playerId)) {
+    sendJson(res, 400, { error: 'invalid player id' });
+    return;
+  }
+  if (action === null && req.method === 'GET') {
+    const view = await valleys.get(playerId);
+    if (!view) sendJson(res, 404, { error: 'not in a valley', now: Date.now() });
+    else sendJson(res, 200, view);
+    return;
+  }
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { error: 'method not allowed' });
+    return;
+  }
+  const body = JSON.parse((await readBody(req)) || '{}') as Record<string, unknown>;
+  if (action === 'join') {
+    const name = typeof body.name === 'string' ? body.name.slice(0, 40) : 'Founder';
+    const villageName = typeof body.villageName === 'string' ? body.villageName.slice(0, 40) : 'A village';
+    sendJson(res, 200, await valleys.join(playerId, name, villageName));
+    return;
+  }
+  if (action === 'dev-skip' && dev) {
+    const hours = typeof body.hours === 'number' ? Math.min(24 * 30, Math.max(0, body.hours)) : 1;
+    const view = await valleys.devSkip(playerId, hours * 3_600_000);
+    if (!view) sendJson(res, 404, { error: 'not in a valley' });
+    else sendJson(res, 200, view);
+    return;
+  }
+  if (action === 'contribute') {
+    const { opId, building, resources } = body;
+    if (typeof opId !== 'string' || opId.length > 80 || typeof building !== 'string' || !resources || typeof resources !== 'object') {
+      sendJson(res, 400, { error: 'malformed contribution' });
+      return;
+    }
+    const clean: ResourceBag = {};
+    for (const [r, n] of Object.entries(resources as Record<string, unknown>)) {
+      if (typeof n === 'number' && Number.isFinite(n) && n > 0) clean[r as keyof ResourceBag] = Math.floor(n);
+    }
+    const out = await valleys.contribute(playerId, building, clean, opId);
+    if (!out) sendJson(res, 404, { error: 'not in a valley' });
+    else if (!out.ok) sendJson(res, 422, { error: out.reason });
+    else sendJson(res, 200, { result: out.result, ...out.view });
+    return;
+  }
+  sendJson(res, 404, { error: 'not found' });
 }

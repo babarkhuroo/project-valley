@@ -9,8 +9,8 @@ export class CameraController {
   readonly target = new THREE.Vector3();
   distance = 24;
   yaw = 0;
-  readonly minDistance = 7;
-  readonly maxDistance = 62;
+  readonly minDistance: number;
+  readonly maxDistance: number;
   private readonly goalTarget = new THREE.Vector3();
   private goalDistance = 24;
   private goalYaw = 0;
@@ -27,7 +27,10 @@ export class CameraController {
     start: THREE.Vector3,
     /** Terrain height lookup so the camera never dips into hills. */
     private readonly groundHeight: (x: number, z: number) => number = () => 0,
+    zoom: { min: number; max: number } = { min: 7, max: 62 },
   ) {
+    this.minDistance = zoom.min;
+    this.maxDistance = zoom.max;
     this.bounds = bounds;
     this.target.copy(start);
     this.goalTarget.copy(start);

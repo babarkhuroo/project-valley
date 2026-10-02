@@ -86,7 +86,12 @@ export function maxBuildingCount(state: GameState, id: BuildingId): number {
 }
 
 export function mealDuration(state: GameState): number {
-  return BALANCE.villager.mealDuration * getModifiers(state).mealDurationMult;
+  return BALANCE.villager.mealDuration * getModifiers(state).mealDurationMult * state.valley.bonuses.mealDurationMult;
+}
+
+/** Whether the road to the shared Valley is open. */
+export function isValleyUnlocked(state: GameState): boolean {
+  return state.research.completed.some((id) => RESEARCH[id].effects.some((e) => e.type === 'unlockValley'));
 }
 
 export function regrowSeconds(state: GameState, kind: NodeKind): number {

@@ -23,14 +23,14 @@ export interface BuildingModel {
   busy: { obj: THREE.Object3D; axis: 'x' | 'y' | 'z'; speed: number }[];
 }
 
-function box(parent: THREE.Object3D, w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
+export function box(parent: THREE.Object3D, w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
   m.position.set(x, y, z);
   parent.add(m);
   return m;
 }
 
-function cyl(parent: THREE.Object3D, rt: number, rb: number, h: number, material: THREE.Material, x: number, y: number, z: number, seg = 12): THREE.Mesh {
+export function cyl(parent: THREE.Object3D, rt: number, rb: number, h: number, material: THREE.Material, x: number, y: number, z: number, seg = 12): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), material);
   m.position.set(x, y, z);
   parent.add(m);
@@ -38,7 +38,7 @@ function cyl(parent: THREE.Object3D, rt: number, rb: number, h: number, material
 }
 
 /** Triangular prism roof. `span` is the width across the slope, `length` runs along the ridge. */
-function gableRoof(parent: THREE.Object3D, span: number, height: number, length: number, material: THREE.Material, y: number, ridgeAlongX: boolean, x = 0, z = 0): THREE.Mesh {
+export function gableRoof(parent: THREE.Object3D, span: number, height: number, length: number, material: THREE.Material, y: number, ridgeAlongX: boolean, x = 0, z = 0): THREE.Mesh {
   const shape = new THREE.Shape();
   shape.moveTo(-span / 2, 0);
   shape.lineTo(span / 2, 0);
@@ -53,7 +53,7 @@ function gableRoof(parent: THREE.Object3D, span: number, height: number, length:
   return m;
 }
 
-function door(parent: THREE.Object3D, x: number, z: number, w = 0.46, h = 0.78, base = 0.2): void {
+export function door(parent: THREE.Object3D, x: number, z: number, w = 0.46, h = 0.78, base = 0.2): void {
   const wood = mat(PALETTE.woodDark);
   box(parent, w, h - w / 2, 0.06, wood, x, base + (h - w / 2) / 2, z);
   // Half-disc arch over the door, facing out of the wall (+z).
@@ -63,7 +63,7 @@ function door(parent: THREE.Object3D, x: number, z: number, w = 0.46, h = 0.78, 
   box(parent, 0.05, 0.05, 0.03, mat(PALETTE.gold), x + w * 0.28, base + h * 0.42, z + 0.04);
 }
 
-function windowPane(parent: THREE.Object3D, x: number, y: number, z: number, w = 0.3, h = 0.3, rotY = 0): void {
+export function windowPane(parent: THREE.Object3D, x: number, y: number, z: number, w = 0.3, h = 0.3, rotY = 0): void {
   const g = new THREE.Group();
   box(g, w + 0.08, h + 0.08, 0.04, mat(PALETTE.woodDark), 0, 0, 0);
   box(g, w, h, 0.05, glowMat(), 0, 0, 0.005);
@@ -74,13 +74,13 @@ function windowPane(parent: THREE.Object3D, x: number, y: number, z: number, w =
   parent.add(g);
 }
 
-function barrel(parent: THREE.Object3D, x: number, z: number, y = 0): void {
+export function barrel(parent: THREE.Object3D, x: number, z: number, y = 0): void {
   cyl(parent, 0.16, 0.16, 0.36, mat(PALETTE.wood), x, y + 0.18, z, 10);
   cyl(parent, 0.165, 0.165, 0.03, mat(PALETTE.iron), x, y + 0.08, z, 10);
   cyl(parent, 0.165, 0.165, 0.03, mat(PALETTE.iron), x, y + 0.28, z, 10);
 }
 
-function emptyModel(): BuildingModel {
+export function emptyModel(): BuildingModel {
   return { root: new THREE.Group(), smoke: [], steam: [], spinners: [], wavers: [], flames: [], fills: [], busy: [] };
 }
 
@@ -660,7 +660,7 @@ function house(variant: number): BuildingModel {
 }
 
 /** Small flag that tells the building's level at a glance (blue = 2, gold = 3). */
-function levelPennant(m: BuildingModel, level: number, x: number, z: number, height: number): void {
+export function levelPennant(m: BuildingModel, level: number, x: number, z: number, height: number): void {
   const pole = new THREE.Group();
   pole.position.set(x, 0, z);
   cyl(pole, 0.025, 0.03, height, mat(PALETTE.woodDark), 0, height / 2, 0, 6);
@@ -839,7 +839,7 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
  * are assembled from dozens of primitives; merging keeps each to a handful of draw calls.
  * Anything referenced by an animation anchor or storage fill stays separate.
  */
-function mergeStatic(model: BuildingModel): void {
+export function mergeStatic(model: BuildingModel): void {
   const dynamic = new Set<THREE.Object3D>();
   const keep = (o: THREE.Object3D) => o.traverse((c) => dynamic.add(c));
   model.spinners.forEach((s) => keep(s.obj));

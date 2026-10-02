@@ -29,9 +29,10 @@ export type ResearchId =
   | 'villageCommons'
   | 'claySpades'
   | 'woodlandTending'
-  | 'buildersPlans';
+  | 'buildersPlans'
+  | 'valleyRoad';
 
-export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge' | 'crafting';
+export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge' | 'crafting' | 'valley';
 
 export type ResearchEffect =
   | { type: 'unlockBuilding'; building: BuildingId }
@@ -43,7 +44,9 @@ export type ResearchEffect =
   | { type: 'regrow'; node: NodeKind; mult: number }
   | { type: 'practiceCap'; add: number }
   /** Informational: opens building upgrades up to this level (checked by upgrade definitions). */
-  | { type: 'upgradeTier'; level: number };
+  | { type: 'upgradeTier'; level: number }
+  /** Opens the road to the shared Valley. */
+  | { type: 'unlockValley' };
 
 export interface ResearchDef {
   id: ResearchId;
@@ -70,6 +73,7 @@ export const RESEARCH_CATEGORY_LABEL: Record<ResearchCategory, string> = {
   production: 'Production',
   knowledge: 'Knowledge',
   crafting: 'Crafting',
+  valley: 'Valley',
 };
 
 export const RESEARCH: Record<ResearchId, ResearchDef> = {
@@ -276,6 +280,18 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     effects: [{ type: 'jobRate', job: 'build', mult: 1.25 }],
     xp: 90,
     row: 5,
+  },
+  valleyRoad: {
+    id: 'valleyRoad',
+    name: 'The Valley Road',
+    description: 'Clear the old road over the ridge to the shared Valley, where neighbouring villages build together.',
+    category: 'valley',
+    tier: 3,
+    cost: 100,
+    prereqs: [],
+    effects: [{ type: 'unlockValley' }],
+    xp: 100,
+    row: 7,
   },
   // ---------------------------------------------------------------- Tier 4 (level 4)
   familyHomes: {

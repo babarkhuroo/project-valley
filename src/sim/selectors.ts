@@ -1,3 +1,5 @@
+import { IDENTITY } from '../config/identity';
+import { isValleyUnlocked } from './modifiers';
 import { BALANCE } from '../config/balance';
 import { BUILDINGS, BUILD_MENU_ORDER, type BuildingId } from '../config/buildings';
 import { JOBS, type JobType } from '../config/jobs';
@@ -242,7 +244,7 @@ export interface Suggestion {
   id: string;
   text: string;
   kind: 'warning' | 'idea';
-  action?: { type: 'selectVillager'; id: number } | { type: 'openResearch' } | { type: 'openBuild'; building?: BuildingId } | { type: 'selectBuilding'; id: number };
+  action?: { type: 'selectVillager'; id: number } | { type: 'openResearch' } | { type: 'openBuild'; building?: BuildingId } | { type: 'selectBuilding'; id: number } | { type: 'openValley' };
 }
 
 /** "What should I do next?" — a short, prioritised list of nudges. */
@@ -286,6 +288,9 @@ export function nextSteps(state: GameState): Suggestion[] {
   if (academy && !state.research.active) {
     const available = RESEARCH_IDS.filter((id) => researchStatus(state, id) === 'available');
     if (available.length > 0) tips.push({ id: 'research', kind: 'idea', text: `Choose a research project (${available.length} available)`, action: { type: 'openResearch' } });
+  }
+  if (isValleyUnlocked(state) && !state.valley.valleyId) {
+    tips.push({ id: 'valley', kind: 'idea', text: `The road to ${IDENTITY.valleyName} is open — meet your neighbours`, action: { type: 'openValley' } });
   }
   if (!academy && !state.buildings.some((b) => b.defId === 'academy')) {
     tips.push({ id: 'academy', kind: 'idea', text: 'Build an Academy to start researching', action: { type: 'openBuild', building: 'academy' } });

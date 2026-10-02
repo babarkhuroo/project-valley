@@ -119,6 +119,7 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 3 | Woodland Tending | 110 | 110 | Sharpened Axes | Replant as you go. Felled trees regrow three times faster. |
 | 3 | Builder's Plans | 90 | 90 | Study Notes | Drawn plans and measured timber. Construction is 25% faster. |
 | 3 | Brickmaking | 110 | 110 | Carpentry | Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods. |
+| 3 | The Valley Road | 100 | 100 | — | Clear the old road over the ridge to the shared Valley, where neighbouring villages build together. |
 | 4 | Family Homes | 420 | 200 | Village Commons | Two storeys, a brick chimney and room for two. Unlocks the House. |
 | 4 | Clay Pits | 380 | 180 | Iron-shod Spades | Dig a proper pit wherever the ground is good. Unlocks the Clay Pit — clay that never runs out. |
 | 4 | Organised Stores | 400 | 190 | Masonry | Labelled bays and tidy stacks. Stone, plank and brick storage +50%. |
@@ -132,7 +133,7 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 
 - Tier 1: 60 Knowledge in total ≈ 6 scholar-minutes.
 - Tier 2: 340 Knowledge in total ≈ 34 scholar-minutes.
-- Tier 3: 610 Knowledge in total ≈ 61 scholar-minutes.
+- Tier 3: 710 Knowledge in total ≈ 71 scholar-minutes.
 
 ## Village levels
 
@@ -140,7 +141,7 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | --- | --- | --- |
 | 1 | 0 | Research tier 1: Cottage Craft, Clay Digging, Hearty Recipes |
 | 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Carpentry, Stonecutting |
-| 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans |
+| 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans, The Valley Road |
 | 4 | 700 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
 | 5 | 1500 | Research tier 5: Townhouses, Stone Quarry, Master Builders |
 | 6 | 2800 | — |
@@ -169,6 +170,62 @@ Practice: +1 XP per finished batch in the job's skill, up to level 2. Skills: Wo
 | Offline progress cap | 168 h |
 | Autosave interval | 15 s (plus on tab hide / close) |
 | Starting resources | 20 Timber, 30 Stew |
+
+## The Valley
+
+Shared projects restored by every member. Costs are Valley-wide totals. Reputation: 0.1 per point of value (Timber 1, Clay 1, Stone 1.5, Planks 2.5, Bricks 3).
+
+| Building | Level | Cost (whole Valley) | Build time | Effect | Opens after |
+| --- | --- | --- | --- | --- | --- |
+| Hearth Hall | 1 | 3000 Timber, 1500 Clay | 1h | Shared suppers: a bowl of Stew lasts 10% longer |  |
+|  | 2 | 6000 Timber, 3000 Stone, 1500 Planks | 4h | Valley storehouse: +10% storage in every village |  |
+|  | 3 | 12000 Timber, 6000 Stone, 3000 Planks, 3000 Bricks | 10h | Great feasts: Stew +10% longer and storage +10% more |  |
+| Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% in every member's village | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting +5% more (×1.10 in all) |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting +5% more (×1.16 in all) |  |
+| Miners' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Digging and quarrying +5% in every member's village | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Digging and quarrying +5% more (×1.10 in all) |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Digging and quarrying +5% more (×1.16 in all) |  |
+| Cooks' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Cooking +5% in every member's village | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Cooking +5% more (×1.10 in all) |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Cooking +5% more (×1.16 in all) |  |
+| Scholars' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Study +5% in every member's village | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Study +5% more (×1.10 in all) |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Study +5% more (×1.16 in all) |  |
+| Builders' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Construction +5% in every member's village | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Construction +5% more (×1.10 in all) |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Construction +5% more (×1.16 in all) |  |
+| Craftsfolk's Guild | 1 | 2400 Timber, 1200 Clay | 2h | Crafting +5% in every member's village | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Crafting +5% more (×1.10 in all) |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Crafting +5% more (×1.16 in all) |  |
+
+Simulated neighbours (7): a delivery worth 50–150 value × generosity every 25–70 min while awake (16h a day), growing 4% per finished Valley level. A new Valley starts with Hearth Hall 55.00000000000001% supplied.
+
+Neighbours alone (no help from the player), seeded run over four weeks:
+
+| Valley time | Finished |
+| --- | --- |
+| 0.2 days | Hearth Hall → level 1 |
+| 1.3 days | Scholars' Guild → level 1 |
+| 1.3 days | Builders' Guild → level 1 |
+| 1.5 days | Foresters' Lodge → level 1 |
+| 1.9 days | Cooks' Guild → level 1 |
+| 2.1 days | Miners' Guild → level 1 |
+| 2.1 days | Craftsfolk's Guild → level 1 |
+| 4.5 days | Builders' Guild → level 2 |
+| 5.1 days | Hearth Hall → level 2 |
+| 5.2 days | Scholars' Guild → level 2 |
+| 6.1 days | Cooks' Guild → level 2 |
+| 6.2 days | Miners' Guild → level 2 |
+| 6.2 days | Foresters' Lodge → level 2 |
+| 6.3 days | Craftsfolk's Guild → level 2 |
+| 11.8 days | Cooks' Guild → level 3 |
+| 11.9 days | Scholars' Guild → level 3 |
+| 12.8 days | Builders' Guild → level 3 |
+| 13.4 days | Craftsfolk's Guild → level 3 |
+| 13.8 days | Foresters' Lodge → level 3 |
+| 13.9 days | Miners' Guild → level 3 |
+| 14.4 days | Hearth Hall → level 3 |
 
 ## Simulated pacing
 

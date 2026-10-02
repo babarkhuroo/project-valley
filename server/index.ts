@@ -3,13 +3,14 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApiMiddleware } from './api.ts';
-import { FileSaveStore } from './saveStore.ts';
+import { FileSaveStore, FileValleyStore } from './saveStore.ts';
+import { ValleyService } from './valleyService.ts';
 
 /** Production server: serves the built client from /dist plus the persistence API. */
 const root = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(root, '../dist');
 const port = Number(process.env.PORT ?? 8080);
-const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')));
+const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')), new ValleyService(new FileValleyStore(path.resolve(root, 'data'))));
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

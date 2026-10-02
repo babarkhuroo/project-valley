@@ -27,6 +27,7 @@ export function GameView() {
           : null;
       r.view.movingBuildingId = s.mode.kind === 'move' ? s.mode.buildingId : null;
       r.view.showGrid = placing;
+      if (s.travelling) ui.set({ travelling: false });
       if (t - lastTick > 0.15) {
         lastTick = t;
         ui.set({ tick: s.tick + 1 });

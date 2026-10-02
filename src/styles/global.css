@@ -2755,3 +2755,453 @@ h4 {
   font-weight: 800;
   color: var(--ink-faint);
 }
+
+/* ---------- The Valley ---------- */
+
+.big-btn.valley {
+  background: linear-gradient(#c8eab0, #8cc265);
+}
+
+.big-btn.home {
+  width: auto;
+  min-width: 132px;
+  padding: 0 18px;
+  background: linear-gradient(#ffe39b, var(--honey));
+}
+
+.big-btn.locked {
+  background: linear-gradient(#efe6d4, #d8ccb4);
+  color: var(--ink-soft);
+}
+
+.valley-side {
+  position: absolute;
+  left: 12px;
+  top: 88px;
+  width: 310px;
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.valley-side h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+}
+
+.vs-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vs-head small {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.vs-rep {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #fff1ee;
+  border: 2px solid #f3c4ba;
+}
+
+.vs-rep strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--berry-dark);
+}
+
+.vs-rep small {
+  flex-basis: 100%;
+  margin-left: 28px;
+  margin-top: -4px;
+}
+
+.vs-projects,
+.vs-news {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vs-project {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 7px 9px;
+  text-align: left;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.vs-project:hover {
+  background: #fff;
+}
+
+.vs-project.active {
+  border-color: var(--honey-dark);
+  background: #fff8e2;
+}
+
+.vs-project.is-locked {
+  opacity: 0.62;
+}
+
+.vs-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+
+.vs-pname {
+  flex: 1;
+  min-width: 0;
+}
+
+.vs-pname strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.vs-pname small {
+  display: block;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.lvl-pip {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: #6fa8dc;
+  border: 2px solid var(--ink);
+}
+
+.vs-news li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 1px dashed var(--paper-3);
+}
+
+.vs-news li.news-finished,
+.vs-news li.news-opened,
+.vs-news li.news-started {
+  color: var(--leaf-dark);
+}
+
+.vs-news time {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.vp-desc {
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 0 0 8px;
+}
+
+.vp-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vp-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.vp-level .lvl-pip {
+  background: var(--ink-faint);
+}
+
+.vp-level.done {
+  color: var(--leaf-dark);
+}
+
+.vp-level.done .lvl-pip {
+  background: var(--leaf);
+}
+
+.vp-level.next {
+  color: var(--ink);
+  background: #fff8e2;
+  border: 2px solid var(--honey);
+}
+
+.vp-level.next .lvl-pip {
+  background: var(--honey-dark);
+}
+
+.vp-level > span:nth-child(2) {
+  flex: 1;
+}
+
+.vp-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.vp-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.vp-res {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.vp-res-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.vp-stepper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vp-stepper .icon-btn {
+  width: 30px;
+  height: 30px;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.vp-stepper .icon-btn:disabled {
+  opacity: 0.4;
+}
+
+.vp-amt {
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.vp-pending {
+  margin-top: 6px;
+}
+
+.vp-shares {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vp-shares li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.vp-shares li.me strong {
+  color: var(--berry-dark);
+}
+
+.vp-member {
+  width: 128px;
+  flex: none;
+  line-height: 1.1;
+}
+
+.vp-member strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.vp-member small {
+  color: var(--ink-faint);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.vp-share-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(59, 47, 42, 0.1);
+  overflow: hidden;
+}
+
+.vp-share-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(#ffd978, var(--honey));
+}
+
+.vp-shares li.me .vp-share-bar i {
+  background: linear-gradient(#f59c8f, var(--berry));
+}
+
+.travel-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 248, 234, 0.9), rgba(207, 231, 234, 0.96));
+  animation: veil-in 0.2s ease-out;
+}
+
+.travel-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-radius: var(--radius);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+@keyframes veil-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Valley world labels */
+
+.wo-valley {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 10px 5px;
+  border-radius: 14px;
+  background: rgba(255, 248, 234, 0.92);
+  border: 2px solid var(--edge);
+  box-shadow: 0 3px 0 rgba(59, 47, 42, 0.18);
+}
+
+.wo-valley.is-active {
+  border-color: var(--honey-dark);
+  background: #fff8e2;
+}
+
+.wo-valley.is-compact {
+  padding: 2px 8px;
+}
+
+.wo-valley.is-compact .wo-bar,
+.wo-valley.is-compact .wo-sub {
+  display: none;
+}
+
+.wo-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.wo-lvl {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: #6fa8dc;
+  border: 2px solid var(--ink);
+}
+
+.wo-sub {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.wo-sub svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wo-district {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(59, 47, 42, 0.7), 0 0 6px rgba(59, 47, 42, 0.5);
+}
+
+@media (max-width: 720px) {
+  .valley-side {
+    top: 124px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 38vh;
+  }
+  .valley-side.has-selection,
+  .valley-side .vs-news {
+    display: none;
+  }
+  .big-btn.home {
+    min-width: 0;
+  }
+}

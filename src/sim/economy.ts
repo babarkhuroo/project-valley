@@ -12,7 +12,9 @@ export function capacity(state: GameState, resource: ResourceId): number {
     if (b.status !== 'complete') continue;
     cap += buildingStats(b.defId, b.level).storage[resource] ?? 0;
   }
-  return Math.floor(cap * (getModifiers(state).storageMult[resource] ?? 1));
+  // Valley storehouses help every kind of store except the Stew pantry and Knowledge bank.
+  const valley = resource === 'stew' || resource === 'knowledge' ? 1 : state.valley.bonuses.storageMult;
+  return Math.floor(cap * (getModifiers(state).storageMult[resource] ?? 1) * valley);
 }
 
 export function freeSpace(state: GameState, resource: ResourceId): number {

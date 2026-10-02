@@ -14,6 +14,8 @@ import { MAX_ORDER, RECIPES, RECIPE_IDS } from '../src/config/recipes.ts';
 import { formatClock, runEconomySim } from '../src/sim/economySim.ts';
 import { RESOURCES, RESOURCE_ORDER } from '../src/config/resources.ts';
 import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
+import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../src/config/valley.ts';
+import { advanceValley, createValley } from '../src/valley/valleySim.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lines: string[] = [];
@@ -188,6 +190,45 @@ table(['Setting', 'Value'], [
   ['Autosave interval', '15 s (plus on tab hide / close)'],
   ['Starting resources', bundle(BALANCE.start.resources)],
 ]);
+
+out('## The Valley');
+out();
+out(`Shared projects restored by every member. Costs are Valley-wide totals. Reputation: ${VALLEY_BALANCE.reputationPerValue} per point of value (${VALLEY_RESOURCES.map((r) => `${RESOURCES[r].name} ${VALLEY_BALANCE.value[r]}`).join(', ')}).`);
+out();
+table(
+  ['Building', 'Level', 'Cost (whole Valley)', 'Build time', 'Effect', 'Opens after'],
+  VALLEY_BUILDING_ORDER.flatMap((id) => {
+    const d = VALLEY_BUILDINGS[id];
+    return d.levels.map((l, i) => [
+      i === 0 ? d.name : '',
+      i + 1,
+      bundle(l.cost),
+      `${l.buildHours}h`,
+      l.summary,
+      i === 0 && d.requires ? `${VALLEY_BUILDINGS[d.requires.building].name} ${d.requires.level}` : '',
+    ]);
+  }),
+);
+const nb = VALLEY_BALANCE.neighbours;
+out(`Simulated neighbours (${NEIGHBOURS.length}): a delivery worth ${nb.parcelValue.min}–${nb.parcelValue.max} value × generosity every ${nb.intervalMinutes.min}–${nb.intervalMinutes.max} min while awake (${24 - nb.sleepHours}h a day), growing ${nb.growthPerLevel * 100}% per finished Valley level. A new Valley starts with Hearth Hall ${VALLEY_BALANCE.foundingProgress * 100}% supplied.`);
+out();
+{
+  const t0 = Date.UTC(2026, 0, 1, 12);
+  const v = createValley('v-doc', 1234, t0, { id: 'p-doc', name: 'Founder', villageName: 'Thistledown' });
+  const finished: string[][] = [];
+  const seen = new Set<number>();
+  for (let h = 1; h <= 24 * 28; h++) {
+    advanceValley(v, t0 + h * 3_600_000);
+    for (const e of v.log) {
+      if (seen.has(e.id)) continue;
+      seen.add(e.id);
+      if (e.kind === 'finished') finished.push([`${(h / 24).toFixed(1)} days`, `${VALLEY_BUILDINGS[e.building].name} → level ${e.level}`]);
+    }
+  }
+  out('Neighbours alone (no help from the player), seeded run over four weeks:');
+  out();
+  table(['Valley time', 'Finished'], finished);
+}
 
 out('## Simulated pacing');
 out();

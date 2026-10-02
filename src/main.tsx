@@ -5,8 +5,9 @@ import { startAutosave } from './game/autosave';
 import { bootGame } from './game/boot';
 import { summaryIsInteresting } from './game/offline';
 import { runtime } from './game/runtime';
+import { ValleyClient } from './game/valleyClient';
 import { App } from './ui/App';
-import { attachNotifications } from './ui/notifications';
+import { attachNotifications, attachValleyNotifications } from './ui/notifications';
 import { ui } from './ui/store';
 import './styles/global.css';
 
@@ -26,6 +27,9 @@ bootGame()
   .then(({ game, away, source }) => {
     runtime.game = game;
     attachNotifications(game);
+    runtime.valley = new ValleyClient(game);
+    attachValleyNotifications(runtime.valley);
+    runtime.valley.start();
     startAutosave(game, (saveStatus) => ui.set({ saveStatus }));
     ui.set({ booted: true, saveSource: source, away: away && summaryIsInteresting(away) ? away : null });
     if (import.meta.env.DEV) (window as unknown as { valley: typeof runtime }).valley = runtime;

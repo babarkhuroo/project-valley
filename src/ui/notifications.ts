@@ -2,6 +2,9 @@ import { BUILDINGS } from '../config/buildings';
 import { RESEARCH } from '../config/research';
 import { RESOURCES } from '../config/resources';
 import { SKILLS } from '../config/skills';
+import { VALLEY_BUILDINGS } from '../config/valley';
+import type { ValleyClient } from '../game/valleyClient';
+import { bagText, describeLog } from './valley/format';
 import type { Game } from '../game/Game';
 import { runtime } from '../game/runtime';
 import { findVillager } from '../sim/villagerAI';
@@ -86,6 +89,16 @@ export function attachNotifications(game: Game): () => void {
           if (v) ui.toast({ kind: 'success', title: `${v.name} joined ${state.player.villageName}!`, body: 'Give them something to do.', icon: 'villager', target: { kind: 'villager', id: v.id } });
           break;
         }
+        case 'valleyAccepted': {
+          const name = VALLEY_BUILDINGS[e.building].name;
+          const back = bagText(e.returned);
+          if (e.reputation > 0) {
+            ui.toast({ kind: 'success', title: `Delivered to the ${name}`, body: `+${e.reputation} reputation${back ? ` · ${back} wasn’t needed and came home` : ''}`, icon: 'reputation' }, 3500);
+          } else if (back) {
+            ui.toast({ kind: 'info', title: `The ${name} didn’t need that after all`, body: `${back} came back home.`, icon: 'gift' });
+          }
+          break;
+        }
         case 'skillUp': {
           const v = findVillager(state, e.villagerId);
           if (v) ui.toast({ kind: 'info', title: `${v.name} improved at ${SKILLS[e.skill].name}`, body: `Now level ${e.level} — works faster.`, icon: 'xp', target: { kind: 'villager', id: v.id } });
@@ -96,4 +109,23 @@ export function attachNotifications(game: Game): () => void {
       }
     }
   });
+}
+
+/** Valley milestones (restorations, new projects) become toasts; routine deliveries don't. */
+export function attachValleyNotifications(client: ValleyClient): void {
+  client.onLog = (entries, snapshot) => {
+    for (const e of entries) {
+      if (e.kind !== 'finished') continue;
+      ui.toast({ kind: 'success', title: describeLog(e, snapshot, null), body: VALLEY_BUILDINGS[e.building].levels[e.level - 1]?.summary, icon: 'valley' }, 6500);
+      runtime.audio.play('complete');
+    }
+    // Several projects often open together (all the guilds at once): one toast for the lot.
+    const opened = entries.filter((e) => e.kind === 'opened');
+    if (opened.length === 1) {
+      ui.toast({ kind: 'info', title: describeLog(opened[0], snapshot, null), body: VALLEY_BUILDINGS[opened[0].building].description, icon: 'valley' }, 6500);
+    } else if (opened.length > 1) {
+      const names = opened.map((e) => (e.kind === 'opened' ? VALLEY_BUILDINGS[e.building].name : '')).join(', ');
+      ui.toast({ kind: 'info', title: `${opened.length} new Valley projects are open`, body: names, icon: 'valley' }, 6500);
+    }
+  };
 }

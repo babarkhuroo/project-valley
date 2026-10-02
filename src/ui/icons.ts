@@ -184,6 +184,28 @@ export const ICONS = {
   compass: svg(
     `<circle cx="12" cy="12" r="9.5" fill="#fff6e0" stroke="${O}" stroke-width="1.4"/><path d="M12 5l2.5 7h-5z" fill="#d9544a"/><path d="M12 19l-2.5-7h5z" fill="#9aa4b1"/>`,
   ),
+  valley: svg(
+    `<path d="M1.5 19l6-9.5 4 5.5 3.5-5 7.5 9z" fill="#8cc265" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M5.4 12.8l2.1-3.3 1.6 2.2" fill="#f4f1ea" stroke="${O}" stroke-width="1" stroke-linejoin="round"/>
+     <path d="M11 19c1-2 3.5-2.4 4-4.2" stroke="#e8d3a8" stroke-width="2" fill="none" stroke-linecap="round"/>
+     <circle cx="18" cy="5.5" r="2.3" fill="#f4b83e" stroke="${O}" stroke-width="1.2"/>`,
+  ),
+  reputation: svg(
+    `<path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" fill="#f08a7a" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M3 5.5l2 1.2M21 5.5l-2 1.2M12 2.5v2.2" stroke="#f4b83e" stroke-width="1.8" stroke-linecap="round"/>
+     <path d="M8.2 10.5c.4-1 1.2-1.5 2.1-1.5" stroke="#ffd6cc" stroke-width="1.4" fill="none" stroke-linecap="round"/>`,
+  ),
+  gift: svg(
+    `<rect x="3.5" y="9.5" width="17" height="11" rx="1.6" fill="#d9a865" stroke="${O}" stroke-width="1.4"/>
+     <rect x="2.5" y="7" width="19" height="4" rx="1.2" fill="#e8bd80" stroke="${O}" stroke-width="1.4"/>
+     <path d="M12 7v13.5" stroke="#d9544a" stroke-width="2.6"/>
+     <path d="M12 7c-1.5-3.5-5-3.8-5-1.6S10 7 12 7c2 0 5 .6 5-1.6S13.5 3.5 12 7z" fill="#f08a7a" stroke="${O}" stroke-width="1.2" stroke-linejoin="round"/>`,
+  ),
+  travel: svg(
+    `<path d="M11 3.5v17.5" stroke="#8a5a3b" stroke-width="2.2" stroke-linecap="round"/>
+     <path d="M11 5h8l2.5 2.5L19 10h-8z" fill="#f4b83e" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>
+     <path d="M11 11.5H5L2.5 14 5 16.5h6z" fill="#8cc265" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>`,
+  ),
 } as const;
 
 export type IconName = keyof typeof ICONS;

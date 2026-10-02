@@ -1,7 +1,9 @@
 import { BUILDINGS } from '../../config/buildings';
 import { findVillager } from '../../sim/villagerAI';
 import { game } from '../../game/runtime';
-import { cancelMode, confirmPlacement, rotatePlacement } from '../actions';
+import { cancelMode, confirmPlacement, rotatePlacement, travelToValley } from '../actions';
+import { IDENTITY } from '../../config/identity';
+import { isValleyUnlocked } from '../../sim/modifiers';
 import { Icon } from '../common/Icon';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
@@ -25,7 +27,23 @@ export function ActionBar() {
         <Icon name="research" size={34} />
         <span>Research</span>
       </button>
+      <ValleyButton />
     </nav>
+  );
+}
+
+function ValleyButton() {
+  const state = useGameState();
+  const open = isValleyUnlocked(state);
+  return (
+    <button
+      className={`big-btn valley ${open ? '' : 'locked'} ${open && !state.valley.valleyId ? 'pulse' : ''}`}
+      onClick={travelToValley}
+      title={open ? `Travel to ${IDENTITY.valleyName}` : 'Research The Valley Road to open the way'}
+    >
+      <Icon name={open ? 'valley' : 'lock'} size={34} />
+      <span>Valley</span>
+    </button>
   );
 }
 

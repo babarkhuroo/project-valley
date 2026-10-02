@@ -86,6 +86,8 @@ export function workRateBreakdown(state: GameState, v: Villager, jt: JobType, jo
   if (skillMult !== 1) factors.push({ label: `Skill level ${skill.level}`, mult: skillMult });
   const research = getModifiers(state).jobRate[jt];
   if (research && research.mult !== 1) factors.push({ label: 'Research', mult: research.mult });
+  const guild = state.valley.bonuses.jobRate[jt];
+  if (guild && guild !== 1) factors.push({ label: 'Valley guild', mult: guild });
   if (job?.kind === 'operate') {
     const b = findBuilding(state, job.buildingId);
     const mult = b ? buildingStats(b.defId, b.level).outputMult : 1;

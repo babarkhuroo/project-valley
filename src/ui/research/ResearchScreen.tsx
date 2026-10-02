@@ -1,3 +1,4 @@
+import { IDENTITY } from '../../config/identity';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BUILDINGS } from '../../config/buildings';
 import { NODES } from '../../config/nodes';
@@ -29,6 +30,7 @@ const CATEGORY_ICON: Record<ResearchCategory, IconName> = {
   production: 'build',
   knowledge: 'study',
   crafting: 'craft',
+  valley: 'valley',
 };
 
 function effectText(e: ResearchEffect): string {
@@ -51,6 +53,8 @@ function effectText(e: ResearchEffect): string {
       return `Buildings can be upgraded to level ${e.level}`;
     case 'practiceCap':
       return `Practice can raise skills ${e.add} level${e.add > 1 ? 's' : ''} higher`;
+    case 'unlockValley':
+      return `Opens the road to ${IDENTITY.valleyName}`;
   }
 }
 

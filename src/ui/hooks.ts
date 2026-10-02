@@ -1,11 +1,22 @@
+import { useSyncExternalStore } from 'react';
 import { useUI } from './store';
-import { game } from '../game/runtime';
+import { game, runtime } from '../game/runtime';
+import type { ValleyView } from '../game/valleyClient';
 import type { GameState } from '../sim/types';
 
 /** Re-renders the calling component a few times per second and returns live state. */
 export function useGameState(): GameState {
   useUI((s) => s.tick);
   return game().state;
+}
+
+const NO_VALLEY: ValleyView = { snapshot: null, connection: 'idle', fetchedAt: 0, receivedAt: 0 };
+const noop = () => () => undefined;
+
+/** The latest Valley snapshot from the server (re-renders when a new one arrives). */
+export function useValley(): ValleyView {
+  const client = runtime.valley;
+  return useSyncExternalStore(client ? (l) => client.subscribe(l) : noop, () => client?.current ?? NO_VALLEY);
 }
 
 export function formatDuration(seconds: number): string {

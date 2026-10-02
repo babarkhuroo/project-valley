@@ -13,6 +13,8 @@ import { SelectionPanel } from './panels/SelectionPanel';
 import { ResearchScreen } from './research/ResearchScreen';
 import { useUI } from './store';
 import { TutorialCoach } from './tutorial/TutorialCoach';
+import { TravelVeil, ValleyActionBar, ValleyProjectPanel, ValleySidebar } from './valley/ValleyHud';
+import { ValleyView } from './valley/ValleyView';
 
 // Compiled out of production builds entirely.
 const DevPanel = import.meta.env.DEV ? lazy(() => import('./dev/DevPanel').then((m) => ({ default: m.DevPanel }))) : null;
@@ -32,19 +34,31 @@ function LoadingScreen({ error }: { error: string | null }) {
 export function App() {
   const booted = useUI((s) => s.booted);
   const error = useUI((s) => s.bootError);
+  const scene = useUI((s) => s.scene);
   if (!booted) return <LoadingScreen error={error} />;
+  const village = scene === 'village';
   return (
-    <div className="app">
-      <GameView />
+    <div className={`app scene-${scene}`}>
+      {village ? <GameView /> : <ValleyView />}
       <div className="hud">
         <TopBar />
-        <WorkerList />
-        <div className="left-stack">
-          <NextSteps />
-          <TutorialCoach />
-        </div>
-        <SelectionPanel />
-        <ActionBar />
+        {village ? (
+          <>
+            <WorkerList />
+            <div className="left-stack">
+              <NextSteps />
+              <TutorialCoach />
+            </div>
+            <SelectionPanel />
+            <ActionBar />
+          </>
+        ) : (
+          <>
+            <ValleySidebar />
+            <ValleyProjectPanel />
+            <ValleyActionBar />
+          </>
+        )}
         <Toasts />
         <NotificationsPanel />
         <SettingsPanel />
@@ -54,11 +68,12 @@ export function App() {
           </Suspense>
         ) : null}
       </div>
-      <BuildMenu />
+      {village ? <BuildMenu /> : null}
       <ResearchScreen />
       <NewcomerDialog />
       <AwayDialog />
       <LevelUpBanner />
+      <TravelVeil />
     </div>
   );
 }

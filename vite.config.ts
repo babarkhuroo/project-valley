@@ -4,21 +4,27 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApiMiddleware } from './server/api.ts';
-import { FileSaveStore } from './server/saveStore.ts';
+import { FileSaveStore, FileValleyStore } from './server/saveStore.ts';
+import { ValleyService } from './server/valleyService.ts';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
+function createApi(dev: boolean) {
+  const saves = new FileSaveStore(path.resolve(projectRoot, 'server/data/saves'));
+  const valleys = new ValleyService(new FileValleyStore(path.resolve(projectRoot, 'server/data')));
+  return createApiMiddleware(saves, valleys, { dev });
+}
 
 /** Mounts the persistence API into the Vite dev server so `npm run dev` is all you need. */
 function valleyApi(): Plugin {
   return {
     name: 'valley-api',
     configureServer(server) {
-      const store = new FileSaveStore(path.resolve(projectRoot, 'server/data/saves'));
-      server.middlewares.use(createApiMiddleware(store));
+      // Dev-only routes (Valley time skips) exist only on the dev server.
+      server.middlewares.use(createApi(true));
     },
     configurePreviewServer(server) {
-      const store = new FileSaveStore(path.resolve(projectRoot, 'server/data/saves'));
-      server.middlewares.use(createApiMiddleware(store));
+      server.middlewares.use(createApi(false));
     },
   };
 }

@@ -1,4 +1,8 @@
 import { BUILDINGS, type BuildingId } from '../config/buildings';
+import { IDENTITY } from '../config/identity';
+import type { ResourceId } from '../config/resources';
+import type { ValleyBuildingId } from '../config/valley';
+import { isValleyUnlocked } from '../sim/modifiers';
 import { RESEARCH, type ResearchId } from '../config/research';
 import type { RecipeId } from '../config/recipes';
 import { runtime, game } from '../game/runtime';
@@ -228,4 +232,49 @@ export function tutorialRestart(): void {
   game().mutate((s) => {
     s.tutorial = { step: 0, done: false, skipped: false };
   });
+}
+
+// ---------------------------------------------------------------------------
+// The Valley
+// ---------------------------------------------------------------------------
+
+/** Swaps the world on screen to the shared Valley (the village keeps simulating). */
+export function travelToValley(): void {
+  const state = game().state;
+  if (!isValleyUnlocked(state)) {
+    ui.toast({ kind: 'info', title: `The road to ${IDENTITY.valleyName} is still overgrown`, body: 'Research The Valley Road at the Academy to clear it.', icon: 'valley' });
+    return;
+  }
+  const client = runtime.valley;
+  if (client) {
+    client.visiting = true;
+    if (!state.valley.valleyId) void client.join();
+    else void client.refresh();
+  }
+  runtime.audio.play('click');
+  ui.set({ scene: 'valley', travelling: true, selection: null, hover: null, mode: { kind: 'normal' }, panel: null, valleySelection: null, valleyHover: null });
+}
+
+export function returnToVillage(): void {
+  if (runtime.valley) runtime.valley.visiting = false;
+  runtime.audio.play('click');
+  ui.set({ scene: 'village', travelling: true, valleySelection: null, valleyHover: null, panel: null });
+}
+
+export function selectValleyBuilding(id: ValleyBuildingId | null, focusCamera = false): void {
+  ui.set({ valleySelection: id });
+  if (id && focusCamera) runtime.valleyRenderer?.focusOn(id);
+}
+
+/** Sends resources to a Valley project; the toast for the result comes when the server confirms. */
+export function contributeToValley(id: ValleyBuildingId, resources: Partial<Record<ResourceId, number>>): boolean {
+  const client = runtime.valley;
+  const error = client ? client.contribute(id, resources) : 'The Valley is out of reach right now';
+  if (error) {
+    ui.toast({ kind: 'warning', title: 'Couldn’t send that', body: error, icon: 'info' }, 3000);
+    runtime.audio.play('error');
+    return false;
+  }
+  runtime.audio.play('deposit');
+  return true;
 }

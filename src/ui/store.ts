@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { BuildingId } from '../config/buildings';
+import type { ValleyBuildingId } from '../config/valley';
 import type { ResearchId } from '../config/research';
 import type { AwaySummary } from '../game/offline';
 import type { SaveStatus } from '../game/autosave';
@@ -33,8 +34,16 @@ export interface Toast {
   at: number;
 }
 
+export type SceneId = 'village' | 'valley';
+
 export interface UIState {
   booted: boolean;
+  /** Which world is on screen. The village keeps simulating either way. */
+  scene: SceneId;
+  /** True for the moment between choosing to travel and the new world's first frame. */
+  travelling: boolean;
+  valleySelection: ValleyBuildingId | null;
+  valleyHover: ValleyBuildingId | null;
   bootError: string | null;
   saveSource: SaveSource | null;
   saveStatus: SaveStatus;
@@ -61,6 +70,10 @@ let toastId = 1;
 
 export const useUI = create<UIState>(() => ({
   booted: false,
+  scene: 'village',
+  travelling: false,
+  valleySelection: null,
+  valleyHover: null,
   bootError: null,
   saveSource: null,
   saveStatus: { lastSavedAt: null, outcome: null },

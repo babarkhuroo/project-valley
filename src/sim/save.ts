@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -26,7 +26,13 @@ export const MIGRATIONS: Record<number, Migration> = {
     if (Array.isArray(d.buildings)) out.buildings = (d.buildings as Record<string, unknown>[]).map((b) => ({ craft: null, ...b }));
     return out;
   },
+  // v4 (milestone 3): Valley membership, reputation and the delivery outbox.
+  3: (d) => ({ ...d, valley: newValleyState() }),
 };
+
+export function newValleyState(): GameState['valley'] {
+  return { valleyId: null, reputation: 0, outbox: [], given: {}, bonuses: { jobRate: {}, storageMult: 1, mealDurationMult: 1 } };
+}
 
 export class SaveError extends Error {}
 

@@ -1,9 +1,11 @@
 import type { BuildingId } from '../config/buildings';
+import type { JobType } from '../config/jobs';
 import type { NodeKind } from '../config/nodes';
 import type { RecipeId } from '../config/recipes';
 import type { ResearchId } from '../config/research';
 import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
+import type { ValleyBuildingId } from '../config/valley';
 import type { Appearance } from '../config/villagers';
 
 /**
@@ -155,6 +157,34 @@ export interface TutorialState {
   skipped: boolean;
 }
 
+/** Village-side bonuses from restored Valley buildings (cached from the last Valley sync). */
+export interface ValleyBonuses {
+  jobRate: Partial<Record<JobType, number>>;
+  storageMult: number;
+  mealDurationMult: number;
+}
+
+/** A delivery to the Valley that has left the village but isn't confirmed by the server yet. */
+export interface ValleyOp {
+  opId: string;
+  building: ValleyBuildingId;
+  resources: Partial<Record<ResourceId, number>>;
+  /** Village sim time it was sent. */
+  at: number;
+}
+
+export interface VillageValleyState {
+  /** Valley this village belongs to, once it has joined one. */
+  valleyId: string | null;
+  reputation: number;
+  /** Deliveries waiting for the server; retried until confirmed (idempotent by opId). */
+  outbox: ValleyOp[];
+  /** Lifetime resources accepted by the Valley. */
+  given: Partial<Record<ResourceId, number>>;
+  /** Kept in the save so offline catch-up uses the same bonuses as live play. */
+  bonuses: ValleyBonuses;
+}
+
 export interface GameState {
   schemaVersion: number;
   /** Seed for the map and deterministic choices. */
@@ -174,6 +204,7 @@ export interface GameState {
   tutorial: TutorialState;
   /** Lifetime counters (resources produced, buildings built, ...). */
   stats: Record<string, number>;
+  valley: VillageValleyState;
   /** Wall-clock (server-synchronised) ms at which `time` was last current. */
   lastProcessedAt: number;
   /** Monotonic save counter used to reject stale writes. */

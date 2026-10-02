@@ -1,6 +1,6 @@
 import { nextSteps, type Suggestion } from '../../sim/selectors';
 import { currentStep } from '../../game/tutorial';
-import { selectAndFocus } from '../actions';
+import { selectAndFocus, travelToValley } from '../actions';
 import { Icon } from '../common/Icon';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
@@ -20,6 +20,9 @@ function run(s: Suggestion): void {
       break;
     case 'openBuild':
       ui.set({ panel: 'build', buildHighlight: a.building ?? null });
+      break;
+    case 'openValley':
+      travelToValley();
       break;
   }
 }
