@@ -11,6 +11,7 @@ import { JOBS } from '../src/config/jobs.ts';
 import { NODES } from '../src/config/nodes.ts';
 import { RESEARCH, RESEARCH_IDS } from '../src/config/research.ts';
 import { MAX_ORDER, RECIPES, RECIPE_IDS } from '../src/config/recipes.ts';
+import { formatClock, runEconomySim } from '../src/sim/economySim.ts';
 import { RESOURCES, RESOURCE_ORDER } from '../src/config/resources.ts';
 import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 
@@ -187,6 +188,18 @@ table(['Setting', 'Value'], [
   ['Autosave interval', '15 s (plus on tab hide / close)'],
   ['Starting resources', bundle(BALANCE.start.resources)],
 ]);
+
+out('## Simulated pacing');
+out();
+out('A deterministic autoplayer (`src/sim/autoplay.ts`) plays a fresh village for 4 hours, checking in every 15 s. It plays faster than most people, so read these as best-case times; `tests/pacing.test.ts` guards them.');
+out();
+const report = runEconomySim(4 * 3600);
+table(
+  ['Time', 'Milestone'],
+  report.milestones.filter((m) => m.kind !== 'research').map((m) => [formatClock(m.t), m.label]),
+);
+out(`Research completed: ${report.milestones.filter((m) => m.kind === 'research').length} projects. Villager time per hour — ${report.hourly.map((h) => `h${h.hour}: ${Math.round(h.blocked * 100)}% waiting`).join(', ')} (waiting rises once everything unlocked is built and research is the bottleneck).`);
+out();
 
 writeFileSync(path.join(root, 'BALANCING.md'), lines.join('\n'));
 console.log('BALANCING.md written');

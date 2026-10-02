@@ -12,7 +12,7 @@ src/
   audio/       synthesised sound (no sample files)
   ui/          React HUD/panels; Zustand holds UI-only state
 server/        persistence API (Node http middleware + file store)
-scripts/       balance-doc generator, map probe
+scripts/       balance-doc generator, pacing simulator, map probe, headless-Chrome driver
 tests/         economy tests (vitest)
 ```
 
@@ -41,6 +41,8 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 **Commands** (`sim/commands.ts`) are the only player mutations: assign/unassign, place/move/cancel building, choose research, accept newcomer, rename. Each validates and returns a readable refusal reason. **Events** (`sim/events.ts`) are transient facts (`deposit`, `constructionComplete`, `hungry`, `levelUp`, …) consumed by rendering (particles, sound), UI (toasts) and offline summaries.
 
 **Pathfinding** (`sim/pathfinding.ts`): A* over the 64×64 grid, 8-way without corner cutting, road cells cheaper; greedy line-of-sight smoothing that won't leave or enter a road mid-segment. Searches reuse typed-array scratch buffers (sub-millisecond on this map, so no worker thread is needed yet). After any building change every walking villager re-plans and anyone inside a new footprint is moved out.
+
+**Economy simulation** (`sim/autoplay.ts`, `sim/economySim.ts`): a deterministic scripted player (a build/upgrade priority list, a research order and a priority-role allocator for cooking, building, studying, crafting and gathering whatever is scarcest) acts only through the normal commands every 15 s of sim time while `advance` runs in between. `runEconomySim(seconds)` returns a `PacingReport`: milestone times, per-minute samples and per-hour idle/waiting/hungry shares. Since it shares the real sim, every config change shows up in it immediately. It drives `npm run simulate`, the *Simulated pacing* section of BALANCING.md, the dev panel's *Economy simulation* chart, and `tests/pacing.test.ts`, which guards early-game speed and late-game length.
 
 **ECS?** Deliberately not. Entity counts are small, behaviours are few and state must serialise cleanly; plain data plus focused system functions (`villagerAI`, `construction`, `research`, `population`, `economy`) is simpler. Revisit if Valley scenes need thousands of heterogeneous entities.
 
@@ -124,4 +126,4 @@ Personal villages remain single documents (their state is highly interlinked and
 
 ## Testing
 
-`npm test` covers production, storage caps and resumption, food/hunger, skill and research bonuses, construction (costs, builders, cancel, move), research (flow, switching, banking, gating), offline determinism and long catch-ups, pathfinding (obstacles, water, bridges, re-planning), XP/levels, population, and save round-trip/migrations.
+`npm test` covers production, storage caps and resumption, food/hunger, skill and research bonuses, construction (costs, builders, cancel, move), research (flow, switching, banking, gating), offline determinism and long catch-ups, pathfinding (obstacles, water, bridges, re-planning), XP/levels, population, save round-trip/migrations, upgrades, crafting, tiers 4–5, culling, and simulated pacing (`tests/pacing.test.ts`: e.g. Academy < 5 min, level 2 < 12 min, Quarry not before 2 h).

@@ -2656,3 +2656,102 @@ h4 {
     bottom: 100px;
   }
 }
+
+/* Dev panel: economy simulation */
+.econ-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 6px 0 2px;
+}
+
+.econ-chart text {
+  font: 700 9px var(--font-body);
+  fill: var(--ink-faint);
+}
+
+.econ-chart .grid {
+  stroke: var(--paper-3);
+  stroke-width: 1;
+}
+
+.econ-chart .level {
+  stroke: var(--ink-faint);
+  stroke-dasharray: 2 3;
+}
+
+.econ-chart .villagers {
+  fill: none;
+  stroke: var(--leaf-dark);
+  stroke-width: 2;
+}
+
+.econ-chart .legend text {
+  fill: var(--leaf-dark);
+}
+
+.econ-waiting .bars {
+  display: flex;
+  gap: 3px;
+  height: 46px;
+  margin: 2px 0 4px;
+}
+
+.econ-waiting .bars > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.econ-waiting .bars span {
+  width: 100%;
+  background: var(--berry);
+  border-radius: 3px 3px 0 0;
+  opacity: 0.75;
+}
+
+.econ-waiting .bars small {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--ink-faint);
+}
+
+.econ-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.econ-legend i,
+.econ-milestones i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.econ-milestones {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.econ-milestones li {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.econ-milestones time {
+  width: 60px;
+  flex: none;
+  font-weight: 800;
+  color: var(--ink-faint);
+}

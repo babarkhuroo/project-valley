@@ -35,7 +35,7 @@ export const BALANCE = {
   },
   progression: {
     /** Cumulative Village XP needed for each player level (index 0 = level 1). */
-    levelXp: [0, 80, 250, 550, 1000, 1700, 2600],
+    levelXp: [0, 80, 250, 700, 1500, 2800, 4600],
     /** Resources gifted on reaching a new level. */
     levelUpGift: { stew: 25, timber: 40 } as Partial<Record<ResourceId, number>>,
   },

@@ -119,16 +119,16 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 3 | Woodland Tending | 110 | 110 | Sharpened Axes | Replant as you go. Felled trees regrow three times faster. |
 | 3 | Builder's Plans | 90 | 90 | Study Notes | Drawn plans and measured timber. Construction is 25% faster. |
 | 3 | Brickmaking | 110 | 110 | Carpentry | Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods. |
-| 4 | Family Homes | 180 | 180 | Village Commons | Two storeys, a brick chimney and room for two. Unlocks the House. |
-| 4 | Clay Pits | 160 | 160 | Iron-shod Spades | Dig a proper pit wherever the ground is good. Unlocks the Clay Pit — clay that never runs out. |
-| 4 | Organised Stores | 170 | 170 | Masonry | Labelled bays and tidy stacks. Stone, plank and brick storage +50%. |
-| 4 | Preserved Food | 150 | 150 | Field Rations | Salted, smoked and sealed. Each bowl of Stew fuels another 30% more work. |
-| 4 | Managed Woodland | 160 | 160 | Woodland Tending | Coppice and replant on purpose. Unlocks the Woodlot — timber that never runs out, placed where you like. |
-| 4 | Apprenticeship | 170 | 170 | Study Notes | Elders teach while they work. Villagers can practise any skill up to level 3. |
-| 4 | Master Crafts | 190 | 190 | Brickmaking | Jigs, moulds and better kilns. Workshops produce 25% faster. |
-| 5 | Townhouses | 260 | 260 | Family Homes | Shared walls and tidy lanes: room for a second House. |
-| 5 | Stone Quarry | 240 | 240 | Clay Pits | Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out. |
-| 5 | Master Builders | 240 | 240 | Apprenticeship | Cranes, templates and practised crews. Construction is 30% faster. |
+| 4 | Family Homes | 420 | 200 | Village Commons | Two storeys, a brick chimney and room for two. Unlocks the House. |
+| 4 | Clay Pits | 380 | 180 | Iron-shod Spades | Dig a proper pit wherever the ground is good. Unlocks the Clay Pit — clay that never runs out. |
+| 4 | Organised Stores | 400 | 190 | Masonry | Labelled bays and tidy stacks. Stone, plank and brick storage +50%. |
+| 4 | Preserved Food | 360 | 170 | Field Rations | Salted, smoked and sealed. Each bowl of Stew fuels another 30% more work. |
+| 4 | Managed Woodland | 380 | 180 | Woodland Tending | Coppice and replant on purpose. Unlocks the Woodlot — timber that never runs out, placed where you like. |
+| 4 | Apprenticeship | 420 | 200 | Study Notes | Elders teach while they work. Villagers can practise any skill up to level 3. |
+| 4 | Master Crafts | 450 | 210 | Brickmaking | Jigs, moulds and better kilns. Workshops produce 25% faster. |
+| 5 | Townhouses | 800 | 320 | Family Homes | Shared walls and tidy lanes: room for a second House. |
+| 5 | Stone Quarry | 720 | 300 | Clay Pits | Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out. |
+| 5 | Master Builders | 720 | 300 | Apprenticeship | Cranes, templates and practised crews. Construction is 30% faster. |
 
 - Tier 1: 60 Knowledge in total ≈ 6 scholar-minutes.
 - Tier 2: 340 Knowledge in total ≈ 34 scholar-minutes.
@@ -141,10 +141,10 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 1 | 0 | Research tier 1: Cottage Craft, Clay Digging, Hearty Recipes |
 | 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Carpentry, Stonecutting |
 | 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans |
-| 4 | 550 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
-| 5 | 1000 | Research tier 5: Townhouses, Stone Quarry, Master Builders |
-| 6 | 1700 | — |
-| 7 | 2600 | — |
+| 4 | 700 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
+| 5 | 1500 | Research tier 5: Townhouses, Stone Quarry, Master Builders |
+| 6 | 2800 | — |
+| 7 | 4600 | — |
 
 Level-up gift: 40 Timber, 25 Stew (capped by storage). Tutorial beats: +5 XP each.
 
@@ -169,3 +169,48 @@ Practice: +1 XP per finished batch in the job's skill, up to level 2. Skills: Wo
 | Offline progress cap | 168 h |
 | Autosave interval | 15 s (plus on tab hide / close) |
 | Starting resources | 20 Timber, 30 Stew |
+
+## Simulated pacing
+
+A deterministic autoplayer (`src/sim/autoplay.ts`) plays a fresh village for 4 hours, checking in every 15 s. It plays faster than most people, so read these as best-case times; `tests/pacing.test.ts` guards them.
+
+| Time | Milestone |
+| --- | --- |
+| 1m 45s | Academy |
+| 6m 45s | Cottage |
+| 6m 45s | Village level 2 |
+| 6m 45s | Villager #3 joins |
+| 9m 00s | Clay Shed |
+| 12m 45s | Timber Yard → level 2 |
+| 16m 30s | Stone Yard |
+| 16m 30s | Village level 3 |
+| 22m 30s | Cottage |
+| 22m 30s | Villager #4 joins |
+| 28m 00s | Cookhouse → level 2 |
+| 35m 45s | Sawmill |
+| 37m 30s | Clay Shed → level 2 |
+| 38m 30s | Village level 4 |
+| 53m 00s | Academy → level 2 |
+| 54m 00s | Stone Yard → level 2 |
+| 1h 00m | Brickworks |
+| 1h 09m | Warehouse |
+| 1h 16m | Founders' Lodge → level 2 |
+| 1h 16m | Village level 5 |
+| 1h 16m | Villager #5 joins |
+| 1h 23m | Cottage |
+| 1h 23m | Villager #6 joins |
+| 1h 28m | Timber Yard → level 3 |
+| 1h 40m | House |
+| 1h 40m | Villager #7 joins |
+| 1h 40m | Villager #8 joins |
+| 1h 44m | Woodlot |
+| 1h 48m | Cookhouse → level 3 |
+| 1h 53m | Clay Pit |
+| 2h 05m | Academy → level 3 |
+| 2h 13m | Village level 6 |
+| 2h 51m | House |
+| 2h 51m | Villager #9 joins |
+| 2h 51m | Villager #10 joins |
+| 3h 06m | Quarry |
+
+Research completed: 26 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 34% waiting, h4: 87% waiting (waiting rises once everything unlocked is built and research is the bottleneck).

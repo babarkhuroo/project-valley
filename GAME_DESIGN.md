@@ -146,9 +146,22 @@ Contextual coach card + world arrow, each beat completes by doing the thing (and
 | Why can't I build/assign this? | Red costs + reasons on build cards; blockers in panels |
 | What should I do next? | “Next steps” card |
 
+## Pacing targets
+
+Measured by the autoplayer (`npm run simulate`, see BALANCING.md); it plays faster than most people, so real play is slower.
+
+| Target | Autoplayer today |
+| --- | --- |
+| Academy within 5 min | 1m 45s |
+| Village level 2 and a third villager within ~12 min | 6m 45s |
+| A real unlock every few minutes in the first hour; villagers never waiting | 0 % waiting in hours 1–2 |
+| Later tiers spread over days of casual play | level 6 at ~2h 15m, all M2 content by ~3h |
+
+Once everything is built (from hour 3 in the autoplayer), villagers mostly wait on full storage and research. The Valley (milestone 3) adds the long-term resource sink: contributions.
+
 ## Roadmap
 
-- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ⏳ economy simulation / balancing tools.
+- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
 - **Milestone 3:** The Hearthlands (shared Valley) map, Valley buildings & research, contributions, guild training, merchants, reputation — with simulated neighbours first.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

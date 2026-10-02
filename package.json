@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "serve": "tsx server/index.ts",
-    "balance-doc": "tsx scripts/gen-balancing.ts"
+    "balance-doc": "tsx scripts/gen-balancing.ts",
+    "simulate": "tsx scripts/simulate.ts"
   },
   "dependencies": {
     "react": "^19.3.0",

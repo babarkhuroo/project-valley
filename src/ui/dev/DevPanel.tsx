@@ -4,6 +4,7 @@ import { devCommands } from '../../sim/dev';
 import { Icon } from '../common/Icon';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
+import { EconomySimSection } from './EconomySimSection';
 
 const SPEEDS = [1, 2, 5, 10, 50];
 
@@ -90,6 +91,7 @@ export function DevPanel() {
           </button>
         </div>
       </section>
+      <EconomySimSection />
       <section>
         <h4>Session</h4>
         <div className="seg">

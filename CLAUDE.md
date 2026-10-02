@@ -15,6 +15,7 @@ npm run typecheck      # tsc -b (TypeScript 7; unused locals/params are errors)
 npm run build          # tsc -b && vite build → dist/ (dev tools are stripped)
 npm run serve          # production server: dist/ + save API on $PORT (default 8080)
 npm run balance-doc    # regenerate BALANCING.md from src/config — never hand-edit BALANCING.md
+npm run simulate [-- 8]        # autoplayer pacing report (milestone times, hourly waiting share)
 npx tsx scripts/probe-map.ts   # ASCII dump of the village grid + early production rates
 node scripts/headless.mjs <cmd> # drive a headless Chrome (CDP on :9333) for screenshots/eval — usage in the file header
 ```
@@ -34,6 +35,7 @@ Dependency direction is strict: `config ← world ← sim ← game ← {renderin
   - Building stats depend on level: always read storage/housing/slots/speed through `levels.ts` (`buildingStats`), never straight from the definition. Upgrades reuse the `construct` job via `siteWork()`.
   - All player mutations go through `commands.ts` (validated, return readable refusal reasons). Research effects are aggregated in `modifiers.ts`. UI read-models (task labels, rate breakdowns, estimates, "next steps") live in `selectors.ts`.
   - `SimEvent`s are transient (never saved) and feed particles/sound, toasts and offline summaries.
+  - Balancing: `autoplay.ts` (scripted player using only commands) + `economySim.ts` (`runEconomySim` → `PacingReport`). `tests/pacing.test.ts` guards pacing; after tuning config, re-run `npm run simulate` and `npm run balance-doc`, and update the autoplayer's goal and research lists when you add content.
   - Saves: `save.ts` has `SAVE_VERSION` + ordered `MIGRATIONS`; bump and add a migration whenever `GameState` changes shape. New map nodes reach old saves through `ensureMapNodes` (append-only; new node kinds go at the end of `generateNodes` so existing ids never shift).
 - **`src/game/`** — `Game` owns state/world and is the only entry point for time (`tick`, `skip`) and commands (`run`, `mutate`); it broadcasts events. `boot.ts` loads and replays offline time; `persistence.ts`/`autosave.ts` talk to the API. Offline elapsed time uses the **server** clock (`serverNow − serverSavedAt`); save `revision`s reject stale writes; localStorage is only a cache.
 - **`src/rendering/`** — `GameRenderer` owns WebGL, ticks the game each frame, then renders state through views (terrain, water, bridges, instanced nature, buildings with clip-plane construction stages, villager rigs, particles, HTML `WorldOverlay`). Rendering only reads state; animation "impacts" are cosmetic callbacks. Models are procedural and hidden behind `createBuildingModel` / `createVillagerRig` so real assets can replace them. Performance matters: static building parts are merged per material, villager parts per pivot, particles pack live instances. Instanced scenery goes through `rendering/culling/` (`ChunkGrid` frustum + distance, `InstanceField` per-LOD packing with constant draw calls, `OcclusionQueries` WebGL2 queries) — add new scattered layers as `InstanceField`s, not raw `InstancedMesh`es. Chimney smoke/steam is GPU-animated in `SmokeSystem`.
