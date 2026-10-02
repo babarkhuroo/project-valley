@@ -154,13 +154,24 @@ Researching **The Valley Road** (tier 3) opens a road over the ridge to a shared
 | --- | --- |
 | Hearth Plaza | Hearth Hall — restore it first; it opens everything else |
 | Guild Row | Six guild halls (Foresters, Miners, Cooks, Scholars, Builders, Craftsfolk) |
-| Lantern Hill, Millrace, Saltreach Harbour, Market Green, Goldfurrow Fields | Districts waiting for the library, cooperative workshops, merchants and festivals (next steps of milestone 3) |
+| Saltreach Harbour | The Trading Post and its pier, where merchant ships dock |
+| Lantern Hill, Millrace, Market Green, Goldfurrow Fields | Districts waiting for the library, cooperative workshops and festivals (next steps of milestone 3) |
 | Old Wood, Greystep Quarry, Silverrun, The Far Reach | Scenery now; the Far Reach is fenced off for future expansion |
 
 - **Contributing:** pick a project, choose amounts per resource (or *All I can*) and send. Resources leave the village immediately; anything the project no longer needs (a neighbour got there first) comes back. Each delivery earns **reputation** (1 per 10 timber's worth; stone, planks and bricks count more).
 - **Restoration:** once a level's materials are all in, builders work for 1–12 hours, scaffolding and a crane go up, then the building visibly gains its level and the bonus switches on everywhere: Hearth Hall (Stew lasts longer, more storage), guilds (+5% per level to their trade: woodcutting, digging & quarrying, cooking, study, construction, crafting).
 - **Neighbours:** seven simulated villages (Rowan of Brackenford, Ilse of Millbrook, …) deliver parcels through the day, sleep at night, and favour projects that are nearly done. They and their helpers walk the Valley carrying parcels and hammering on site. Shares are shown per member in a fixed order — who's helping, not a leaderboard.
 - **News:** the Valley log shows deliveries and milestones; restorations and newly opened projects arrive as notifications even while you're in your village.
+
+## Merchants, coins and tonics
+
+Restoring the Valley's **Trading Post** (Saltreach Harbour) brings merchant ships to every member's village. A ship docks beside the pier for 4 hours with 3–5 crates to fill (more and better-paid with Trading Post levels) — each asks for one good the village can actually make, sized to its storage, and pays **coins** and reputation. Prices swing per crate and per merchant, so some crates are a bargain and some are better left for building; filling all of them earns a bonus. Ships keep calling while you're away (the summary says if one sailed without trading), and a "Next steps" tip and toast announce each arrival.
+
+**Coins** buy **tonics** from the ship (two on offer, limited stock) and, next, guild training. Tonics are the boost system: Woodworker Tonic, Miner's Meal, Farmer's Tea, Research Brew, Builder's Brew, Crafter's Oil — +50% to their trade for 30 minutes; another dose extends it. They show in the work-rate formula like any other factor.
+
+## Reputation Road
+
+Reputation (from Valley deliveries and trade) unlocks a road of twelve rewards claimed in order: coins, tonics, bundles of planks/bricks/stone, and two decorations only it gives (the Valley Banner and the Fountain). Nothing on it is paid; it rewards taking part.
 
 ## Pacing targets
 
@@ -178,6 +189,6 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 ## Roadmap
 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
-- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ⏳ merchants & the Reputation Road · ⏳ guild training · ⏳ Valley research, cooperative crafting and events.
+- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ⏳ guild training · ⏳ Valley research, cooperative crafting and events.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

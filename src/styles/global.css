@@ -1389,6 +1389,7 @@ h4 {
 
 .notif-panel,
 .settings,
+.side-panel,
 .dev-panel {
   position: absolute;
   right: 12px;
@@ -1402,6 +1403,7 @@ h4 {
 
 .notif-panel header,
 .settings header,
+.side-panel header,
 .dev-panel header {
   display: flex;
   align-items: center;
@@ -1411,6 +1413,7 @@ h4 {
 
 .notif-panel h3,
 .settings h3,
+.side-panel h3,
 .dev-panel h3 {
   display: flex;
   align-items: center;
@@ -2511,6 +2514,20 @@ h4 {
 
 /* ---------- Tablet ---------- */
 
+@media (max-width: 1520px) {
+  .res-chip {
+    min-width: 0;
+    padding-right: 10px;
+  }
+  .round-btn {
+    width: 46px;
+    height: 46px;
+  }
+  .top-buttons {
+    gap: 6px;
+  }
+}
+
 @media (max-width: 1100px) {
   .res-chip {
     min-width: 0;
@@ -2803,6 +2820,11 @@ h4 {
 }
 
 .vs-rep {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -2824,6 +2846,15 @@ h4 {
   flex-basis: 100%;
   margin-left: 28px;
   margin-top: -4px;
+}
+
+.vs-rep .bar {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+}
+
+.vs-rep:hover {
+  background: #ffe9e4;
 }
 
 .vs-projects,
@@ -3204,4 +3235,180 @@ h4 {
   .big-btn.home {
     min-width: 0;
   }
+}
+
+/* ---------- Merchants, tonics, Reputation Road ---------- */
+
+.res-coins .res-amt {
+  color: var(--honey-dark);
+}
+
+.round-btn.glow {
+  border-color: var(--leaf);
+  box-shadow: var(--shadow), 0 0 0 4px rgba(95, 174, 79, 0.35);
+}
+
+.badge-count.soft {
+  background: var(--leaf-dark);
+}
+
+.tonic-row,
+.wares li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--paper-3);
+}
+
+.tonic-dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+
+.tonic-name {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.tonic-name strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.tonic-name small {
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.road {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.road li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.road li.claimed {
+  color: var(--leaf-dark);
+}
+
+.road li.ready {
+  color: var(--ink);
+  background: #fff8e2;
+  border: 2px solid var(--honey);
+}
+
+.road li.reached {
+  color: var(--ink-soft);
+}
+
+.road-at {
+  width: 46px;
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--berry-dark);
+}
+
+.road-reward {
+  flex: 1;
+  font-size: 13px;
+}
+
+.merchant-empty,
+.merchant-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.merchant-empty {
+  color: var(--ink-soft);
+}
+
+.merchant-head strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.merchant-head small {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.crates,
+.wares {
+  list-style: none;
+  margin: 8px 0 4px;
+  padding: 0;
+}
+
+.crates li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 5px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--paper-3);
+}
+
+.crates li.filled {
+  background: #eef8e8;
+  border-color: #b9dda6;
+}
+
+.crate-ask {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.crate-ask strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.crate-ask small {
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.crate-pay {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.wares-title {
+  margin-top: 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
 }

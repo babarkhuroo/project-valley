@@ -1,3 +1,4 @@
+import { boostFor } from './trade';
 import { BALANCE } from '../config/balance';
 import { BUILDINGS } from '../config/buildings';
 import { JOBS, type JobType } from '../config/jobs';
@@ -86,6 +87,8 @@ export function workRateBreakdown(state: GameState, v: Villager, jt: JobType, jo
   if (skillMult !== 1) factors.push({ label: `Skill level ${skill.level}`, mult: skillMult });
   const research = getModifiers(state).jobRate[jt];
   if (research && research.mult !== 1) factors.push({ label: 'Research', mult: research.mult });
+  const tonic = boostFor(state, jt);
+  if (tonic.mult !== 1) factors.push({ label: tonic.names.join(' + '), mult: tonic.mult });
   const guild = state.valley.bonuses.jobRate[jt];
   if (guild && guild !== 1) factors.push({ label: 'Valley guild', mult: guild });
   if (job?.kind === 'operate') {

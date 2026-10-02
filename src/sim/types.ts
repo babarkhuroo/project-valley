@@ -6,6 +6,7 @@ import type { ResearchId } from '../config/research';
 import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
 import type { ValleyBuildingId } from '../config/valley';
+import type { BoostId } from '../config/trade';
 import type { Appearance } from '../config/villagers';
 
 /**
@@ -162,6 +163,54 @@ export interface ValleyBonuses {
   jobRate: Partial<Record<JobType, number>>;
   storageMult: number;
   mealDurationMult: number;
+  /** Trading Post level in the Valley (0 = no merchants yet). */
+  tradeLevel: number;
+}
+
+export interface MerchantCrate {
+  resource: ResourceId;
+  amount: number;
+  coins: number;
+  reputation: number;
+  filled: boolean;
+}
+
+export interface MerchantWare {
+  boost: BoostId;
+  price: number;
+  stock: number;
+}
+
+export interface MerchantShip {
+  id: number;
+  /** Index into MERCHANTS. */
+  merchant: number;
+  arrivedAt: number;
+  leavesAt: number;
+  crates: MerchantCrate[];
+  wares: MerchantWare[];
+  /** Paid once, when the last crate is filled. */
+  bonusPaid: boolean;
+}
+
+export interface ActiveBoost {
+  boost: BoostId;
+  /** Sim time it wears off. */
+  until: number;
+}
+
+/** Coins, merchant visits, tonics and Reputation Road progress. */
+export interface TradeState {
+  coins: number;
+  ship: MerchantShip | null;
+  /** When the next ship arrives; null while no ship is due (no Trading Post yet, or one is in port). */
+  nextShipAt: number | null;
+  shipsSeen: number;
+  inventory: Partial<Record<BoostId, number>>;
+  active: ActiveBoost[];
+  /** Reputation Road milestones claimed (always the first N). */
+  roadClaimed: number;
+  unlockedDecor: BuildingId[];
 }
 
 /** A delivery to the Valley that has left the village but isn't confirmed by the server yet. */
@@ -205,6 +254,7 @@ export interface GameState {
   /** Lifetime counters (resources produced, buildings built, ...). */
   stats: Record<string, number>;
   valley: VillageValleyState;
+  trade: TradeState;
   /** Wall-clock (server-synchronised) ms at which `time` was last current. */
   lastProcessedAt: number;
   /** Monotonic save counter used to reject stale writes. */

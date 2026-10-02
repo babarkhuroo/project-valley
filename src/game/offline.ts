@@ -17,6 +17,9 @@ export interface AwaySummary {
   fullStorage: ResourceId[];
   wentHungry: boolean;
   idle: string[];
+  /** Merchant ships that came and went unvisited, and whether one is in port now. */
+  shipsMissed: number;
+  shipInPort: boolean;
 }
 
 export function clampOffline(seconds: number): number {
@@ -39,6 +42,7 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
   const idleIds = new Set<number>();
   let newcomers = false;
   let wentHungry = false;
+  let shipsMissed = 0;
   for (const e of events) {
     switch (e.type) {
       case 'constructionComplete':
@@ -65,12 +69,15 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
       case 'villagerIdle':
         if (e.reason !== 'unassigned') idleIds.add(e.villagerId);
         break;
+      case 'shipLeft':
+        if (e.filled === 0) shipsMissed += 1;
+        break;
       default:
         break;
     }
   }
   const idle = state.villagers.filter((v) => idleIds.has(v.id) && !v.job).map((v) => v.name);
-  return { seconds, cappedSeconds, gained, spent, built, researched, levels, newcomers, fullStorage: [...full], wentHungry, idle };
+  return { seconds, cappedSeconds, gained, spent, built, researched, levels, newcomers, fullStorage: [...full], wentHungry, idle, shipsMissed, shipInPort: state.trade.ship !== null };
 }
 
 export function summaryIsInteresting(s: AwaySummary): boolean {

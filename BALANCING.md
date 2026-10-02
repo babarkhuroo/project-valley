@@ -66,6 +66,8 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Flower Bed | 1×1 | 24 | #1: 5 Timber | instant | 1 | decoration | — |
 | Lantern Post | 1×1 | 16 | #1: 12 Timber | instant | 1 | decoration | — |
 | Garden Bench | 1×1 | 12 | #1: 15 Timber | instant | 1 | decoration | — |
+| Valley Banner | 1×1 | 8 | #1: 10 Timber | instant | 2 | decoration | — |
+| Fountain | 2×2 | 2 | #1: 30 Stone | instant | 5 | decoration | — |
 
 ## Workshop recipes
 
@@ -180,6 +182,9 @@ Shared projects restored by every member. Costs are Valley-wide totals. Reputati
 | Hearth Hall | 1 | 3000 Timber, 1500 Clay | 1h | Shared suppers: a bowl of Stew lasts 10% longer |  |
 |  | 2 | 6000 Timber, 3000 Stone, 1500 Planks | 4h | Valley storehouse: +10% storage in every village |  |
 |  | 3 | 12000 Timber, 6000 Stone, 3000 Planks, 3000 Bricks | 10h | Great feasts: Stew +10% longer and storage +10% more |  |
+| Trading Post | 1 | 2000 Timber, 1000 Clay | 2h | Merchant ships call on every member: 3 crates a ship | Hearth Hall 1 |
+|  | 2 | 4000 Timber, 1500 Stone, 800 Planks | 6h | 4 crates a ship, pay +10%, ships return sooner |  |
+|  | 3 | 8000 Timber, 3000 Stone, 1500 Planks, 1500 Bricks | 12h | 5 crates a ship, pay +20%, ships return sooner still |  |
 | Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% in every member's village | Hearth Hall 1 |
 |  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting +5% more (×1.10 in all) |  |
 |  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting +5% more (×1.16 in all) |  |
@@ -206,26 +211,84 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | Valley time | Finished |
 | --- | --- |
 | 0.2 days | Hearth Hall → level 1 |
-| 1.3 days | Scholars' Guild → level 1 |
-| 1.3 days | Builders' Guild → level 1 |
-| 1.5 days | Foresters' Lodge → level 1 |
-| 1.9 days | Cooks' Guild → level 1 |
-| 2.1 days | Miners' Guild → level 1 |
-| 2.1 days | Craftsfolk's Guild → level 1 |
-| 4.5 days | Builders' Guild → level 2 |
-| 5.1 days | Hearth Hall → level 2 |
-| 5.2 days | Scholars' Guild → level 2 |
-| 6.1 days | Cooks' Guild → level 2 |
-| 6.2 days | Miners' Guild → level 2 |
-| 6.2 days | Foresters' Lodge → level 2 |
-| 6.3 days | Craftsfolk's Guild → level 2 |
-| 11.8 days | Cooks' Guild → level 3 |
-| 11.9 days | Scholars' Guild → level 3 |
-| 12.8 days | Builders' Guild → level 3 |
-| 13.4 days | Craftsfolk's Guild → level 3 |
-| 13.8 days | Foresters' Lodge → level 3 |
-| 13.9 days | Miners' Guild → level 3 |
-| 14.4 days | Hearth Hall → level 3 |
+| 1.3 days | Trading Post → level 1 |
+| 1.4 days | Builders' Guild → level 1 |
+| 1.5 days | Scholars' Guild → level 1 |
+| 1.6 days | Cooks' Guild → level 1 |
+| 2.2 days | Miners' Guild → level 1 |
+| 2.3 days | Foresters' Lodge → level 1 |
+| 2.3 days | Craftsfolk's Guild → level 1 |
+| 5.2 days | Trading Post → level 2 |
+| 5.4 days | Scholars' Guild → level 2 |
+| 5.5 days | Cooks' Guild → level 2 |
+| 6.1 days | Builders' Guild → level 2 |
+| 6.2 days | Hearth Hall → level 2 |
+| 6.7 days | Foresters' Lodge → level 2 |
+| 6.7 days | Miners' Guild → level 2 |
+| 7.2 days | Craftsfolk's Guild → level 2 |
+| 11.5 days | Trading Post → level 3 |
+| 11.9 days | Cooks' Guild → level 3 |
+| 13.5 days | Miners' Guild → level 3 |
+| 13.8 days | Scholars' Guild → level 3 |
+| 13.8 days | Builders' Guild → level 3 |
+| 14.6 days | Foresters' Lodge → level 3 |
+| 14.8 days | Craftsfolk's Guild → level 3 |
+| 15.4 days | Hearth Hall → level 3 |
+
+## Merchants & coins
+
+Ships call once the Valley's Trading Post is restored: the first 10 min later, each staying 4h, the next arriving 2–5h after one sails (shorter with Trading Post levels). A crate is worth 40 + 30 × village level (±30%) and never asks for more than 80% of the village's storage of that good. Pay: 0.6 coins per point of value × merchant × Trading Post, ±35% per crate; 0.05 reputation per point. Filling every crate adds 25% of the crates' coins and +10 reputation.
+
+| Trading Post level | Crates | Pay | Time between ships |
+| --- | --- | --- | --- |
+| 1 | 3 | ×1 | ×1 |
+| 2 | 4 | ×1.1 | ×0.85 |
+| 3 | 5 | ×1.2 | ×0.7 |
+
+| Good | Value | Needs |
+| --- | --- | --- |
+| Timber | 1 | — |
+| Stew | 1.2 | — |
+| Clay | 1 | Clay Digging |
+| Stone | 1.5 | Stonecutting |
+| Planks | 2.5 | Carpentry |
+| Bricks | 3 | Brickmaking |
+
+| Merchant | Ship | Likes | Pay |
+| --- | --- | --- | --- |
+| Captain Mabel Quill | the Gull's Promise | Timber, Planks | ×1 |
+| Peregrine Stout | the Amber Lantern | Bricks, Clay | ×1.15 |
+| The Brine Sisters | the Twin Herons | Stone, Bricks | ×0.95 |
+| Old Hollis | the Patient Otter | Stew, Timber | ×0.9 |
+| Juniper Vale | the Silver Thimble | Planks, Stone | ×1.1 |
+
+### Tonics
+
+| Tonic | Effect | Lasts | Price |
+| --- | --- | --- | --- |
+| Woodworker Tonic | chop ×1.5 | 30 min | 60 coins ±15% |
+| Miner's Meal | dig, quarry ×1.5 | 30 min | 70 coins ±15% |
+| Farmer's Tea | cook ×1.5 | 30 min | 50 coins ±15% |
+| Research Brew | study ×1.5 | 30 min | 80 coins ±15% |
+| Builder's Brew | build ×1.5 | 30 min | 70 coins ±15% |
+| Crafter's Oil | craft ×1.5 | 30 min | 70 coins ±15% |
+
+### Reputation Road
+
+| Reputation | Reward |
+| --- | --- |
+| 25 | type:coins, amount:50 |
+| 75 | type:boost, boost:woodTonic, count:2 |
+| 150 | type:decor, building:valleyBanner |
+| 250 | type:resources, resources:planks:40, bricks:40 |
+| 400 | type:coins, amount:150 |
+| 600 | type:boost, boost:researchBrew, count:2 |
+| 850 | type:decor, building:fountain |
+| 1150 | type:boost, boost:buildersBrew, count:3 |
+| 1500 | type:coins, amount:300 |
+| 2000 | type:resources, resources:stone:150, planks:100, bricks:100 |
+| 2600 | type:boost, boost:minersMeal, count:3 |
+| 3300 | type:coins, amount:500 |
 
 ## Simulated pacing
 

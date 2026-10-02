@@ -22,7 +22,7 @@ export interface Placement {
   reason: string | null;
 }
 
-export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | null;
+export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | null;
 
 export interface Toast {
   id: number;

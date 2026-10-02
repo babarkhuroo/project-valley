@@ -1,6 +1,6 @@
 import { nextSteps, type Suggestion } from '../../sim/selectors';
 import { currentStep } from '../../game/tutorial';
-import { selectAndFocus, travelToValley } from '../actions';
+import { openHarbour, selectAndFocus, travelToValley } from '../actions';
 import { Icon } from '../common/Icon';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
@@ -23,6 +23,12 @@ function run(s: Suggestion): void {
       break;
     case 'openValley':
       travelToValley();
+      break;
+    case 'openHarbour':
+      openHarbour();
+      break;
+    case 'openRoad':
+      ui.set({ panel: 'road' });
       break;
   }
 }

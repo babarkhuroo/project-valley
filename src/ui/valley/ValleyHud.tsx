@@ -11,6 +11,8 @@ import { Icon } from '../common/Icon';
 import { formatDuration, formatNumber, useGameState, useValley } from '../hooks';
 import { useUI } from '../store';
 import { agoText, describeLog } from './format';
+import { MerchantSection, roadProgress } from './TradeUi';
+import { ui as uiStore } from '../store';
 
 function statusText(b: ValleyBuildingState, serverNow: number): string {
   const def = VALLEY_BUILDINGS[b.id];
@@ -56,6 +58,7 @@ export function ValleySidebar() {
   }
   const me = playerId();
   const news = [...snapshot.log].reverse().slice(0, 7);
+  const road = roadProgress(state);
   return (
     <aside className={`valley-side panel pop-in ${selected ? 'has-selection' : ''}`}>
       <header className="vs-head">
@@ -67,13 +70,14 @@ export function ValleySidebar() {
           </small>
         </div>
       </header>
-      <div className="vs-rep">
+      <button className="vs-rep" onClick={() => uiStore.openPanel('road')}>
         <Icon name="reputation" size={22} />
         <span>
           <strong>{formatNumber(state.valley.reputation)}</strong> reputation
         </span>
-        <small className="muted">from helping the Valley</small>
-      </div>
+        <small className="muted">{road.next !== null ? `Next Reputation Road reward at ${road.next}` : 'Reputation Road complete'}</small>
+        {road.next !== null ? <Bar value={(state.valley.reputation - road.prev) / (road.next - road.prev)} tone="red" thin /> : null}
+      </button>
       <Section title="Projects">
         <ul className="vs-projects">
           {VALLEY_BUILDING_ORDER.map((id) => {
@@ -214,9 +218,11 @@ function ContributeForm({ id, b }: { id: ValleyBuildingId; b: ValleyBuildingStat
 
 export function ValleyProjectPanel() {
   const id = useUI((s) => s.valleySelection);
+  // Side panels (road, tonics, settings…) open in the same spot; let them take over.
+  const covered = useUI((s) => s.panel !== null);
   const { snapshot } = useValley();
   const serverNow = useServerNow();
-  if (!id || !snapshot) return null;
+  if (!id || !snapshot || covered) return null;
   const b = snapshot.buildings[id];
   const def = VALLEY_BUILDINGS[id];
   const next = levelDef(id, b.level);
@@ -246,6 +252,7 @@ export function ValleyProjectPanel() {
           </div>
         ))}
       </div>
+      {id === 'tradingPost' && b.level > 0 ? <MerchantSection /> : null}
       {b.status === 'locked' ? (
         <p className="vp-note">
           <Icon name="lock" size={18} /> {statusText(b, serverNow)}.

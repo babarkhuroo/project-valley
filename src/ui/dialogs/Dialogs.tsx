@@ -93,6 +93,16 @@ export function AwayDialog() {
               <Icon name="xp" size={20} /> Reached village level {l}
             </li>
           ))}
+          {away.shipInPort ? (
+            <li>
+              <Icon name="coin" size={20} /> A merchant ship is in port at Saltreach Harbour
+            </li>
+          ) : null}
+          {away.shipsMissed > 0 ? (
+            <li className="warn">
+              <Icon name="coin" size={20} /> {away.shipsMissed === 1 ? 'A merchant ship' : `${away.shipsMissed} merchant ships`} sailed without trading
+            </li>
+          ) : null}
           {away.newcomers ? (
             <li>
               <Icon name="villager" size={20} /> Travellers are waiting to join

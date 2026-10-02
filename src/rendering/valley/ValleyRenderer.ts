@@ -22,6 +22,7 @@ import { sharedUniforms } from '../wind';
 import { WorldOverlay } from '../WorldOverlay';
 import { ValleyBuildingsView } from './ValleyBuildingsView';
 import { ValleyFolk } from './ValleyFolk';
+import { ShipView } from './ShipView';
 import { createValleyScene, type ValleyScene } from './valleyWorld';
 
 const SKY = new THREE.Color('#d3e9ee');
@@ -55,6 +56,7 @@ export class ValleyRenderer {
   private readonly folk: ValleyFolk;
   private readonly folkView: VillagersView;
   private readonly particles = new Particles();
+  private readonly ship = new ShipView();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
   private readonly selection: SelectionView;
@@ -130,7 +132,7 @@ export class ValleyRenderer {
       this.particles.emit('dust', at.clone().setY(at.y - 3), 20, 3);
       this.audio.play('complete');
     };
-    this.scene.add(this.buildings.group, this.smoke.mesh);
+    this.scene.add(this.buildings.group, this.smoke.mesh, this.ship.group);
 
     this.folk = new ValleyFolk(world, this.valley.scenery);
     this.folkView = new VillagersView(world.terrain);
@@ -192,7 +194,8 @@ export class ValleyRenderer {
 
   focusOn(id: ValleyBuildingId, distance = 26): void {
     const def = VALLEY_BUILDINGS[id];
-    this.cameraCtl.focusOn(new THREE.Vector3(def.x, this.buildings.groundY(id), def.z), distance);
+    const at = def.view ?? def;
+    this.cameraCtl.focusOn(new THREE.Vector3(at.x, this.buildings.groundY(id), at.z), distance);
   }
 
   private resize(): void {
@@ -219,7 +222,7 @@ export class ValleyRenderer {
 
   private pick(ndc: THREE.Vector2): PickResult {
     this.raycaster.setFromCamera(ndc, this.camera);
-    const hits = this.raycaster.intersectObjects(this.buildings.hitboxes, false);
+    const hits = this.raycaster.intersectObjects([...this.buildings.hitboxes, ...this.ship.pickables], false);
     const id = hits.length > 0 ? this.buildings.idFor(hits[0].object) : null;
     return { target: id ? { kind: 'building', id: VALLEY_BUILDING_ORDER.indexOf(id) } : null, ground: this.groundAt(ndc) };
   }
@@ -245,6 +248,7 @@ export class ValleyRenderer {
     this.nature.update(this.valley.scenery, this.realTime);
     this.nature.sync();
     this.buildings.update(dt, this.realTime);
+    this.ship.update(dt, this.realTime, this.game.state.trade.ship);
     const snap = this.snapshot;
     this.folk.update(this.realTime, ValleyFolk.openProjects((id) => snap?.buildings[id]?.status));
     this.folkView.update(this.valley.scenery, dt, this.realTime, 1, eye, lod);

@@ -73,6 +73,7 @@ export function getModifiers(state: GameState): Modifiers {
 
 export function isBuildingUnlocked(state: GameState, id: BuildingId): boolean {
   const def = BUILDINGS[id];
+  if (def.requiresRoadReward) return state.trade.unlockedDecor.includes(id);
   return !def.requiresResearch || state.research.completed.includes(def.requiresResearch);
 }
 

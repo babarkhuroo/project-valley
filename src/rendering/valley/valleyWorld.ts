@@ -1,6 +1,6 @@
 import { VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, type ValleyBuildingDef } from '../../config/valley';
 import { VALLEY_MAP } from '../../config/valleyMap';
-import { newValleyState } from '../../sim/save';
+import { newTradeState, newValleyState } from '../../sim/save';
 import type { GameState, ResourceNode } from '../../sim/types';
 import { createWorld, generateNodes, type World } from '../../sim/world';
 import { VALLEY_MODEL_SIZE } from '../models/valleyModels';
@@ -51,6 +51,7 @@ export function createValleyScene(): ValleyScene {
     nodes,
     research: { completed: [], progress: {}, active: null },
     valley: newValleyState(),
+    trade: newTradeState(),
     resources: {},
   } as unknown as GameState;
   return { world, scenery };

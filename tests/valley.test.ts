@@ -5,7 +5,7 @@ import { mealDuration } from '../src/sim/modifiers';
 import { migrate, SAVE_VERSION } from '../src/sim/save';
 import { inTransit, joinValley, sendToValley, setValleyBonuses, settleValleyOp } from '../src/sim/valley';
 import { workRateBreakdown } from '../src/sim/villagerAI';
-import { advanceValley, ageValley, contribute, createValley, deliveredFraction, remainingFor, snapshotOf, valleyBonuses } from '../src/valley/valleySim';
+import { advanceValley, ageValley, contribute, createValley, upgradeValley, deliveredFraction, remainingFor, snapshotOf, valleyBonuses } from '../src/valley/valleySim';
 import { MemoryValleyStore, ValleyService } from '../server/valleyService.ts';
 import { makeGame, villager } from './helpers';
 
@@ -89,6 +89,17 @@ describe('valley simulation', () => {
     expect(aged.members.map((m) => m.lifetimeValue)).toEqual(waited.members.map((m) => m.lifetimeValue));
   });
 
+  it('adds buildings that are newer than a stored Valley', () => {
+    const v = fresh();
+    advanceValley(v, T0 + 24 * HOUR);
+    delete (v.buildings as Partial<typeof v.buildings>).tradingPost;
+    v.schemaVersion = 1;
+    expect(upgradeValley(v, T0 + 24 * HOUR)).toBe(true);
+    expect(v.buildings.tradingPost.status).toBe(v.buildings.hearthHall.level >= 1 ? 'collecting' : 'locked');
+    expect(() => advanceValley(v, T0 + 48 * HOUR)).not.toThrow();
+    expect(upgradeValley(v, T0 + 48 * HOUR)).toBe(false);
+  });
+
   it('snapshots hide server bookkeeping', () => {
     const v = fresh();
     contribute(v, player.id, 'hearthHall', { timber: 5 }, 'op-x', T0);
@@ -138,7 +149,7 @@ describe('village side of the valley', () => {
     const baseRate = workRateBreakdown(h.state, v, 'chop').rate;
     const baseCap = capacity(h.state, 'timber');
     const baseMeal = mealDuration(h.state);
-    setValleyBonuses(h.state, { jobRate: { chop: 1.1 }, storageMult: 1.1, mealDurationMult: 1.1 });
+    setValleyBonuses(h.state, { jobRate: { chop: 1.1 }, storageMult: 1.1, mealDurationMult: 1.1, tradeLevel: 0 });
     const after = workRateBreakdown(h.state, v, 'chop');
     expect(after.rate).toBeCloseTo(baseRate * 1.1);
     expect(after.factors.some((f) => f.label === 'Valley guild')).toBe(true);

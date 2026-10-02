@@ -49,7 +49,7 @@ export const VALLEY_MAP: VillageMapDef = {
     // Market Green and the fields.
     { width: 1.6, points: [[70, 72], [80, 84], [92, 94], [103, 104]] },
     // Millrace and down to the harbour.
-    { width: 1.6, points: [[58, 72], [47, 80], [40, 86], [36, 96], [34, 104]] },
+    { width: 1.6, points: [[58, 72], [47, 80], [40, 86], [36, 96], [33, 105.5]] },
     // East road to where the Far Reach is fenced off.
     { width: 1.4, points: [[86, 64.5], [100, 64.5], [109, 64.5]] },
   ],

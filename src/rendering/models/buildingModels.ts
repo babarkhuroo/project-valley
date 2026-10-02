@@ -358,6 +358,42 @@ function lantern(): BuildingModel {
   return m;
 }
 
+/** Reputation Road reward: a tall pole flying the Valley's colours. */
+function valleyBanner(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  cyl(r, 0.16, 0.2, 0.14, mat(PALETTE.stone), 0, 0.07, 0, 8);
+  cyl(r, 0.035, 0.04, 2.5, mat(PALETTE.woodDark), 0, 1.3, 0, 6);
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), mat(PALETTE.gold));
+  ball.position.y = 2.6;
+  r.add(ball);
+  const pivot = new THREE.Group();
+  pivot.position.set(0.03, 2.4, 0);
+  const colours = ['#d9544a', '#5fae4f', '#6f8fe0'];
+  colours.forEach((c, i) => box(pivot, 0.55, 0.16, 0.02, mat(c, { side: THREE.DoubleSide }), 0.28, -i * 0.16, 0));
+  r.add(pivot);
+  m.wavers.push({ obj: pivot, amp: 0.2, speed: 2.1, base: 0 });
+  return m;
+}
+
+/** Reputation Road reward: a carved stone fountain with a gently spilling basin. */
+function fountain(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const stone = mat(PALETTE.stone, { flat: true });
+  cyl(r, 0.95, 1.0, 0.36, stone, 0, 0.18, 0, 16);
+  cyl(r, 0.82, 0.82, 0.04, mat('#7fc8e8', { emissive: '#2a6f8f', emissiveIntensity: 0.15 }), 0, 0.35, 0, 16);
+  cyl(r, 0.14, 0.2, 0.9, stone, 0, 0.75, 0, 10);
+  cyl(r, 0.42, 0.3, 0.14, stone, 0, 1.2, 0, 14);
+  cyl(r, 0.36, 0.36, 0.03, mat('#9ad6ef'), 0, 1.28, 0, 14);
+  cyl(r, 0.05, 0.08, 0.3, stone, 0, 1.42, 0, 8);
+  const spray = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#d8f2fb', { transparent: true, opacity: 0.75 }));
+  spray.position.y = 1.56;
+  r.add(spray);
+  m.spinners.push({ obj: spray, axis: 'y', speed: 1.5 });
+  return m;
+}
+
 function bench(): BuildingModel {
   const m = emptyModel();
   const r = m.root;
@@ -820,6 +856,12 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
       break;
     case 'bench':
       model = bench();
+      break;
+    case 'valleyBanner':
+      model = valleyBanner();
+      break;
+    case 'fountain':
+      model = fountain();
       break;
   }
   addLevelDetails(model, id, level);

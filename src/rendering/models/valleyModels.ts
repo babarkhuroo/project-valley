@@ -17,7 +17,11 @@ export type ValleyVisualStage = 'ruin' | 'restored';
 export const VALLEY_MODEL_SIZE: Record<ValleyBuildingDef['model'], { hx: number; hz: number; height: number }> = {
   hall: { hx: 4.1, hz: 3.1, height: 6.2 },
   guild: { hx: 2.6, hz: 2.1, height: 4.4 },
+  post: { hx: 2.7, hz: 2.2, height: 4.2 },
 };
+
+/** Length of the Trading Post's pier, out from its front wall. */
+export const PIER_LENGTH = 9;
 
 function plinth(r: THREE.Object3D, hx: number, hz: number, color: string): void {
   // A deep skirt so the building sits cleanly on gently sloping ground.
@@ -184,6 +188,99 @@ function guild(def: ValleyBuildingDef, level: number): BuildingModel {
 }
 
 // ---------------------------------------------------------------------------
+// Trading Post
+// ---------------------------------------------------------------------------
+
+/** Plank pier on posts, from the front wall out over the water. `deckY` is local. */
+function pier(r: THREE.Object3D, hz: number, deckY: number, broken: boolean): void {
+  const plank = mat(PALETTE.wood);
+  const post = mat(PALETTE.barkDark);
+  const start = hz + 0.3;
+  for (let z = start; z < start + PIER_LENGTH; z += 0.5) {
+    if (broken && (z > start + 3 && (Math.floor(z * 2) % 3 === 0 || z > start + 6))) continue;
+    box(r, 1.6, 0.08, 0.44, plank, 0, deckY, z);
+  }
+  for (let z = start + 0.5; z < start + PIER_LENGTH; z += 2) {
+    for (const x of [-0.75, 0.75]) {
+      if (broken && z > start + 6 && x > 0) continue;
+      box(r, 0.14, deckY + 1.2, 0.14, post, x, (deckY - 1.2) / 2 + 0.1, z);
+    }
+  }
+  if (!broken) {
+    // Mooring bollards and a lamp at the end.
+    for (const x of [-0.65, 0.65]) cyl(r, 0.08, 0.1, 0.3, mat(PALETTE.iron), x, deckY + 0.18, start + PIER_LENGTH - 0.6, 8);
+    cyl(r, 0.04, 0.04, 1.4, mat(PALETTE.iron), 0.7, deckY + 0.7, start + PIER_LENGTH - 1.6, 6);
+    box(r, 0.2, 0.24, 0.2, mat(PALETTE.glow, { emissive: '#ffb347', emissiveIntensity: 0.9 }), 0.7, deckY + 1.45, start + PIER_LENGTH - 1.6);
+  }
+}
+
+function tradingPost(def: ValleyBuildingDef, level: number, deckY: number): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const { hx, hz } = VALLEY_MODEL_SIZE.post;
+  plinth(r, hx, hz, PALETTE.stone);
+  const wood = mat(PALETTE.wood);
+  const beam = mat(PALETTE.woodDark);
+  // A tall timber warehouse with big loading doors facing the water.
+  box(r, 4.6, 2.6, 3.4, wood, 0, 1.7, -0.3);
+  for (const x of [-2.3, -1.15, 0, 1.15, 2.3]) box(r, 0.14, 2.6, 0.12, beam, x, 1.7, 1.42);
+  gableRoof(r, 4.0, 1.6, 5.0, mat(PALETTE.slateDark, { flat: true }), 3.0, true, 0, -0.3);
+  box(r, 1.5, 1.7, 0.08, beam, 0, 1.25, 1.44);
+  box(r, 0.7, 1.6, 0.04, mat(PALETTE.woodLight), -0.36, 1.2, 1.5);
+  box(r, 0.7, 1.6, 0.04, mat(PALETTE.woodLight), 0.36, 1.2, 1.5);
+  windowPane(r, -1.7, 2.4, 1.45, 0.4, 0.4);
+  windowPane(r, 1.7, 2.4, 1.45, 0.4, 0.4);
+  // Striped awning in the Valley's harbour colours.
+  for (let i = 0; i < 5; i++) {
+    const strip = box(r, 0.5, 0.05, 1.2, mat(i % 2 ? '#fff8ea' : def.color, { flat: true }), -1.0 + i * 0.5, 2.25, 2.0);
+    strip.rotation.x = 0.3;
+  }
+  for (const x of [-1.25, 1.25]) box(r, 0.08, 2.0, 0.08, beam, x, 1.3, 2.55);
+  // Sign: a little ship on a board.
+  box(r, 1.3, 0.55, 0.06, mat(PALETTE.woodLight), 0, 3.3, 1.2);
+  box(r, 0.6, 0.12, 0.02, mat(def.color), 0, 3.22, 1.24);
+  box(r, 0.04, 0.32, 0.02, mat(PALETTE.woodDark), 0, 3.42, 1.24);
+  // Cargo waiting on the quay.
+  for (const [x, z, s] of [[-2.0, 2.2, 0.5], [-1.6, 2.6, 0.4], [1.8, 2.3, 0.55], [2.1, 1.8, 0.45]] as const) box(r, s, s, s, mat(PALETTE.wood), x, 0.4 + s / 2, z);
+  cyl(r, 0.22, 0.22, 0.5, mat(PALETTE.wood), 1.4, 0.65, 2.6, 10);
+  // Cargo crane at the corner of the quay.
+  const crane = new THREE.Group();
+  crane.position.set(-2.4, 0.4, 2.4);
+  box(crane, 0.16, 3.0, 0.16, beam, 0, 1.5, 0);
+  const jib = new THREE.Group();
+  jib.position.y = 2.9;
+  box(jib, 0.12, 0.12, 2.2, beam, 0, 0, 0.9);
+  cyl(jib, 0.01, 0.01, 1.2, mat(PALETTE.iron), 0, -0.6, 1.9, 4);
+  box(jib, 0.35, 0.3, 0.35, mat(PALETTE.wood), 0, -1.3, 1.9);
+  crane.add(jib);
+  r.add(crane);
+  m.spinners.push({ obj: jib, axis: 'y', speed: 0.15 });
+  banner(m, def.color, -2.45, 3.0, 1.5, 0.9);
+  pier(r, hz, deckY, false);
+  if (level >= 2) {
+    // A second, open-sided store shed.
+    box(r, 0.1, 2.0, 0.1, beam, 3.6, 1.4, -1.6);
+    box(r, 0.1, 2.0, 0.1, beam, 3.6, 1.4, 1.0);
+    const roof = box(r, 1.6, 0.06, 3.0, mat(def.color, { flat: true }), 3.2, 2.45, -0.3);
+    roof.rotation.z = -0.2;
+    for (let i = 0; i < 3; i++) box(r, 0.5, 0.5, 0.5, mat(PALETTE.wood), 3.1, 0.65 + (i === 2 ? 0.5 : 0), -1.0 + (i % 2) * 0.6);
+    levelPennant(m, level, 2.4, -1.9, 4.6);
+  }
+  if (level >= 3) {
+    // A harbour lighthouse at the end of the pier.
+    const lz = hz + 0.3 + PIER_LENGTH + 0.4;
+    cyl(r, 0.45, 0.6, 2.8, mat('#fff8ea'), 0, deckY + 1.4, lz, 12);
+    cyl(r, 0.62, 0.62, 0.35, mat(def.color), 0, deckY + 1.0, lz, 12);
+    const lamp = cyl(r, 0.35, 0.35, 0.45, mat(PALETTE.glow, { emissive: '#ffb347', emissiveIntensity: 1 }), 0, deckY + 3.05, lz, 10);
+    m.flames.push(lamp);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.5, 10), mat(def.color, { flat: true }));
+    cap.position.set(0, deckY + 3.5, lz);
+    r.add(cap);
+  }
+  return m;
+}
+
+// ---------------------------------------------------------------------------
 // Ruins and scaffolding
 // ---------------------------------------------------------------------------
 
@@ -289,8 +386,15 @@ export function createScaffold(def: ValleyBuildingDef, height: number): THREE.Gr
   return g;
 }
 
-export function createValleyModel(def: ValleyBuildingDef, level: number): BuildingModel {
-  const model = level <= 0 ? ruin(def) : def.model === 'hall' ? hall(def, level) : guild(def, level);
+/** `deckY`: local height of the pier deck above water (Trading Post only). */
+export function createValleyModel(def: ValleyBuildingDef, level: number, deckY = 0): BuildingModel {
+  let model: BuildingModel;
+  if (level <= 0) {
+    model = ruin(def);
+    if (def.model === 'post') pier(model.root, VALLEY_MODEL_SIZE.post.hz, deckY, true);
+  } else if (def.model === 'hall') model = hall(def, level);
+  else if (def.model === 'post') model = tradingPost(def, level, deckY);
+  else model = guild(def, level);
   mergeStatic(model);
   model.root.traverse((o) => {
     const mesh = o as THREE.Mesh;

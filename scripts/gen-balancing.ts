@@ -16,6 +16,7 @@ import { RESOURCES, RESOURCE_ORDER } from '../src/config/resources.ts';
 import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../src/config/valley.ts';
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
+import { BOOSTS, BOOST_ORDER, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS } from '../src/config/trade.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lines: string[] = [];
@@ -228,6 +229,23 @@ out();
   out('Neighbours alone (no help from the player), seeded run over four weeks:');
   out();
   table(['Valley time', 'Finished'], finished);
+}
+
+out('## Merchants & coins');
+out();
+{
+  const B = TRADE_BALANCE;
+  out(`Ships call once the Valley's Trading Post is restored: the first ${B.firstShipDelay / 60} min later, each staying ${B.stayHours}h, the next arriving ${B.gapHours.min}–${B.gapHours.max}h after one sails (shorter with Trading Post levels). A crate is worth ${B.crateValue.base} + ${B.crateValue.perLevel} × village level (±${B.crateValue.spread * 100}%) and never asks for more than ${B.maxShareOfStorage * 100}% of the village's storage of that good. Pay: ${B.coinsPerValue} coins per point of value × merchant × Trading Post, ±${B.priceSpread * 100}% per crate; ${B.reputationPerValue} reputation per point. Filling every crate adds ${B.fullShipBonus.coinShare * 100}% of the crates' coins and +${B.fullShipBonus.reputation} reputation.`);
+  out();
+  table(['Trading Post level', 'Crates', 'Pay', 'Time between ships'], TRADING_POST_LEVELS.map((l, i) => [i + 1, l.crates, `×${l.pay}`, `×${l.gap}`]));
+  table(['Good', 'Value', 'Needs'], TRADE_GOODS.map((g) => [RESOURCES[g.resource].name, g.value, g.requires ? RESEARCH[g.requires].name : '—']));
+  table(['Merchant', 'Ship', 'Likes', 'Pay'], MERCHANTS.map((m) => [m.name, m.ship, m.likes.map((r) => RESOURCES[r].name).join(', '), `×${m.premium}`]));
+  out('### Tonics');
+  out();
+  table(['Tonic', 'Effect', 'Lasts', 'Price'], BOOST_ORDER.map((b) => [BOOSTS[b].name, `${BOOSTS[b].jobs.join(', ')} ×${BOOSTS[b].mult}`, `${BOOSTS[b].seconds / 60} min`, `${BOOSTS[b].price} coins ±${B.priceHaggle * 100}%`]));
+  out('### Reputation Road');
+  out();
+  table(['Reputation', 'Reward'], REPUTATION_ROAD.map((m) => [m.at, JSON.stringify(m.reward).replace(/[{}"]/g, '').replace(/,/g, ', ')]));
 }
 
 out('## Simulated pacing');

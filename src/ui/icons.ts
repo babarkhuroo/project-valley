@@ -206,6 +206,23 @@ export const ICONS = {
      <path d="M11 5h8l2.5 2.5L19 10h-8z" fill="#f4b83e" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>
      <path d="M11 11.5H5L2.5 14 5 16.5h6z" fill="#8cc265" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>`,
   ),
+  coin: svg(
+    `<ellipse cx="12" cy="14.5" rx="8" ry="6" fill="#c98a1a" stroke="${O}" stroke-width="1.4"/>
+     <ellipse cx="12" cy="11.5" rx="8" ry="6" fill="#f4b83e" stroke="${O}" stroke-width="1.4"/>
+     <ellipse cx="12" cy="11.5" rx="4.6" ry="3.2" fill="none" stroke="#c98a1a" stroke-width="1.3"/>
+     <path d="M10.6 10.2c.8-.6 2-.6 2.8 0" stroke="#fff3c4" stroke-width="1.2" fill="none" stroke-linecap="round"/>`,
+  ),
+  potion: svg(
+    `<path d="M9.5 3.5h5M10.3 3.5v4.2L5.6 15.5a3.6 3.6 0 0 0 3.1 5h6.6a3.6 3.6 0 0 0 3.1-5l-4.7-7.8V3.5" fill="#e5f1ff" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M7 14h10l1.2 2a2.4 2.4 0 0 1-2.1 3.4H7.9A2.4 2.4 0 0 1 5.8 16z" fill="#8cc265"/>
+     <circle cx="10" cy="16.5" r=".9" fill="#fff"/><circle cx="13.6" cy="15.3" r=".6" fill="#fff"/>`,
+  ),
+  ship: svg(
+    `<path d="M3 15.5h18l-2.6 4.2c-.3.5-.8.8-1.4.8H7c-.6 0-1.1-.3-1.4-.8z" fill="#8a5a3b" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M12 3v12.5" stroke="${O}" stroke-width="1.4"/>
+     <path d="M12.6 4.2c3 2 4.6 5.2 4.6 9.3h-4.6z" fill="#fff8ea" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>
+     <path d="M11.4 6.2c-2.4 1.7-3.8 4.2-3.8 7.3h3.8z" fill="#d9544a" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>`,
+  ),
 } as const;
 
 export type IconName = keyof typeof ICONS;

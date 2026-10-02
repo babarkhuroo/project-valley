@@ -20,7 +20,9 @@ export type BuildingId =
   | 'cottage'
   | 'flowerBed'
   | 'lantern'
-  | 'bench';
+  | 'bench'
+  | 'valleyBanner'
+  | 'fountain';
 
 export type BuildingCategory = 'essentials' | 'production' | 'storage' | 'homes' | 'decor';
 
@@ -61,6 +63,8 @@ export interface BuildingDef {
   /** Whether the player can place new copies from the build menu. */
   buildable: boolean;
   requiresResearch?: ResearchId;
+  /** Unlocked by a Reputation Road reward instead of research. */
+  requiresRoadReward?: boolean;
   /** Copies allowed before research bonuses. */
   maxCount: number;
   /** Cost of the next copy, indexed by copies already owned. The last entry repeats. */
@@ -390,6 +394,34 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     model: 'bench',
     height: 0.8,
   },
+  valleyBanner: {
+    id: 'valleyBanner',
+    name: 'Valley Banner',
+    description: 'Flies the Valley colours. A Reputation Road reward.',
+    category: 'decor',
+    footprint: { w: 1, d: 1 },
+    buildable: true,
+    requiresRoadReward: true,
+    maxCount: 8,
+    costs: [{ resources: { timber: 10 }, work: 0 }],
+    xp: 2,
+    model: 'valleyBanner',
+    height: 2.6,
+  },
+  fountain: {
+    id: 'fountain',
+    name: 'Fountain',
+    description: 'A carved stone fountain, gift of the Valley. A Reputation Road reward.',
+    category: 'decor',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresRoadReward: true,
+    maxCount: 2,
+    costs: [{ resources: { stone: 30 }, work: 0 }],
+    xp: 5,
+    model: 'fountain',
+    height: 1.6,
+  },
 };
 
 export const BUILD_MENU_ORDER: BuildingId[] = [
@@ -408,6 +440,8 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'flowerBed',
   'lantern',
   'bench',
+  'valleyBanner',
+  'fountain',
 ];
 
 export const BUILDING_CATEGORY_LABEL: Record<BuildingCategory, string> = {

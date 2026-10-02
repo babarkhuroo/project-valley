@@ -49,7 +49,9 @@ export const DISTRICTS: Record<DistrictId, DistrictDef> = {
 export type ValleyEffect =
   | { type: 'jobRate'; jobs: JobType[]; mult: number }
   | { type: 'storage'; mult: number }
-  | { type: 'mealDuration'; mult: number };
+  | { type: 'mealDuration'; mult: number }
+  /** One Trading Post level: merchants call (more crates and better pay with each level). */
+  | { type: 'trade' };
 
 export interface ValleyLevelDef {
   /** Total resources the whole Valley must bring. */
@@ -61,9 +63,9 @@ export interface ValleyLevelDef {
   summary: string;
 }
 
-export type ValleyBuildingId = 'hearthHall' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
+export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
 
-export type ValleyModel = 'hall' | 'guild';
+export type ValleyModel = 'hall' | 'guild' | 'post';
 
 export interface ValleyBuildingDef {
   id: ValleyBuildingId;
@@ -81,6 +83,8 @@ export interface ValleyBuildingDef {
   /** Must reach this before restoration can start. */
   requires: { building: ValleyBuildingId; level: number } | null;
   levels: ValleyLevelDef[];
+  /** Where the camera looks when focusing this building, if not its centre. */
+  view?: { x: number; z: number };
 }
 
 const guildLevels = (jobs: JobType[], craft: ResourceId, label: string): ValleyLevelDef[] => [
@@ -139,6 +143,25 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
         ],
         summary: 'Great feasts: Stew +10% longer and storage +10% more',
       },
+    ],
+  },
+  tradingPost: {
+    id: 'tradingPost',
+    name: 'Trading Post',
+    district: 'harbor',
+    description: 'A warehouse and pier on Saltreach bay. Restored, it brings merchant ships to every village in the Valley.',
+    model: 'post',
+    color: '#3f7a8c',
+    x: 36,
+    z: 110,
+    radius: 3,
+    facing: -Math.PI / 2,
+    requires: { building: 'hearthHall', level: 1 },
+    view: { x: 28, z: 111 },
+    levels: [
+      { cost: { timber: 2000, clay: 1000 }, buildHours: 2, effects: [{ type: 'trade' }], summary: 'Merchant ships call on every member: 3 crates a ship' },
+      { cost: { timber: 4000, stone: 1500, planks: 800 }, buildHours: 6, effects: [{ type: 'trade' }], summary: '4 crates a ship, pay +10%, ships return sooner' },
+      { cost: { timber: 8000, stone: 3000, planks: 1500, bricks: 1500 }, buildHours: 12, effects: [{ type: 'trade' }], summary: '5 crates a ship, pay +20%, ships return sooner still' },
     ],
   },
   forestersLodge: {
@@ -227,7 +250,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
   },
 };
 
-export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
+export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
 
 /** Resources the Valley accepts, in display order. */
 export const VALLEY_RESOURCES: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks'];

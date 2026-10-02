@@ -1,6 +1,6 @@
 import { VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
 import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
-import { advanceValley, ageValley, contribute, createValley, snapshotOf, type ContributeOutcome } from '../src/valley/valleySim.ts';
+import { advanceValley, ageValley, contribute, createValley, snapshotOf, upgradeValley, type ContributeOutcome } from '../src/valley/valleySim.ts';
 
 /**
  * Persistence for shared Valleys. A file-backed store ships now; the multiplayer
@@ -56,6 +56,13 @@ export class ValleyService {
     private readonly clock: () => number = Date.now,
   ) {}
 
+  /** Loads a Valley and brings it up to the current content version. */
+  private async load(valleyId: string): Promise<ValleyState | null> {
+    const v = await this.store.load(valleyId);
+    if (v) upgradeValley(v, this.clock());
+    return v;
+  }
+
   private async locked<T>(valleyId: string, fn: () => Promise<T>): Promise<T> {
     const prev = this.locks.get(valleyId) ?? Promise.resolve();
     const run = prev.catch(() => undefined).then(fn);
@@ -72,7 +79,7 @@ export class ValleyService {
     const valleyId = await this.store.valleyFor(playerId);
     if (!valleyId) return null;
     return this.locked(valleyId, async () => {
-      const v = await this.store.load(valleyId);
+      const v = await this.load(valleyId);
       if (!v) return null;
       const now = this.clock();
       advanceValley(v, now);
@@ -103,7 +110,7 @@ export class ValleyService {
     const valleyId = await this.store.valleyFor(playerId);
     if (!valleyId) return null;
     return this.locked(valleyId, async () => {
-      const v = await this.store.load(valleyId);
+      const v = await this.load(valleyId);
       if (!v) return null;
       const now = this.clock();
       ageValley(v, ms);
@@ -118,7 +125,7 @@ export class ValleyService {
     if (!valleyId) return null;
     if (!(building in VALLEY_BUILDINGS)) return { ok: false, reason: 'Unknown Valley building' };
     return this.locked(valleyId, async () => {
-      const v = await this.store.load(valleyId);
+      const v = await this.load(valleyId);
       if (!v) return null;
       const now = this.clock();
       advanceValley(v, now);

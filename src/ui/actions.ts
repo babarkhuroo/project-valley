@@ -3,6 +3,8 @@ import { IDENTITY } from '../config/identity';
 import type { ResourceId } from '../config/resources';
 import type { ValleyBuildingId } from '../config/valley';
 import { isValleyUnlocked } from '../sim/modifiers';
+import type { BoostId } from '../config/trade';
+import { buyWare, claimRoadReward, fillCrate, useBoost } from '../sim/trade';
 import { RESEARCH, type ResearchId } from '../config/research';
 import type { RecipeId } from '../config/recipes';
 import { runtime, game } from '../game/runtime';
@@ -277,4 +279,34 @@ export function contributeToValley(id: ValleyBuildingId, resources: Partial<Reco
   }
   runtime.audio.play('deposit');
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Merchants, tonics and the Reputation Road
+// ---------------------------------------------------------------------------
+
+/** Travels to the Valley (if needed) and opens the Trading Post. */
+export function openHarbour(): void {
+  if (ui.get().scene !== 'valley') travelToValley();
+  window.setTimeout(() => selectValleyBuilding('tradingPost', true), 120);
+}
+
+export function fillMerchantCrate(index: number): void {
+  const res = game().run((s, _w, sink) => fillCrate(s, index, sink));
+  feedback(res, () => runtime.audio.play('deposit'));
+}
+
+export function buyFromMerchant(index: number): void {
+  const res = game().run((s, _w, sink) => buyWare(s, index, sink));
+  feedback(res, () => runtime.audio.play('click'));
+}
+
+export function drinkTonic(boost: BoostId): void {
+  const res = game().run((s, _w, sink) => useBoost(s, boost, sink));
+  feedback(res, () => runtime.audio.play('skillUp'));
+}
+
+export function claimRoad(): void {
+  const res = game().run((s, _w, sink) => claimRoadReward(s, sink));
+  feedback(res, () => runtime.audio.play('levelUp'));
 }

@@ -5,6 +5,7 @@ import { game } from '../../game/runtime';
 import { capacity } from '../../sim/economy';
 import { productionSummary } from '../../sim/selectors';
 import { Icon } from '../common/Icon';
+import { CoinsChip, TradeButtons } from '../valley/TradeUi';
 import { formatNumber, useGameState } from '../hooks';
 import { ui, useUI } from '../store';
 
@@ -81,8 +82,10 @@ export function TopBar() {
         {RESOURCE_ORDER.filter((r) => RESOURCES[r].hud).map((r) => (
           <ResourceChip key={r} id={r} rate={rates[r]} />
         ))}
+        <CoinsChip />
       </div>
       <div className="top-buttons">
+        <TradeButtons />
         <button className="round-btn" onClick={() => ui.openPanel('notifications')} title="Notifications">
           <Icon name="bell" size={24} />
           {unread > 0 ? <span className="badge-count">{unread > 9 ? '9+' : unread}</span> : null}

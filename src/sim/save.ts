@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -28,10 +28,19 @@ export const MIGRATIONS: Record<number, Migration> = {
   },
   // v4 (milestone 3): Valley membership, reputation and the delivery outbox.
   3: (d) => ({ ...d, valley: newValleyState() }),
+  // v5: merchants, coins, tonics and the Reputation Road; Trading Post level in the bonuses.
+  4: (d) => {
+    const valley = (d.valley ?? newValleyState()) as GameState['valley'];
+    return { ...d, valley: { ...valley, bonuses: { ...valley.bonuses, tradeLevel: 0 } }, trade: newTradeState() };
+  },
 };
 
+export function newTradeState(): GameState['trade'] {
+  return { coins: 0, ship: null, nextShipAt: null, shipsSeen: 0, inventory: {}, active: [], roadClaimed: 0, unlockedDecor: [] };
+}
+
 export function newValleyState(): GameState['valley'] {
-  return { valleyId: null, reputation: 0, outbox: [], given: {}, bonuses: { jobRate: {}, storageMult: 1, mealDurationMult: 1 } };
+  return { valleyId: null, reputation: 0, outbox: [], given: {}, bonuses: { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 } };
 }
 
 export class SaveError extends Error {}

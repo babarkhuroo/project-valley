@@ -1,4 +1,5 @@
 import type { EventSink } from './events';
+import { processTrade, tradeNextEvent } from './trade';
 import type { GameState } from './types';
 import { EPS, integrateVillager, processVillager, regrowNode, settleVillagers, villagerNextEvent } from './villagerAI';
 import type { World } from './world';
@@ -8,7 +9,7 @@ const MAX_EVENTS_PER_ADVANCE = 5_000_000;
 const MAX_CASCADE = 64;
 
 function nextEventTime(state: GameState): number {
-  let t = Infinity;
+  let t = tradeNextEvent(state);
   for (const v of state.villagers) {
     const e = villagerNextEvent(state, v);
     if (e < t) t = e;
@@ -26,7 +27,7 @@ function integrate(state: GameState, dt: number): void {
 
 function processDue(state: GameState, world: World, sink: EventSink): void {
   for (let pass = 0; pass < MAX_CASCADE; pass++) {
-    let acted = false;
+    let acted = processTrade(state, sink, EPS);
     for (const n of state.nodes) {
       if (n.regrowAt !== null && n.regrowAt <= state.time + EPS) {
         regrowNode(n, sink);

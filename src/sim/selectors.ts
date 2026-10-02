@@ -1,3 +1,4 @@
+import { canClaimRoad } from './trade';
 import { IDENTITY } from '../config/identity';
 import { isValleyUnlocked } from './modifiers';
 import { BALANCE } from '../config/balance';
@@ -244,7 +245,7 @@ export interface Suggestion {
   id: string;
   text: string;
   kind: 'warning' | 'idea';
-  action?: { type: 'selectVillager'; id: number } | { type: 'openResearch' } | { type: 'openBuild'; building?: BuildingId } | { type: 'selectBuilding'; id: number } | { type: 'openValley' };
+  action?: { type: 'selectVillager'; id: number } | { type: 'openResearch' } | { type: 'openBuild'; building?: BuildingId } | { type: 'selectBuilding'; id: number } | { type: 'openValley' } | { type: 'openHarbour' } | { type: 'openRoad' };
 }
 
 /** "What should I do next?" — a short, prioritised list of nudges. */
@@ -289,6 +290,18 @@ export function nextSteps(state: GameState): Suggestion[] {
     const available = RESEARCH_IDS.filter((id) => researchStatus(state, id) === 'available');
     if (available.length > 0) tips.push({ id: 'research', kind: 'idea', text: `Choose a research project (${available.length} available)`, action: { type: 'openResearch' } });
   }
+  const ship = state.trade.ship;
+  if (ship && ship.crates.some((c) => !c.filled)) {
+    const ready = ship.crates.filter((c) => !c.filled && state.resources[c.resource] >= c.amount).length;
+    const left = Math.max(0, ship.leavesAt - state.time);
+    tips.push({
+      id: 'ship',
+      kind: 'idea',
+      text: `A merchant ship is in port for ${left >= 3600 ? `${Math.floor(left / 3600)}h ${Math.floor((left % 3600) / 60)}m` : `${Math.ceil(left / 60)}m`}${ready > 0 ? ` — you can fill ${ready} crate${ready > 1 ? 's' : ''}` : ''}`,
+      action: { type: 'openHarbour' },
+    });
+  }
+  if (canClaimRoad(state)) tips.push({ id: 'road', kind: 'idea', text: 'A Reputation Road reward is waiting for you', action: { type: 'openRoad' } });
   if (isValleyUnlocked(state) && !state.valley.valleyId) {
     tips.push({ id: 'valley', kind: 'idea', text: `The road to ${IDENTITY.valleyName} is open — meet your neighbours`, action: { type: 'openValley' } });
   }

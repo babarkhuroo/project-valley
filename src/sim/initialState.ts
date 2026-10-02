@@ -2,7 +2,7 @@ import { BALANCE } from '../config/balance';
 import { BUILDINGS } from '../config/buildings';
 import { IDENTITY } from '../config/identity';
 import { FOUNDERS } from '../config/villagers';
-import { newValleyState, SAVE_VERSION } from './save';
+import { newTradeState, newValleyState, SAVE_VERSION } from './save';
 import { createVillager } from './population';
 import type { BuildingInstance, GameState } from './types';
 import { frontSpot } from './villagerAI';
@@ -25,6 +25,7 @@ export function createInitialState(world: World, now: number, seed = world.map.s
     tutorial: { step: 0, done: false, skipped: false },
     stats: {},
     valley: newValleyState(),
+    trade: newTradeState(),
     lastProcessedAt: now,
     revision: 0,
   };

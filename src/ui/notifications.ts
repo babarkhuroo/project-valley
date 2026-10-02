@@ -3,6 +3,8 @@ import { RESEARCH } from '../config/research';
 import { RESOURCES } from '../config/resources';
 import { SKILLS } from '../config/skills';
 import { VALLEY_BUILDINGS } from '../config/valley';
+import { BOOSTS, MERCHANTS } from '../config/trade';
+import { canClaimRoad } from '../sim/trade';
 import type { ValleyClient } from '../game/valleyClient';
 import { bagText, describeLog } from './valley/format';
 import type { Game } from '../game/Game';
@@ -29,9 +31,14 @@ export function attachNotifications(game: Game): () => void {
     lastAt.set(key, now);
     return true;
   };
+  let roadNotified = -1;
   return game.subscribe((events, { catchUp }) => {
     if (catchUp) return;
     const state = game.state;
+    if (canClaimRoad(state) && roadNotified !== state.trade.roadClaimed) {
+      roadNotified = state.trade.roadClaimed;
+      ui.toast({ kind: 'success', title: 'A Reputation Road reward is ready', body: 'Open the Reputation Road to claim it.', icon: 'reputation' }, 6000);
+    }
     for (const e of events) {
       switch (e.type) {
         case 'constructionComplete': {
@@ -89,6 +96,25 @@ export function attachNotifications(game: Game): () => void {
           if (v) ui.toast({ kind: 'success', title: `${v.name} joined ${state.player.villageName}!`, body: 'Give them something to do.', icon: 'villager', target: { kind: 'villager', id: v.id } });
           break;
         }
+        case 'shipArrived': {
+          const m = MERCHANTS[e.merchant];
+          ui.toast({ kind: 'info', title: `${m.name} has docked at Saltreach Harbour`, body: `${m.ship} wants ${e.crates} crates filled — and has tonics for sale.`, icon: 'ship' }, 7000);
+          runtime.audio.play('notify');
+          break;
+        }
+        case 'shipLeft':
+          ui.toast({ kind: 'info', title: `${MERCHANTS[e.merchant].ship} has sailed`, body: e.filled > 0 ? `You filled ${e.filled} crate${e.filled > 1 ? 's' : ''}. Another ship will come.` : 'Another ship will come before long.', icon: 'ship' });
+          break;
+        case 'crateFilled':
+          ui.toast({ kind: 'success', title: `Crate loaded: +${e.coins} coins`, body: `+${e.reputation} reputation`, icon: 'coin' }, 2500);
+          break;
+        case 'shipComplete':
+          ui.toast({ kind: 'success', title: 'Every crate filled!', body: `${MERCHANTS[e.merchant].name} adds ${e.coins} coins and +${e.reputation} reputation.`, icon: 'coin' }, 5000);
+          runtime.audio.play('complete');
+          break;
+        case 'boostEnded':
+          ui.toast({ kind: 'info', title: `${BOOSTS[e.boost].name} has worn off`, icon: 'potion' }, 3500);
+          break;
         case 'valleyAccepted': {
           const name = VALLEY_BUILDINGS[e.building].name;
           const back = bagText(e.returned);

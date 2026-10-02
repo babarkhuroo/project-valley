@@ -64,6 +64,10 @@ POST /api/valley/:playerId/contribute   ← { opId, building, resources } → { 
 POST /api/valley/:playerId/dev-skip     ← { hours }   (dev server only: ages the Valley)
 ```
 
+**Merchants** (`sim/trade.ts`, `config/trade.ts`) are deliberately *village-side*: once the Valley's Trading Post level reaches the village (via `state.valley.bonuses.tradeLevel`), ship arrival/departure and tonic expiry become ordinary timer events in the village simulation (`tradeNextEvent` / `processTrade` in the event loop), rolled from the village RNG. So ships come and go during offline catch-up, and a tonic's rate change lands exactly on its expiry (one-step-equals-many is tested with ships and tonics). Coins, tonics and Reputation Road progress live in `state.trade`; crates, purchases, tonics and road claims are plain commands.
+
+Valley content versioning: `VALLEY_SCHEMA` plus `upgradeValley` (run on every server load) adds buildings introduced after a Valley was founded, so existing Valleys pick up new content (schema 2: the Trading Post).
+
 Rendering: `rendering/valley/ValleyRenderer` is a second scene built from the same parts — the Valley map uses the village map format (`config/valleyMap.ts`), so `Terrain`, `TerrainView`, water, bridges, `NatureView` and ambient wildlife are reused; `ValleyBuildingsView` shows each communal building as a ruin, under scaffolding (with a crane) or restored with visible levels; `ValleyFolk` walks the neighbours (reusing `VillagersView` over a scenery-only state) between projects and districts. Travelling swaps renderers (only one WebGL context exists at a time); the village keeps ticking while you visit.
 
 ## Game layer
@@ -116,7 +120,7 @@ DELETE /api/save/:playerId
 - The **server clock is authoritative** for offline time: elapsed = `serverNow − serverSavedAt`, both stamped by the server.
 - Saves carry a monotonically increasing `revision`; the server rejects stale writes (409), and the client prefers a newer local cache only when the server copy is older (offline play).
 - `localStorage` is a cache, never the only copy.
-- **Schema versions:** `SAVE_VERSION` + an ordered `MIGRATIONS` table; loading walks old saves forward one version at a time and rejects saves from the future. v2 added stone and building upgrades; v3 added planks, bricks and workshop queues; v4 added Valley membership, reputation and the delivery outbox. Map content that needs the world to place (new resource nodes) is reconciled after loading by `ensureMapNodes`, which appends missing nodes without touching existing ids.
+- **Schema versions:** `SAVE_VERSION` + an ordered `MIGRATIONS` table; loading walks old saves forward one version at a time and rejects saves from the future. v2 added stone and building upgrades; v3 added planks, bricks and workshop queues; v4 added Valley membership, reputation and the delivery outbox; v5 added coins, merchant ships, tonics and the Reputation Road. Map content that needs the world to place (new resource nodes) is reconciled after loading by `ensureMapNodes`, which appends missing nodes without touching existing ids.
 
 The API is Connect-style middleware mounted in Vite for development and in `server/index.ts` for production, over a `SaveStore` interface (file-backed today).
 

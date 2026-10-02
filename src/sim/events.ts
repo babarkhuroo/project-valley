@@ -4,6 +4,7 @@ import type { ResearchId } from '../config/research';
 import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
 import type { ValleyBuildingId } from '../config/valley';
+import type { BoostId } from '../config/trade';
 
 /**
  * Transient facts emitted while the simulation advances. They are not saved: the
@@ -33,6 +34,14 @@ export type SimEvent =
   | { type: 'villagerJoined'; villagerId: number }
   | { type: 'autoContinue'; villagerId: number; nodeId: number }
   | { type: 'valleySent'; building: ValleyBuildingId; resources: Partial<Record<ResourceId, number>> }
+  | { type: 'shipArrived'; merchant: number; crates: number }
+  | { type: 'shipLeft'; merchant: number; filled: number }
+  | { type: 'crateFilled'; resource: ResourceId; amount: number; coins: number; reputation: number }
+  | { type: 'shipComplete'; merchant: number; coins: number; reputation: number }
+  | { type: 'boostBought'; boost: BoostId }
+  | { type: 'boostStarted'; boost: BoostId }
+  | { type: 'boostEnded'; boost: BoostId }
+  | { type: 'roadReward'; index: number }
   | { type: 'valleyAccepted'; building: ValleyBuildingId; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number };
 
 export type IdleReason = 'depleted' | 'unassigned' | 'finished' | 'unreachable' | 'removed';

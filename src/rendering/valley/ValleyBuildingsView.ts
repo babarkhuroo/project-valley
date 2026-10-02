@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, type ValleyBuildingId } from '../../config/valley';
 import type { ValleyBuildingState, ValleySnapshot } from '../../valley/types';
-import type { Terrain } from '../../world/terrain';
+import { WATER_LEVEL, type Terrain } from '../../world/terrain';
 import type { BuildingModel } from '../models/buildingModels';
 import { VALLEY_MODEL_SIZE, createScaffold, createValleyModel } from '../models/valleyModels';
 import type { SmokeSystem } from '../SmokeSystem';
@@ -81,7 +81,7 @@ export class ValleyBuildingsView {
     const group = new THREE.Group();
     group.position.set(def.x, this.groundY(id), def.z);
     group.rotation.y = def.facing;
-    const model = createValleyModel(def, level);
+    const model = createValleyModel(def, level, WATER_LEVEL + 0.32 - group.position.y);
     group.add(model.root);
     let scaffold: THREE.Group | null = null;
     if (status === 'building') {

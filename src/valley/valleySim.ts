@@ -11,7 +11,7 @@ import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyLogEnt
  * same Valley advanced in one step or in many ends up identical.
  */
 
-export const VALLEY_SCHEMA = 1;
+export const VALLEY_SCHEMA = 2;
 const HOUR = 3_600_000;
 const MINUTE = 60_000;
 const MAX_EVENTS_PER_ADVANCE = 250_000;
@@ -257,6 +257,26 @@ export function addPlayer(v: ValleyState, player: FoundingPlayer, now: number): 
   return m;
 }
 
+/**
+ * Brings a stored Valley up to the current content: buildings added since it was
+ * founded (e.g. the Trading Post, schema 2) appear as ruins, already open if their
+ * requirement is met. Safe to run on every load.
+ */
+export function upgradeValley(v: ValleyState, now: number): boolean {
+  let changed = false;
+  for (const id of VALLEY_BUILDING_ORDER) {
+    if (v.buildings[id]) continue;
+    v.buildings[id] = { id, level: 0, status: 'locked', delivered: {}, shares: {}, doneAt: null };
+    changed = true;
+  }
+  if (changed) openUnlocked(v, now);
+  if (v.schemaVersion !== VALLEY_SCHEMA) {
+    v.schemaVersion = VALLEY_SCHEMA;
+    changed = true;
+  }
+  return changed;
+}
+
 /** Processes every neighbour visit and finished build up to `now`, in time order. */
 export function advanceValley(v: ValleyState, now: number): void {
   for (let guard = 0; guard < MAX_EVENTS_PER_ADVANCE; guard++) {
@@ -326,7 +346,7 @@ export function snapshotOf(v: ValleyState): ValleySnapshot {
 
 /** Village-side bonuses from every finished Valley level. */
 export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
-  const out: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1 };
+  const out: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 };
   if (!v) return out;
   for (const id of VALLEY_BUILDING_ORDER) {
     const def = VALLEY_BUILDINGS[id];
@@ -334,14 +354,15 @@ export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
       for (const e of def.levels[l].effects) {
         if (e.type === 'jobRate') for (const j of e.jobs) out.jobRate[j] = (out.jobRate[j] ?? 1) * e.mult;
         else if (e.type === 'storage') out.storageMult *= e.mult;
-        else out.mealDurationMult *= e.mult;
+        else if (e.type === 'mealDuration') out.mealDurationMult *= e.mult;
+        else out.tradeLevel += 1;
       }
     }
   }
   return out;
 }
 
-export const NO_VALLEY_BONUSES: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1 };
+export const NO_VALLEY_BONUSES: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 };
 
 /**
  * Development aid: makes the Valley `ms` older, as if that much time had passed with
