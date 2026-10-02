@@ -35,6 +35,7 @@ const WORK_CYCLE: Record<WorkAnim, { period: number; impact: number | null }> = 
   chop: { period: 1.1, impact: 0.66 },
   dig: { period: 1.3, impact: 0.55 },
   mine: { period: 1.25, impact: 0.62 },
+  craft: { period: 0.8, impact: 0.5 },
   cook: { period: 1.8, impact: null },
   research: { period: 3.2, impact: null },
   build: { period: 0.6, impact: 0.5 },
@@ -249,6 +250,18 @@ export class VillagersView {
         rig.body.rotation.x = ph > 0.55 && ph < 0.8 ? 0.15 : 0.02;
         rig.legL.rotation.x = -0.15;
         rig.legR.rotation.x = 0.2;
+        break;
+      }
+      case 'craft': {
+        // Sawing: the saw arm pumps forward and back, body rocking with each stroke.
+        const k = Math.sin(ph * Math.PI * 2);
+        rig.armR.rotation.x = -1.25 + k * 0.42;
+        rig.armL.rotation.set(-0.9, 0, -0.35);
+        rig.body.rotation.x = 0.28 + k * 0.06;
+        rig.body.position.z = k * 0.02;
+        rig.head.rotation.x = 0.3;
+        rig.legL.rotation.x = -0.3;
+        rig.legR.rotation.x = 0.25;
         break;
       }
       case 'mine': {

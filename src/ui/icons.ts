@@ -31,6 +31,26 @@ export const ICONS = {
      <path d="M5 6.5c3.5-3 9.5-3.5 14-1-3.5-.4-6.4.6-8.6 3.2z" fill="#b9c3cf" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
      <path d="M11.4 8.7c2.3-2.4 5.3-3.3 7.6-3.2" stroke="${O}" stroke-width="1" fill="none" opacity=".5"/>`,
   ),
+  planks: svg(
+    `<g stroke="${O}" stroke-width="1.3" stroke-linejoin="round">
+      <path d="M3 15.5l14-5 4 2-14 5z" fill="#d9a865"/>
+      <path d="M3 15.5v2.5l4 2v-2.5zM7 17.5v2.5l14-5v-2.5z" fill="#b8844a"/>
+      <path d="M3 10.5l14-5 4 2-14 5z" fill="#e8bd80"/>
+      <path d="M3 10.5V13l4 2v-2.5zM7 12.5V15l14-5V7.5z" fill="#c9955a"/>
+    </g>`,
+  ),
+  bricks: svg(
+    `<g stroke="${O}" stroke-width="1.3" stroke-linejoin="round">
+      <rect x="2.5" y="13" width="9" height="5.5" rx="1" fill="#c8603f"/>
+      <rect x="12.5" y="13" width="9" height="5.5" rx="1" fill="#b8553a"/>
+      <rect x="7.5" y="6.5" width="9" height="5.5" rx="1" fill="#d97553"/>
+    </g>`,
+  ),
+  craft: svg(
+    `<path d="M3 15.5L15 5l5 5-12 10.5z" fill="#cfd6df" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M5.5 17.5l1.2-1.3M8 19.6l1.2-1.3M3.6 15.4l1.2-1.3" stroke="${O}" stroke-width="1.1" stroke-linecap="round"/>
+     <rect x="14" y="2.5" width="6.5" height="5" rx="1.5" transform="rotate(42 17.2 5)" fill="#8a5a3b" stroke="${O}" stroke-width="1.4"/>`,
+  ),
   crate: svg(
     `<rect x="3.5" y="5.5" width="17" height="14" rx="1.6" fill="#d7a86e" stroke="${O}" stroke-width="1.4"/>
      <path d="M3.5 10.2h17M3.5 14.8h17" stroke="${O}" stroke-width="1.1" opacity=".55"/>

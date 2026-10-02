@@ -5,6 +5,7 @@ export type SoundId =
   | 'dig'
   | 'hammer'
   | 'pick'
+  | 'saw'
   | 'bubble'
   | 'deposit'
   | 'treeFall'
@@ -166,6 +167,11 @@ export class AudioEngine {
       case 'hammer':
         this.tone(out, now, 'triangle', 1250, 1150, 0.08, 0.18);
         this.noiseBurst(out, now, 0.04, 3000, 'highpass', 0.25, 1);
+        break;
+      case 'saw':
+        // A rasping stroke: filtered noise swept in pitch.
+        this.noiseBurst(out, now, 0.22, 2600, 'bandpass', 0.32, 6);
+        this.tone(out, now, 'sawtooth', 420, 380, 0.18, 0.025);
         break;
       case 'pick':
         // Steel on stone: a bright ping over a short gritty crack.

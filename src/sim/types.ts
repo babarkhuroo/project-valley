@@ -1,5 +1,6 @@
 import type { BuildingId } from '../config/buildings';
 import type { NodeKind } from '../config/nodes';
+import type { RecipeId } from '../config/recipes';
 import type { ResearchId } from '../config/research';
 import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
@@ -53,6 +54,20 @@ export interface BuildingInstance {
   variant: number;
   /** In-progress upgrade; the building keeps working meanwhile. */
   upgrade: UpgradeProgress | null;
+  /** Workshop orders (null for non-workshops). */
+  craft: CraftState | null;
+}
+
+export interface CraftOrder {
+  recipe: RecipeId;
+  /** Items left to make; REPEAT_ORDER (-1) keeps making until cancelled. */
+  count: number;
+}
+
+export interface CraftState {
+  orders: CraftOrder[];
+  /** Recipe of the item in progress — its inputs have already been taken. */
+  current: RecipeId | null;
 }
 
 export interface UpgradeProgress {
@@ -70,7 +85,7 @@ export type Job =
 
 export type Activity = 'idle' | 'walking' | 'working' | 'blocked';
 export type WalkPurpose = 'toWork' | 'toStorage' | 'toRest';
-export type BlockReason = 'storageFull' | 'noStorage' | 'knowledgeFull' | 'unreachable';
+export type BlockReason = 'storageFull' | 'noStorage' | 'knowledgeFull' | 'unreachable' | 'noOrders' | 'noInputs';
 
 /** A time-parameterised walk: `times[i]` is the absolute sim time the villager reaches `points[i]`. */
 export interface Route {

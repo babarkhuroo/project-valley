@@ -1,5 +1,6 @@
 import { BUILDINGS, type BuildingId } from '../config/buildings';
 import { RESEARCH, type ResearchId } from '../config/research';
+import type { RecipeId } from '../config/recipes';
 import { runtime, game } from '../game/runtime';
 import { advanceTutorial, skipTutorial } from '../game/tutorial';
 import {
@@ -8,6 +9,9 @@ import {
   cancelConstruction,
   cancelUpgrade,
   startUpgrade,
+  queueCraft,
+  cancelCraftOrder,
+  moveCraftOrder,
   moveBuilding,
   placeBuilding,
   renameVillage,
@@ -176,6 +180,18 @@ export function upgradeBuilding(buildingId: number): void {
 
 export function cancelBuildingUpgrade(buildingId: number): void {
   feedback(game().run((s, w, sink) => cancelUpgrade(s, w, buildingId, sink)), () => runtime.audio.play('close'));
+}
+
+export function orderCraft(buildingId: number, recipe: RecipeId, count: number): void {
+  feedback(game().run((s, w, sink) => queueCraft(s, w, buildingId, recipe, count, sink)), () => runtime.audio.play('click'));
+}
+
+export function cancelOrder(buildingId: number, index: number): void {
+  feedback(game().run((s, w, sink) => cancelCraftOrder(s, w, buildingId, index, sink)), () => runtime.audio.play('close'));
+}
+
+export function moveOrder(buildingId: number, index: number, delta: -1 | 1): void {
+  feedback(game().run((s) => moveCraftOrder(s, buildingId, index, delta)), () => runtime.audio.play('click'));
 }
 
 export function chooseResearch(id: ResearchId | null): void {

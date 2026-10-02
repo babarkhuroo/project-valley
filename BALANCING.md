@@ -25,6 +25,7 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Quarrying stone | Mining | 10 | 3 Stone | carry | yes | 18 |
 | Cooking stew | Farming | 8 | 1 Stew | direct | no | 7.50 |
 | Studying | Research | 6 | 1 Knowledge | direct | yes | 10 |
+| Crafting | Crafting | 12 | 12 construction work | site | yes | 60 work |
 | Building | Construction | 5 | 5 construction work | site | yes | 60 work |
 
 ## Food
@@ -54,10 +55,22 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Timber Yard | 2×2 | 3 | #1: 40 Timber<br>#2: 40 Timber<br>#3: 70 Timber, 20 Clay | 20 / 20 / 35 | 15 | stores 120 Timber | — |
 | Clay Shed | 2×2 | 2 | #1: 50 Timber<br>#2: 80 Timber, 30 Clay | 30 / 40 | 20 | stores 100 Clay | Clay Digging |
 | Stone Yard | 2×2 | 2 | #1: 60 Timber, 20 Clay<br>#2: 90 Timber, 40 Clay | 35 / 45 | 25 | stores 100 Stone | Stonecutting |
-| Cottage | 2×2 | 1 | #1: 100 Timber<br>#2: 120 Timber, 50 Clay<br>#3: 160 Timber, 90 Clay | 60 / 75 / 90 | 50 | houses 1 | Cottage Craft |
+| Sawmill | 3×2 | 1 | #1: 120 Timber, 30 Stone | 60 | 45 | stores 40 Planks; 1 × crafting | Carpentry |
+| Brickworks | 3×2 | 1 | #1: 100 Timber, 60 Clay, 40 Stone, 20 Planks | 70 | 55 | stores 40 Bricks; 1 × crafting | Brickmaking |
+| Warehouse | 3×3 | 2 | #1: 100 Timber, 40 Stone, 40 Planks<br>#2: 140 Timber, 80 Stone, 60 Planks, 40 Bricks | 60 / 80 | 40 | stores 100 Planks, 100 Bricks | Brickmaking |
+| Cottage | 2×2 | 1 | #1: 100 Timber<br>#2: 120 Timber, 50 Clay<br>#3: 120 Timber, 60 Clay, 40 Planks, 30 Bricks | 60 / 75 / 90 | 50 | houses 1 | Cottage Craft |
 | Flower Bed | 1×1 | 24 | #1: 5 Timber | instant | 1 | decoration | — |
 | Lantern Post | 1×1 | 16 | #1: 12 Timber | instant | 1 | decoration | — |
 | Garden Bench | 1×1 | 12 | #1: 15 Timber | instant | 1 | decoration | — |
+
+## Workshop recipes
+
+A crafter makes one item per batch: inputs are taken when the item starts, the output is stored when it finishes. Orders: 1–50 items or "keep making".
+
+| Recipe | Workshop | Inputs | Output | Work | Per minute (untrained crafter) |
+| --- | --- | --- | --- | --- | --- |
+| Planks | Sawmill | 4 Timber | 2 Planks | 12 | 10 out, 20 Timber in |
+| Bricks | Brickworks | 1 Timber, 3 Clay | 2 Bricks | 14 | 8.57 out, 4.3 Timber, 12.9 Clay in |
 
 ## Building upgrades
 
@@ -66,16 +79,18 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | Building | Level | Cost | Work | Requires | Effect | XP |
 | --- | --- | --- | --- | --- | --- | --- |
 | Cookhouse | 1 → 2 | 120 Timber, 50 Clay, 40 Stone | 60 | — | stores 60 Stew; 2 worker slots; work ×1.2 | 40 |
-| Cookhouse | 2 → 3 | 200 Timber, 100 Clay, 120 Stone | 90 | Masonry, village level 3 | stores 90 Stew; work ×1.4 | 60 |
-| Founders' Lodge | 1 → 2 | 150 Timber, 80 Clay, 80 Stone | 80 | Masonry | houses 3 | 60 |
+| Cookhouse | 2 → 3 | 160 Timber, 60 Clay, 100 Stone, 30 Bricks | 90 | Masonry, village level 3 | stores 90 Stew; work ×1.4 | 60 |
+| Founders' Lodge | 1 → 2 | 120 Timber, 60 Clay, 80 Stone, 30 Planks | 80 | Masonry | houses 3 | 60 |
 | Academy | 1 → 2 | 140 Timber, 60 Clay, 50 Stone | 70 | — | stores 50 Knowledge; 2 worker slots; work ×1.2 | 45 |
-| Academy | 2 → 3 | 220 Timber, 120 Clay, 140 Stone | 100 | Masonry, village level 3 | stores 80 Knowledge; work ×1.4 | 70 |
+| Academy | 2 → 3 | 160 Timber, 80 Clay, 120 Stone, 40 Planks, 30 Bricks | 100 | Masonry, village level 3 | stores 80 Knowledge; work ×1.4 | 70 |
 | Timber Yard | 1 → 2 | 80 Timber, 30 Clay | 30 | — | stores 200 Timber | 20 |
-| Timber Yard | 2 → 3 | 120 Timber, 40 Clay, 60 Stone | 45 | Masonry, village level 3 | stores 320 Timber | 35 |
+| Timber Yard | 2 → 3 | 100 Timber, 40 Clay, 60 Stone, 20 Planks | 45 | Masonry, village level 3 | stores 320 Timber | 35 |
 | Clay Shed | 1 → 2 | 90 Timber, 40 Clay | 30 | — | stores 170 Clay | 20 |
-| Clay Shed | 2 → 3 | 120 Timber, 60 Clay, 60 Stone | 45 | Masonry, village level 3 | stores 260 Clay | 35 |
+| Clay Shed | 2 → 3 | 100 Timber, 60 Clay, 60 Stone, 20 Planks | 45 | Masonry, village level 3 | stores 260 Clay | 35 |
 | Stone Yard | 1 → 2 | 80 Timber, 30 Clay, 40 Stone | 35 | — | stores 170 Stone | 25 |
-| Stone Yard | 2 → 3 | 120 Timber, 60 Clay, 100 Stone | 50 | Masonry, village level 3 | stores 260 Stone | 40 |
+| Stone Yard | 2 → 3 | 100 Timber, 60 Clay, 100 Stone, 20 Planks | 50 | Masonry, village level 3 | stores 260 Stone | 40 |
+| Sawmill | 1 → 2 | 140 Timber, 60 Stone, 30 Planks | 60 | — | stores 80 Planks; 2 worker slots; work ×1.2 | 45 |
+| Brickworks | 1 → 2 | 120 Timber, 60 Stone, 30 Planks, 30 Bricks | 70 | — | stores 80 Bricks; 2 worker slots; work ×1.2 | 55 |
 
 ## Research
 
@@ -90,23 +105,25 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 2 | Field Rations | 40 | 40 | Hearty Recipes | Packed lunches: each bowl of Stew fuels 30% more work. |
 | 2 | Sharpened Axes | 40 | 40 | — | A whetstone for every axe. Woodcutting is 20% faster. |
 | 2 | Study Notes | 50 | 50 | — | Shared notebooks help scholars earn Knowledge 25% faster. |
+| 2 | Carpentry | 55 | 55 | — | Saw pits and trestles: build a Sawmill and turn timber into planks. |
 | 3 | Village Commons | 120 | 120 | Growing Hamlet | Plan a proper village green with room for a third Cottage. |
 | 3 | Iron-shod Spades | 80 | 80 | Stonecutting | Iron edges on every spade and pick. Digging clay and quarrying stone are 20% faster. |
 | 3 | Masonry | 100 | 100 | Stonecutting | Mortar, footings and true walls. Buildings can be raised to level 3, and the Founders’ Lodge can grow a third bed. |
 | 3 | Woodland Tending | 110 | 110 | Sharpened Axes | Replant as you go. Felled trees regrow three times faster. |
 | 3 | Builder's Plans | 90 | 90 | Study Notes | Drawn plans and measured timber. Construction is 25% faster. |
+| 3 | Brickmaking | 110 | 110 | Carpentry, Clay Digging | Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods. |
 
 - Tier 1: 60 Knowledge in total ≈ 6 scholar-minutes.
-- Tier 2: 285 Knowledge in total ≈ 28.50 scholar-minutes.
-- Tier 3: 500 Knowledge in total ≈ 50 scholar-minutes.
+- Tier 2: 340 Knowledge in total ≈ 34 scholar-minutes.
+- Tier 3: 610 Knowledge in total ≈ 61 scholar-minutes.
 
 ## Village levels
 
 | Level | Total XP | Opens |
 | --- | --- | --- |
 | 1 | 0 | Research tier 1: Cottage Craft, Clay Digging, Hearty Recipes |
-| 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Stonecutting |
-| 3 | 250 | Research tier 3: Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans |
+| 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Carpentry, Stonecutting |
+| 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans |
 | 4 | 550 | — |
 | 5 | 1000 | — |
 | 6 | 1700 | — |

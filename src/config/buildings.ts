@@ -1,5 +1,6 @@
 import type { JobType } from './jobs';
 import type { ResearchId } from './research';
+import type { RecipeId } from './recipes';
 import type { ResourceId } from './resources';
 
 export type BuildingId =
@@ -8,13 +9,16 @@ export type BuildingId =
   | 'timberYard'
   | 'clayShed'
   | 'stoneYard'
+  | 'sawmill'
+  | 'brickworks'
+  | 'warehouse'
   | 'academy'
   | 'cottage'
   | 'flowerBed'
   | 'lantern'
   | 'bench';
 
-export type BuildingCategory = 'essentials' | 'storage' | 'homes' | 'decor';
+export type BuildingCategory = 'essentials' | 'production' | 'storage' | 'homes' | 'decor';
 
 export type ResourceBundle = Partial<Record<ResourceId, number>>;
 
@@ -62,6 +66,8 @@ export interface BuildingDef {
   storage?: Partial<Record<ResourceId, number>>;
   housing?: number;
   operate?: { job: JobType; slots: number };
+  /** Workshops take orders for these recipes, up to `orderSlots` orders at once. */
+  workshop?: { recipes: RecipeId[]; orderSlots: number };
   /** Key into the rendering model registry. */
   model: string;
   /** Approximate finished height, used for construction and label placement. */
@@ -87,7 +93,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 3.4,
     upgrades: [
       { cost: { resources: { timber: 120, clay: 50, stone: 40 }, work: 60 }, storage: { stew: 60 }, slots: 2, outputMult: 1.2, xp: 40 },
-      { cost: { resources: { timber: 200, clay: 100, stone: 120 }, work: 90 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stew: 90 }, outputMult: 1.4, xp: 60 },
+      { cost: { resources: { timber: 160, clay: 60, stone: 100, bricks: 30 }, work: 90 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stew: 90 }, outputMult: 1.4, xp: 60 },
     ],
   },
   lodge: {
@@ -104,7 +110,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     model: 'lodge',
     height: 2.8,
     upgrades: [
-      { cost: { resources: { timber: 150, clay: 80, stone: 80 }, work: 80 }, requiresResearch: 'masonry', housing: 3, xp: 60 },
+      { cost: { resources: { timber: 120, clay: 60, stone: 80, planks: 30 }, work: 80 }, requiresResearch: 'masonry', housing: 3, xp: 60 },
     ],
   },
   timberYard: {
@@ -126,7 +132,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 1.9,
     upgrades: [
       { cost: { resources: { timber: 80, clay: 30 }, work: 30 }, storage: { timber: 200 }, xp: 20 },
-      { cost: { resources: { timber: 120, clay: 40, stone: 60 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { timber: 320 }, xp: 35 },
+      { cost: { resources: { timber: 100, clay: 40, stone: 60, planks: 20 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { timber: 320 }, xp: 35 },
     ],
   },
   clayShed: {
@@ -148,7 +154,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 2.1,
     upgrades: [
       { cost: { resources: { timber: 90, clay: 40 }, work: 30 }, storage: { clay: 170 }, xp: 20 },
-      { cost: { resources: { timber: 120, clay: 60, stone: 60 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { clay: 260 }, xp: 35 },
+      { cost: { resources: { timber: 100, clay: 60, stone: 60, planks: 20 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { clay: 260 }, xp: 35 },
     ],
   },
   stoneYard: {
@@ -170,8 +176,66 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 2.2,
     upgrades: [
       { cost: { resources: { timber: 80, clay: 30, stone: 40 }, work: 35 }, storage: { stone: 170 }, xp: 25 },
-      { cost: { resources: { timber: 120, clay: 60, stone: 100 }, work: 50 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stone: 260 }, xp: 40 },
+      { cost: { resources: { timber: 100, clay: 60, stone: 100, planks: 20 }, work: 50 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stone: 260 }, xp: 40 },
     ],
+  },
+  sawmill: {
+    id: 'sawmill',
+    name: 'Sawmill',
+    description: 'A saw pit and bench where a crafter turns rough timber into straight planks.',
+    category: 'production',
+    footprint: { w: 3, d: 2 },
+    buildable: true,
+    requiresResearch: 'carpentry',
+    maxCount: 1,
+    costs: [{ resources: { timber: 120, stone: 30 }, work: 60 }],
+    xp: 45,
+    storage: { planks: 40 },
+    operate: { job: 'craft', slots: 1 },
+    workshop: { recipes: ['planks'], orderSlots: 4 },
+    model: 'sawmill',
+    height: 2.6,
+    upgrades: [
+      { cost: { resources: { timber: 140, stone: 60, planks: 30 }, work: 60 }, storage: { planks: 80 }, slots: 2, outputMult: 1.2, xp: 45 },
+    ],
+  },
+  brickworks: {
+    id: 'brickworks',
+    name: 'Brickworks',
+    description: 'Moulds, drying racks and a wood-fired kiln. Clay goes in, bricks come out.',
+    category: 'production',
+    footprint: { w: 3, d: 2 },
+    buildable: true,
+    requiresResearch: 'brickmaking',
+    maxCount: 1,
+    costs: [{ resources: { timber: 100, clay: 60, stone: 40, planks: 20 }, work: 70 }],
+    xp: 55,
+    storage: { bricks: 40 },
+    operate: { job: 'craft', slots: 1 },
+    workshop: { recipes: ['bricks'], orderSlots: 4 },
+    model: 'brickworks',
+    height: 2.8,
+    upgrades: [
+      { cost: { resources: { timber: 120, stone: 60, planks: 30, bricks: 30 }, work: 70 }, storage: { bricks: 80 }, slots: 2, outputMult: 1.2, xp: 55 },
+    ],
+  },
+  warehouse: {
+    id: 'warehouse',
+    name: 'Warehouse',
+    description: 'A tall timber barn with racks for finished goods — planks and bricks.',
+    category: 'storage',
+    footprint: { w: 3, d: 3 },
+    buildable: true,
+    requiresResearch: 'brickmaking',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 100, stone: 40, planks: 40 }, work: 60 },
+      { resources: { timber: 140, stone: 80, planks: 60, bricks: 40 }, work: 80 },
+    ],
+    xp: 40,
+    storage: { planks: 100, bricks: 100 },
+    model: 'warehouse',
+    height: 3.6,
   },
   academy: {
     id: 'academy',
@@ -189,7 +253,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 4.4,
     upgrades: [
       { cost: { resources: { timber: 140, clay: 60, stone: 50 }, work: 70 }, storage: { knowledge: 50 }, slots: 2, outputMult: 1.2, xp: 45 },
-      { cost: { resources: { timber: 220, clay: 120, stone: 140 }, work: 100 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { knowledge: 80 }, outputMult: 1.4, xp: 70 },
+      { cost: { resources: { timber: 160, clay: 80, stone: 120, planks: 40, bricks: 30 }, work: 100 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { knowledge: 80 }, outputMult: 1.4, xp: 70 },
     ],
   },
   cottage: {
@@ -204,7 +268,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     costs: [
       { resources: { timber: 100 }, work: 60 },
       { resources: { timber: 120, clay: 50 }, work: 75 },
-      { resources: { timber: 160, clay: 90 }, work: 90 },
+      { resources: { timber: 120, clay: 60, planks: 40, bricks: 30 }, work: 90 },
     ],
     xp: 50,
     housing: 1,
@@ -257,6 +321,9 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'timberYard',
   'clayShed',
   'stoneYard',
+  'sawmill',
+  'brickworks',
+  'warehouse',
   'cottage',
   'flowerBed',
   'lantern',
@@ -265,6 +332,7 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
 
 export const BUILDING_CATEGORY_LABEL: Record<BuildingCategory, string> = {
   essentials: 'Essentials',
+  production: 'Workshops',
   storage: 'Storage',
   homes: 'Homes',
   decor: 'Decoration',

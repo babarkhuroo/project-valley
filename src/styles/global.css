@@ -27,6 +27,7 @@
   --job-research: #6f8fe0;
   --job-build: #9a7b62;
   --job-mine: #8f97a3;
+  --job-craft: #b36fc2;
   --radius: 18px;
   --shadow: 0 5px 0 rgba(59, 47, 42, 0.22), 0 14px 30px rgba(59, 47, 42, 0.22);
   --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
@@ -1194,6 +1195,85 @@ h4 {
 .sk-pips i.on {
   background: var(--honey);
   box-shadow: inset 0 -2px 0 var(--honey-dark);
+}
+
+.orders {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.orders li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid transparent;
+}
+
+.orders li.active {
+  border-color: var(--honey);
+  background: #fffaf0;
+}
+
+.order-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.order-info strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.order-info strong small {
+  font-family: var(--font-body);
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.order-buttons {
+  display: flex;
+  gap: 3px;
+}
+
+.order-buttons .icon-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+.order-buttons .icon-btn:disabled {
+  opacity: 0.35;
+}
+
+.recipe {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px dashed var(--paper-3);
+  margin-top: 6px;
+}
+
+.recipe-io {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recipe-io .arrow {
+  font-weight: 800;
+  color: var(--ink-faint);
+}
+
+.row-buttons.tight {
+  margin: 6px 0 0;
 }
 
 .perks {

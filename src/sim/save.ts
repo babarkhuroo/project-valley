@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -17,6 +17,13 @@ export const MIGRATIONS: Record<number, Migration> = {
     const out = { ...d };
     if (d.resources && typeof d.resources === 'object') out.resources = { stone: 0, ...(d.resources as Record<string, number>) };
     if (Array.isArray(d.buildings)) out.buildings = (d.buildings as Record<string, unknown>[]).map((b) => ({ upgrade: null, ...b }));
+    return out;
+  },
+  // v3: planks and bricks, workshop order queues.
+  2: (d) => {
+    const out = { ...d };
+    if (d.resources && typeof d.resources === 'object') out.resources = { planks: 0, bricks: 0, ...(d.resources as Record<string, number>) };
+    if (Array.isArray(d.buildings)) out.buildings = (d.buildings as Record<string, unknown>[]).map((b) => ({ craft: null, ...b }));
     return out;
   },
 };

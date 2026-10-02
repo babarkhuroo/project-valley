@@ -10,6 +10,7 @@ import { BUILDINGS, BUILD_MENU_ORDER } from '../src/config/buildings.ts';
 import { JOBS } from '../src/config/jobs.ts';
 import { NODES } from '../src/config/nodes.ts';
 import { RESEARCH, RESEARCH_IDS } from '../src/config/research.ts';
+import { MAX_ORDER, RECIPES, RECIPE_IDS } from '../src/config/recipes.ts';
 import { RESOURCES, RESOURCE_ORDER } from '../src/config/resources.ts';
 import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 
@@ -102,6 +103,19 @@ table(
       provides || 'decoration',
       b.requiresResearch ? RESEARCH[b.requiresResearch].name : '—',
     ];
+  }),
+);
+
+out('## Workshop recipes');
+out();
+out('A crafter makes one item per batch: inputs are taken when the item starts, the output is stored when it finishes. Orders: 1–' + MAX_ORDER + ' items or "keep making".');
+out();
+table(
+  ['Recipe', 'Workshop', 'Inputs', 'Output', 'Work', 'Per minute (untrained crafter)'],
+  RECIPE_IDS.map((id) => {
+    const r = RECIPES[id];
+    const perMin = (60 / r.work) * BALANCE.work.baseRate;
+    return [r.name, BUILDINGS[r.building].name, bundle(r.inputs), `${r.output.amount} ${RESOURCES[r.output.resource].name}`, r.work, `${fmt(perMin * r.output.amount)} out, ${bundle(Object.fromEntries(Object.entries(r.inputs).map(([k, v]) => [k, Math.round((v ?? 0) * perMin * 10) / 10])))} in`];
   }),
 );
 

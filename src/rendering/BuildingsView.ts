@@ -34,7 +34,6 @@ interface Visual {
   smokeLevel: number;
   steamLevel: number;
   sparkleClock: number;
-  lastFill: number;
   level: number;
 }
 
@@ -144,7 +143,6 @@ export class BuildingsView {
       smokeLevel,
       steamLevel: 0,
       sparkleClock: Math.random(),
-      lastFill: -1,
       level: b.level,
     };
   }
@@ -351,19 +349,19 @@ export class BuildingsView {
           this.particles.emit('knowledge', model.root.localToWorld(new THREE.Vector3(-0.35, 1.1, 1.28)), 1, 0.2);
         }
       }
-      if (model.fill) {
-        const r = model.fill.resource;
+      for (const fill of model.fills) {
+        const r = fill.resource;
         if (fills[r] === undefined) {
           const cap = capacity(state, r);
           fills[r] = cap > 0 ? Math.min(1, state.resources[r] / cap) : 0;
         }
-        const fill = fills[r];
-        if (Math.abs(fill - v.lastFill) > 0.001) {
-          v.lastFill = fill;
-          const shown = Math.round(fill * model.fill.items.length);
-          model.fill.items.forEach((item, i) => (item.visible = i < shown));
+        const shown = Math.round(fills[r] * fill.items.length);
+        if (fill.items[0] && (fill.items[0].userData.shown as number | undefined) !== shown) {
+          fill.items[0].userData.shown = shown;
+          fill.items.forEach((item, k) => (item.visible = k < shown));
         }
       }
+      if (activeJob) for (const bz of model.busy) bz.obj.rotation[bz.axis] += bz.speed * dt;
     }
   }
 }

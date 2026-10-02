@@ -3,13 +3,13 @@ import { acceptNewcomer, assignVillager, cancelUpgrade, jobSlots, placeBuilding,
 import { completeConstruction } from '../src/sim/construction';
 import { capacity } from '../src/sim/economy';
 import { buildingStats } from '../src/sim/levels';
-import { deserialize, serialize } from '../src/sim/save';
+import { deserialize, SAVE_VERSION, serialize } from '../src/sim/save';
 import { workRateBreakdown } from '../src/sim/villagerAI';
 import { ensureMapNodes } from '../src/sim/world';
 import { building, cloneGame, makeGame, villager } from './helpers';
 
 function rich(h: ReturnType<typeof makeGame>) {
-  h.state.resources = { timber: 2000, clay: 2000, stone: 2000, stew: 40, knowledge: 0 };
+  h.state.resources = { timber: 2000, clay: 2000, stone: 2000, planks: 2000, bricks: 2000, stew: 40, knowledge: 0 };
   // Generous storage so costs above the starting caps are payable in tests.
 }
 
@@ -128,18 +128,24 @@ describe('building upgrades', () => {
   });
 });
 
-describe('save v2', () => {
+describe('save migration', () => {
   it('migrates a v1 save and gives the old village its stone outcrops', () => {
     const h = makeGame();
     const v1 = JSON.parse(serialize(h.state));
     v1.schemaVersion = 1;
     delete v1.resources.stone;
-    for (const b of v1.buildings) delete b.upgrade;
+    delete v1.resources.planks;
+    delete v1.resources.bricks;
+    for (const b of v1.buildings) {
+      delete b.upgrade;
+      delete b.craft;
+    }
     v1.nodes = v1.nodes.filter((n: { kind: string }) => n.kind !== 'stone');
     const restored = deserialize(JSON.stringify(v1));
-    expect(restored.schemaVersion).toBe(2);
+    expect(restored.schemaVersion).toBe(SAVE_VERSION);
     expect(restored.resources.stone).toBe(0);
-    expect(restored.buildings.every((b) => b.upgrade === null)).toBe(true);
+    expect(restored.resources.planks).toBe(0);
+    expect(restored.buildings.every((b) => b.upgrade === null && b.craft === null)).toBe(true);
     const added = ensureMapNodes(restored, h.world);
     expect(added).toBe(h.state.nodes.filter((n) => n.kind === 'stone').length);
     expect(ensureMapNodes(restored, h.world)).toBe(0);

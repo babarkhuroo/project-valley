@@ -8,6 +8,8 @@ import { canAfford, capacity, nearestStorage } from './economy';
 import { buildingCenter } from './grid';
 import { checkBuildable, nextCost } from './construction';
 import { canAffordUpgrade, siteWork, upgradeBlocker } from './levels';
+import { activeRecipe } from './crafting';
+import { RECIPES, type RecipeId } from '../config/recipes';
 import { mealDuration } from './modifiers';
 import { findPath, pathLength } from './pathfinding';
 import { housingCapacity } from './population';
@@ -63,8 +65,14 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
   const def = JOBS[jt];
   const target = jobTargetName(state, v.job);
   if (v.activity === 'blocked') {
+    const shop = jt === 'craft' && v.job.kind === 'operate' ? findBuilding(state, v.job.buildingId) : undefined;
+    const recipe = shop ? activeRecipe(shop) : null;
+    const missing = recipe ? RESOURCE_ORDER.find((r) => state.resources[r] < (RECIPES[recipe].inputs[r] ?? 0)) : undefined;
+    const outName = recipe ? RESOURCES[RECIPES[recipe].output.resource].name : def.output ? RESOURCES[def.output.resource].name : 'Storage';
     const reasons: Record<string, string> = {
-      storageFull: v.carrying ? `${RESOURCES[v.carrying.resource].name} storage full` : `${def.output ? RESOURCES[def.output.resource].name : 'Storage'} full`,
+      storageFull: v.carrying ? `${RESOURCES[v.carrying.resource].name} storage full` : `${outName} storage full`,
+      noOrders: `No orders at the ${target}`,
+      noInputs: `Waiting for ${missing ? RESOURCES[missing].name.toLowerCase() : 'materials'}`,
       noStorage: 'No storage to deliver to',
       knowledgeFull: 'Pick a research project',
       unreachable: `Can’t reach the ${target}`,
@@ -78,7 +86,11 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
     return { label: `Walking to ${target}`, icon: 'walk', progress: null, warning, idle: false };
   }
   let label = def.verb;
-  if (jt === 'study') {
+  if (jt === 'craft' && v.job.kind === 'operate') {
+    const shop = findBuilding(state, v.job.buildingId);
+    const recipe = shop ? activeRecipe(shop) : null;
+    if (recipe) label = RECIPES[recipe].verb;
+  } else if (jt === 'study') {
     const active = state.research.active;
     label = active ? `Studying ${RESEARCH[active].name}` : 'Studying';
   } else if (jt === 'build') {
@@ -108,6 +120,10 @@ export interface JobEstimate {
   resource: ResourceId | null;
   perMinute: number;
   destination: string | null;
+  /** Inputs consumed per minute at this pace (workshops). */
+  consumes: Partial<Record<ResourceId, number>>;
+  /** Recipe being estimated (workshops). */
+  recipe?: RecipeId;
 }
 
 const travelCache = new Map<string, number>();
@@ -143,6 +159,17 @@ export function estimateJob(state: GameState, world: World, v: Villager, job: Jo
   if (!jt) return null;
   const def = JOBS[jt];
   const { rate, factors } = workRateBreakdown(state, v, jt, job);
+  if (jt === 'craft' && job.kind === 'operate') {
+    const shop = findBuilding(state, job.buildingId);
+    const recipeId = shop ? activeRecipe(shop) : null;
+    if (!shop || !recipeId) return null;
+    const recipe = RECIPES[recipeId];
+    const seconds = recipe.work / rate;
+    const perItem = 60 / seconds;
+    const consumes: Partial<Record<ResourceId, number>> = {};
+    for (const r of RESOURCE_ORDER) if (recipe.inputs[r]) consumes[r] = recipe.inputs[r]! * perItem;
+    return { jobType: jt, rate, factors, workSeconds: seconds, travelSeconds: 0, resource: recipe.output.resource, perMinute: recipe.output.amount * perItem, destination: BUILDINGS[shop.defId].name, consumes, recipe: recipeId };
+  }
   const workSeconds = def.batchWork / rate;
   let travelSeconds = 0;
   let destination: string | null = null;
@@ -156,7 +183,7 @@ export function estimateJob(state: GameState, world: World, v: Villager, job: Jo
     destination = out.resource === 'knowledge' ? (state.research.active ? RESEARCH[state.research.active].name : 'Academy bank') : b ? BUILDINGS[b.defId].name : null;
   }
   const perMinute = out ? (out.amount / (workSeconds + travelSeconds)) * 60 : (def.batchWork / workSeconds) * 60;
-  return { jobType: jt, rate, factors, workSeconds, travelSeconds, resource: out?.resource ?? null, perMinute, destination };
+  return { jobType: jt, rate, factors, workSeconds, travelSeconds, resource: out?.resource ?? null, perMinute, destination, consumes: {} };
 }
 
 /** Estimated net flow per minute for each resource given current assignments. */
@@ -168,7 +195,10 @@ export function productionSummary(state: GameState, world: World): Record<Resour
     if (!v.job) continue;
     const est = estimateJob(state, world, v, v.job);
     if (!est) continue;
+    // Blocked workers (no orders, no inputs, full storage) produce nothing right now.
+    if (v.activity === 'blocked') continue;
     if (est.resource) out[est.resource].gain += est.perMinute;
+    for (const r of RESOURCE_ORDER) out[r].use += est.consumes[r] ?? 0;
     if (JOBS[est.jobType].consumesFood) {
       const duty = est.workSeconds / (est.workSeconds + est.travelSeconds);
       out.stew.use += (60 / meal) * duty;
@@ -261,6 +291,13 @@ export function nextSteps(state: GameState): Suggestion[] {
     if (id === 'cottage' && housingCapacity(state) <= state.villagers.length && canAfford(state, nextCost(state, id).resources)) {
       tips.push({ id: 'cottage', kind: 'idea', text: 'You can afford a Cottage — room for a new villager', action: { type: 'openBuild', building: 'cottage' } });
     }
+  }
+  for (const b of state.buildings) {
+    if (!b.craft || b.status !== 'complete') continue;
+    const crafters = state.villagers.filter((v) => v.job?.kind === 'operate' && v.job.buildingId === b.id);
+    const name = BUILDINGS[b.defId].name;
+    if (b.craft.orders.length === 0 && crafters.length > 0) tips.push({ id: `orders-${b.id}`, kind: 'warning', text: `The ${name} has no orders`, action: { type: 'selectBuilding', id: b.id } });
+    else if (b.craft.orders.length > 0 && crafters.length === 0) tips.push({ id: `crafter-${b.id}`, kind: 'warning', text: `The ${name} has orders but no crafter`, action: { type: 'selectBuilding', id: b.id } });
   }
   if (!state.buildings.some((b) => b.upgrade)) {
     const ready = state.buildings.find((b) => !upgradeBlocker(state, b) && canAffordUpgrade(state, b) && BUILDINGS[b.defId].category !== 'storage');

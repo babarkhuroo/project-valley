@@ -28,6 +28,7 @@ const CATEGORY_ICON: Record<ResearchCategory, IconName> = {
   food: 'stew',
   production: 'build',
   knowledge: 'study',
+  crafting: 'craft',
 };
 
 function effectText(e: ResearchEffect): string {

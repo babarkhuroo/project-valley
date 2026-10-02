@@ -17,7 +17,8 @@ import { researchProgress } from '../../sim/research';
 import { constructionEta, constructionFraction, estimateJob, productionSummary, villagerTask, type JobEstimate } from '../../sim/selectors';
 import type { BuildingInstance, GameState, Job, Villager } from '../../sim/types';
 import { findBuilding, findNode, findVillager, jobTypeOf, villagerPosition } from '../../sim/villagerAI';
-import { assign, beginAssign, cancelBuildingUpgrade, cancelSite, focus, selectAndFocus, startMove, unassign, upgradeBuilding } from '../actions';
+import { assign, beginAssign, cancelBuildingUpgrade, cancelOrder, cancelSite, focus, moveOrder, orderCraft, selectAndFocus, startMove, unassign, upgradeBuilding } from '../actions';
+import { RECIPES, REPEAT_ORDER } from '../../config/recipes';
 import { buildingStats, canAffordUpgrade, maxLevel, nextUpgrade, upgradeBlocker } from '../../sim/levels';
 import { Bar, Cost, Pill, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
@@ -49,11 +50,20 @@ function Formula({ est }: { est: JobEstimate }) {
         </span>
       </div>
       <p className="formula-note">
-        {def.output
+        {est.recipe ? (
+          <>
+            Each item takes {RECIPES[est.recipe].work} work ({est.workSeconds.toFixed(1)}s) and turns{' '}
+            {Object.entries(RECIPES[est.recipe].inputs)
+              .map(([r, n]) => `${n} ${RESOURCES[r as ResourceId].name.toLowerCase()}`)
+              .join(' + ')}{' '}
+            into {RECIPES[est.recipe].output.amount} {RESOURCES[RECIPES[est.recipe].output.resource].name.toLowerCase()}. ≈ <strong>{est.perMinute.toFixed(1)}</strong> per minute.
+          </>
+        ) : null}
+        {est.recipe ? null : def.output
           ? `Each batch takes ${def.batchWork} work (${est.workSeconds.toFixed(1)}s) and yields ${def.output.amount} ${RESOURCES[def.output.resource].name.toLowerCase()}`
           : `Each batch adds ${def.batchWork} work to the site (${est.workSeconds.toFixed(1)}s)`}
-        {est.travelSeconds > 0 ? `, plus ${est.travelSeconds.toFixed(1)}s walking to ${est.destination} and back.` : '.'}
-        {est.resource ? (
+        {est.recipe ? null : est.travelSeconds > 0 ? `, plus ${est.travelSeconds.toFixed(1)}s walking to ${est.destination} and back.` : '.'}
+        {est.resource && !est.recipe ? (
           <>
             {' '}
             ≈ <strong>{est.perMinute.toFixed(1)}</strong> per minute.
@@ -391,6 +401,90 @@ function UpgradeSection({ b }: { b: BuildingInstance }) {
   );
 }
 
+/** Workshop orders: the live queue (with the item in progress) and what can be ordered. */
+function OrdersSection({ b }: { b: BuildingInstance }) {
+  const state = useGameState();
+  const g = game();
+  const shop = BUILDINGS[b.defId].workshop;
+  const craft = b.craft;
+  if (!shop || !craft) return null;
+  const crafter = state.villagers.find((v) => v.job?.kind === 'operate' && v.job.buildingId === b.id);
+  const working = crafter?.activity === 'working';
+  const itemProgress = working && crafter!.batchWork > 0 ? crafter!.workProgress / crafter!.batchWork : 0;
+  const est = crafter ? estimateJob(state, g.world, crafter, crafter.job!) : null;
+  const task = crafter ? villagerTask(state, crafter) : null;
+  return (
+    <Section title={`Orders ${craft.orders.length}/${shop.orderSlots}`} aside={est ? <small className="muted">≈{est.perMinute.toFixed(1)}/min</small> : null}>
+      {craft.orders.length === 0 ? <p className="empty-slot">No orders — add some below.</p> : null}
+      <ol className="orders">
+        {craft.orders.map((o, i) => {
+          const recipe = RECIPES[o.recipe];
+          const active = i === 0 && craft.current === o.recipe;
+          return (
+            <li key={`${o.recipe}-${i}`} className={active ? 'active' : ''}>
+              <Icon name={recipe.output.resource as IconName} size={26} />
+              <span className="order-info">
+                <strong>
+                  {recipe.name} <small>{o.count === REPEAT_ORDER ? '· keep making' : `× ${o.count}`}</small>
+                </strong>
+                {active ? <Bar value={itemProgress} thin tone="honey" /> : <small className="muted">{i === 0 ? 'Next up' : 'Queued'}</small>}
+              </span>
+              <span className="order-buttons">
+                <button className="icon-btn" disabled={i === 0} onClick={() => moveOrder(b.id, i, -1)} aria-label="Move up">
+                  ▲
+                </button>
+                <button className="icon-btn" disabled={i === craft.orders.length - 1} onClick={() => moveOrder(b.id, i, 1)} aria-label="Move down">
+                  ▼
+                </button>
+                <button className="icon-btn" onClick={() => cancelOrder(b.id, i)} aria-label="Cancel order">
+                  <Icon name="close" size={14} />
+                </button>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {task?.warning && crafter?.activity === 'blocked' ? (
+        <p className="blocker warn">
+          <Icon name="blocked" size={20} /> {task.label}
+        </p>
+      ) : !crafter && craft.orders.length > 0 ? (
+        <p className="blocker">
+          <Icon name="info" size={20} /> Assign a crafter below to start on these orders.
+        </p>
+      ) : null}
+      {shop.recipes.map((rid) => {
+        const recipe = RECIPES[rid];
+        const seconds = est ? recipe.work / est.rate : recipe.work;
+        return (
+          <div key={rid} className="recipe">
+            <span className="recipe-io">
+              <Cost bundle={recipe.inputs} state={state} compact />
+              <span className="arrow">→</span>
+              <span className="cost-chip">
+                <Icon name={recipe.output.resource as IconName} size={18} />
+                {recipe.output.amount}
+              </span>
+              <small className="muted">{Math.round(seconds)}s each</small>
+            </span>
+            <span className="row-buttons tight">
+              <button className="btn small" onClick={() => orderCraft(b.id, rid, 1)}>
+                +1
+              </button>
+              <button className="btn small" onClick={() => orderCraft(b.id, rid, 5)}>
+                +5
+              </button>
+              <button className="btn small green" onClick={() => orderCraft(b.id, rid, REPEAT_ORDER)}>
+                Keep making
+              </button>
+            </span>
+          </div>
+        );
+      })}
+    </Section>
+  );
+}
+
 function BuildingPanel({ id }: { id: number }) {
   const state = useGameState();
   const g = game();
@@ -489,6 +583,7 @@ function BuildingPanel({ id }: { id: number }) {
               </div>
             </Section>
           ) : null}
+          {def.workshop ? <OrdersSection b={b} /> : null}
           {def.operate ? <AssignList job={{ kind: 'operate', buildingId: b.id }} /> : null}
           {!b.upgrade ? <UpgradeSection b={b} /> : null}
           <div className="row-buttons">

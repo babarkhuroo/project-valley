@@ -13,7 +13,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   farming: { id: 'farming', name: 'Farming', description: 'Food production — from the Cookhouse pot to future fields.', color: '#e0b040' },
   research: { id: 'research', name: 'Research', description: 'Studying at the Academy to earn Knowledge.', color: '#6f8fe0' },
   construction: { id: 'construction', name: 'Construction', description: 'Raising and improving buildings.', color: '#9a7b62' },
-  crafting: { id: 'crafting', name: 'Crafting', description: 'Workshop production (arrives with crafting buildings).', color: '#b36fc2' },
+  crafting: { id: 'crafting', name: 'Crafting', description: 'Workshop production: sawing planks, firing bricks and finer goods.', color: '#b36fc2' },
 };
 
 export const SKILL_ORDER: SkillId[] = ['woodcutting', 'mining', 'farming', 'research', 'construction', 'crafting'];

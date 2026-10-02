@@ -1,11 +1,11 @@
 import type { ResourceId } from './resources';
 import type { SkillId } from './skills';
 
-export type JobType = 'chop' | 'dig' | 'quarry' | 'cook' | 'study' | 'build';
+export type JobType = 'chop' | 'dig' | 'quarry' | 'cook' | 'study' | 'craft' | 'build';
 
 /** Visual hint for the villager animation layer. The simulation never reads it. */
-export type WorkAnim = 'chop' | 'dig' | 'mine' | 'cook' | 'research' | 'build';
-export type ToolId = 'axe' | 'shovel' | 'pickaxe' | 'ladle' | 'book' | 'hammer';
+export type WorkAnim = 'chop' | 'dig' | 'mine' | 'cook' | 'research' | 'craft' | 'build';
+export type ToolId = 'axe' | 'shovel' | 'pickaxe' | 'ladle' | 'book' | 'saw' | 'hammer';
 
 export interface JobDef {
   id: JobType;
@@ -75,6 +75,16 @@ export const JOBS: Record<JobType, JobDef> = {
     output: { resource: 'knowledge', amount: 1, delivery: 'direct' },
     anim: 'research',
     tool: 'book',
+  },
+  craft: {
+    id: 'craft',
+    verb: 'Crafting',
+    skill: 'crafting',
+    // Workshop batches take their work and output from the current recipe (config/recipes.ts).
+    batchWork: 12,
+    consumesFood: true,
+    anim: 'craft',
+    tool: 'saw',
   },
   build: {
     id: 'build',

@@ -18,6 +18,7 @@ export type SimEvent =
   | { type: 'constructionStarted'; buildingId: number; defId: BuildingId }
   | { type: 'constructionComplete'; buildingId: number; defId: BuildingId }
   | { type: 'upgradeStarted'; buildingId: number; defId: BuildingId; level: number }
+  | { type: 'craftQueueEmpty'; buildingId: number; defId: BuildingId }
   | { type: 'upgradeComplete'; buildingId: number; defId: BuildingId; level: number }
   | { type: 'researchComplete'; researchId: ResearchId }
   | { type: 'xp'; amount: number; reason: string }

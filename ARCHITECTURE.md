@@ -34,6 +34,8 @@ Dependency direction: `config ← world ← sim ← game ← {rendering, ui}`. T
 
 **Building levels** (`sim/levels.ts`): `buildingStats(defId, level)` folds the base definition and its `upgrades` into effective storage, housing, worker slots and output multiplier; capacity, housing, job slots and work rates all read it. An upgrade lives on the instance as `upgrade: { toLevel, progress, workRequired, paid }`; builders reuse the `construct` job (`siteWork()` treats new sites and upgrades alike) and the building stays operational until `completeUpgrade` bumps the level.
 
+**Crafting** (`sim/crafting.ts`, recipes in `config/recipes.ts`): workshops carry `craft: { orders, current }`. The crafter's `operate` job runs one batch per item — `startNextItem` checks output space and takes the inputs (setting `current`), `finishItem` stores the output and counts the head order down (`-1` = keep making). Blocked states (`noOrders`, `noInputs`, `storageFull`) are re-checked in `settleVillagers`, so workshops resume on their own and offline catch-up stays exact.
+
 **Commands** (`sim/commands.ts`) are the only player mutations: assign/unassign, place/move/cancel building, choose research, accept newcomer, rename. Each validates and returns a readable refusal reason. **Events** (`sim/events.ts`) are transient facts (`deposit`, `constructionComplete`, `hungry`, `levelUp`, …) consumed by rendering (particles, sound), UI (toasts) and offline summaries.
 
 **Pathfinding** (`sim/pathfinding.ts`): A* over the 64×64 grid, 8-way without corner cutting, road cells cheaper; greedy line-of-sight smoothing that won't leave or enter a road mid-segment. Searches reuse typed-array scratch buffers (sub-millisecond on this map, so no worker thread is needed yet). After any building change every walking villager re-plans and anyone inside a new footprint is moved out.
@@ -90,7 +92,7 @@ DELETE /api/save/:playerId
 - The **server clock is authoritative** for offline time: elapsed = `serverNow − serverSavedAt`, both stamped by the server.
 - Saves carry a monotonically increasing `revision`; the server rejects stale writes (409), and the client prefers a newer local cache only when the server copy is older (offline play).
 - `localStorage` is a cache, never the only copy.
-- **Schema versions:** `SAVE_VERSION` + an ordered `MIGRATIONS` table; loading walks old saves forward one version at a time and rejects saves from the future. v2 added stone and building upgrades. Map content that needs the world to place (new resource nodes) is reconciled after loading by `ensureMapNodes`, which appends missing nodes without touching existing ids.
+- **Schema versions:** `SAVE_VERSION` + an ordered `MIGRATIONS` table; loading walks old saves forward one version at a time and rejects saves from the future. v2 added stone and building upgrades; v3 added planks, bricks and workshop queues. Map content that needs the world to place (new resource nodes) is reconciled after loading by `ensureMapNodes`, which appends missing nodes without touching existing ids.
 
 The API is Connect-style middleware mounted in Vite for development and in `server/index.ts` for production, over a `SaveStore` interface (file-backed today).
 

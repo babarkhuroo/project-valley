@@ -152,6 +152,9 @@ export class GameRenderer {
         if (Math.random() < 0.35) this.particles.emit('leaves', e.position.clone().setY(e.position.y + 1.4), 2, 0.8);
         if (e.nodeId !== null) this.nature.shake(e.nodeId, this.realTime);
         this.audio.playAt('chop', e.position);
+      } else if (e.anim === 'craft') {
+        this.particles.emit('chips', e.position.clone().setY(e.position.y + 0.45), 3, 0.15);
+        this.audio.playAt('saw', e.position);
       } else if (e.anim === 'mine') {
         this.particles.emit('rubble', e.position, 5, 0.2);
         this.particles.emit('sparkle', e.position.clone().setY(e.position.y + 0.2), 1, 0.1);

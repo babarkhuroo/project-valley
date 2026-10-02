@@ -17,7 +17,10 @@ export interface BuildingModel {
   spinners: { obj: THREE.Object3D; axis: 'x' | 'y' | 'z'; speed: number }[];
   wavers: { obj: THREE.Object3D; amp: number; speed: number; base: number }[];
   flames: THREE.Object3D[];
-  fill: { resource: ResourceId; items: THREE.Object3D[] } | null;
+  /** Storage props shown in proportion to how full that resource's storage is. */
+  fills: { resource: ResourceId; items: THREE.Object3D[] }[];
+  /** Parts that only move while someone works here (e.g. a saw blade). */
+  busy: { obj: THREE.Object3D; axis: 'x' | 'y' | 'z'; speed: number }[];
 }
 
 function box(parent: THREE.Object3D, w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
@@ -78,7 +81,7 @@ function barrel(parent: THREE.Object3D, x: number, z: number, y = 0): void {
 }
 
 function emptyModel(): BuildingModel {
-  return { root: new THREE.Group(), smoke: [], steam: [], spinners: [], wavers: [], flames: [], fill: null };
+  return { root: new THREE.Group(), smoke: [], steam: [], spinners: [], wavers: [], flames: [], fills: [], busy: [] };
 }
 
 function cookhouse(): BuildingModel {
@@ -195,7 +198,7 @@ function timberYard(): BuildingModel {
     });
   }
   items.sort((a, b) => a.position.y - b.position.y);
-  m.fill = { resource: 'timber', items };
+  m.fills.push({ resource: 'timber', items });
   return m;
 }
 
@@ -225,7 +228,7 @@ function clayShed(): BuildingModel {
     b.rotation.y = (i % 5) * 0.08 - 0.1;
     items.push(b);
   });
-  m.fill = { resource: 'clay', items };
+  m.fills.push({ resource: 'clay', items });
   const pot = new THREE.Mesh(
     new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(0.14, 0.02), new THREE.Vector2(0.17, 0.16), new THREE.Vector2(0.09, 0.32), new THREE.Vector2(0.1, 0.36)], 12),
     mat(PALETTE.terracotta),
@@ -401,7 +404,129 @@ function stoneYard(): BuildingModel {
       items.push(b);
     }
   });
-  m.fill = { resource: 'stone', items };
+  m.fills.push({ resource: 'stone', items });
+  return m;
+}
+
+/** Stacks of boards on low trestles; each stack is one fill item. */
+function plankStacks(m: BuildingModel, parent: THREE.Object3D, spots: [number, number][], rotY = 0): void {
+  const board = mat(PALETTE.woodLight, { flat: true });
+  const edge = mat('#c08a52', { flat: true });
+  const items: THREE.Object3D[] = [];
+  for (const [x, z] of spots) {
+    for (let layer = 0; layer < 3; layer++) {
+      const stack = new THREE.Group();
+      stack.position.set(x, 0.14 + layer * 0.09, z);
+      stack.rotation.y = rotY + (layer % 2) * 0.05;
+      box(stack, 0.95, 0.04, 0.16, board, 0, 0, -0.09);
+      box(stack, 0.95, 0.04, 0.16, layer % 2 ? board : edge, 0, 0, 0.09);
+      parent.add(stack);
+      items.push(stack);
+    }
+  }
+  items.sort((a, b) => a.position.y - b.position.y);
+  m.fills.push({ resource: 'planks', items });
+}
+
+/** Neat brick piles; each pile is one fill item. */
+function brickPiles(m: BuildingModel, parent: THREE.Object3D, spots: [number, number][]): void {
+  const brick = mat(PALETTE.terracotta, { flat: true });
+  const brickDark = mat('#a8452f', { flat: true });
+  const items: THREE.Object3D[] = [];
+  for (const [x, z] of spots) {
+    for (let layer = 0; layer < 3; layer++) {
+      const pile = new THREE.Group();
+      pile.position.set(x, 0.12 + layer * 0.1, z);
+      for (let i = 0; i < 3; i++) box(pile, 0.22, 0.09, 0.11, (i + layer) % 2 ? brick : brickDark, (i - 1) * 0.24, 0, layer % 2 ? 0.06 : -0.06);
+      parent.add(pile);
+      items.push(pile);
+    }
+  }
+  items.sort((a, b) => a.position.y - b.position.y);
+  m.fills.push({ resource: 'bricks', items });
+}
+
+function sawmill(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 2.85, 0.12, 1.85, mat(PALETTE.wood), 0, 0.06, 0);
+  // Open-sided shed over the saw bench (back half), plank racks in front.
+  const post = mat(PALETTE.woodDark);
+  for (const [x, z] of [[-1.3, -0.8], [1.3, -0.8], [-1.3, 0.1], [1.3, 0.1]]) box(r, 0.12, 1.9, 0.12, post, x, 0.95, z);
+  gableRoof(r, 1.4, 0.65, 3.0, mat(PALETTE.woodLight, { flat: true }), 1.9, true, 0, -0.35);
+  box(r, 1.4, 0.55, 0.36, mat(PALETTE.wood), -0.3, 0.4, -0.35);
+  box(r, 0.12, 0.6, 0.12, post, -0.95, 0.3, -0.35);
+  // Circular saw blade spinning in a slot of the bench.
+  const blade = new THREE.Group();
+  blade.position.set(-0.3, 0.68, -0.35);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.02, 14), mat('#cfd6df', { flat: true }));
+  disc.rotation.x = Math.PI / 2;
+  blade.add(disc);
+  for (let i = 0; i < 7; i++) {
+    const tooth = box(blade, 0.05, 0.05, 0.022, mat('#9aa4b1'), Math.cos((i / 7) * Math.PI * 2) * 0.27, Math.sin((i / 7) * Math.PI * 2) * 0.27, 0);
+    tooth.rotation.z = (i / 7) * Math.PI * 2;
+  }
+  r.add(blade);
+  m.busy.push({ obj: blade, axis: 'z', speed: 14 });
+  // Log waiting to be sawn, sawdust heap.
+  const log = cyl(r, 0.14, 0.14, 1.0, mat(PALETTE.bark), 0.75, 0.62, -0.35, 8);
+  log.rotation.z = Math.PI / 2;
+  const dust = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), mat('#e6c48f', { flat: true }));
+  dust.scale.y = 0.4;
+  dust.position.set(-1.0, 0.12, 0.45);
+  r.add(dust);
+  plankStacks(m, r, [[-0.55, 0.55], [0.55, 0.55]]);
+  return m;
+}
+
+function brickworks(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 2.85, 0.1, 1.85, mat(PALETTE.stone), 0, 0.05, 0);
+  // Beehive kiln with a stubby chimney.
+  const kilnMat = mat('#b5654a', { flat: true });
+  cyl(r, 0.7, 0.78, 0.7, kilnMat, -0.75, 0.45, -0.25, 12);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), kilnMat);
+  dome.position.set(-0.75, 0.8, -0.25);
+  r.add(dome);
+  box(r, 0.36, 0.36, 0.06, mat('#2b2220'), -0.75, 0.35, 0.5);
+  const glow = box(r, 0.26, 0.2, 0.05, mat('#ff9a3c', { emissive: '#ff6a1a', emissiveIntensity: 1 }), -0.75, 0.3, 0.52);
+  m.flames.push(glow);
+  cyl(r, 0.14, 0.16, 0.6, mat(PALETTE.stoneDark, { flat: true }), -0.75, 1.75, -0.25, 8);
+  m.smoke.push(new THREE.Vector3(-0.75, 2.1, -0.25));
+  // Drying racks under a small roof, with finished brick piles in front.
+  const post = mat(PALETTE.woodDark);
+  for (const [x, z] of [[0.25, -0.8], [1.3, -0.8], [0.25, 0.0], [1.3, 0.0]]) box(r, 0.09, 1.45, 0.09, post, x, 0.72, z);
+  const roof = box(r, 1.35, 0.06, 1.05, mat(PALETTE.terracotta, { flat: true }), 0.78, 1.5, -0.4);
+  roof.rotation.x = 0.15;
+  for (const y of [0.45, 0.85]) {
+    box(r, 1.05, 0.04, 0.6, mat(PALETTE.woodLight), 0.78, y, -0.4);
+    for (let i = 0; i < 5; i++) box(r, 0.16, 0.07, 0.09, mat('#c98a6a', { flat: true }), 0.38 + i * 0.2, y + 0.06, -0.4);
+  }
+  brickPiles(m, r, [[0.35, 0.6], [1.0, 0.6]]);
+  // Clay waiting in a trough.
+  box(r, 0.6, 0.18, 0.35, mat(PALETTE.woodDark), -1.05, 0.15, 0.62);
+  box(r, 0.5, 0.06, 0.26, mat(PALETTE.clay, { flat: true }), -1.05, 0.25, 0.62);
+  return m;
+}
+
+function warehouse(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 2.8, 0.2, 2.7, mat(PALETTE.stoneDark), 0, 0.1, -0.05);
+  // Tall plank barn, open at the front so its racks show.
+  const plank = mat(PALETTE.wood, { flat: true });
+  box(r, 2.5, 1.9, 0.12, plank, 0, 1.15, -1.2);
+  box(r, 0.12, 1.9, 2.3, plank, -1.2, 1.15, -0.1);
+  box(r, 0.12, 1.9, 2.3, plank, 1.2, 1.15, -0.1);
+  for (const x of [-1.2, 1.2]) box(r, 0.14, 2.0, 0.14, mat(PALETTE.woodDark), x, 1.1, 1.05);
+  box(r, 2.5, 0.16, 0.14, mat(PALETTE.woodDark), 0, 2.1, 1.05);
+  gableRoof(r, 2.8, 1.25, 2.85, mat('#8c5e3a', { flat: true }), 2.1, false, 0, -0.1);
+  windowPane(r, 0, 2.6, 1.32, 0.34, 0.34);
+  // A hay-door hoist beam over the entrance.
+  box(r, 0.1, 0.1, 0.6, mat(PALETTE.woodDark), 0, 2.95, 1.25);
+  plankStacks(m, r, [[-0.6, -0.65], [-0.6, -0.15], [-0.6, 0.35]], Math.PI / 2);
+  brickPiles(m, r, [[0.55, -0.6], [0.55, -0.05], [0.55, 0.5]]);
   return m;
 }
 
@@ -531,6 +656,15 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
     case 'stoneYard':
       model = stoneYard();
       break;
+    case 'sawmill':
+      model = sawmill();
+      break;
+    case 'brickworks':
+      model = brickworks();
+      break;
+    case 'warehouse':
+      model = warehouse();
+      break;
     case 'academy':
       model = academy();
       break;
@@ -570,7 +704,8 @@ function mergeStatic(model: BuildingModel): void {
   model.spinners.forEach((s) => keep(s.obj));
   model.wavers.forEach((w) => keep(w.obj));
   model.flames.forEach(keep);
-  model.fill?.items.forEach(keep);
+  model.fills.forEach((f) => f.items.forEach(keep));
+  model.busy.forEach((b) => keep(b.obj));
   const root = model.root;
   root.updateMatrixWorld(true);
   const inverse = new THREE.Matrix4().copy(root.matrixWorld).invert();

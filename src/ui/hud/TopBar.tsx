@@ -32,7 +32,7 @@ function LevelBadge() {
   );
 }
 
-const UNLOCKED_BY: Partial<Record<ResourceId, ResearchId>> = { clay: 'clayDigging', stone: 'stonecutting' };
+const UNLOCKED_BY: Partial<Record<ResourceId, ResearchId>> = { clay: 'clayDigging', stone: 'stonecutting', planks: 'carpentry', bricks: 'brickmaking' };
 
 function ResourceChip({ id, rate }: { id: ResourceId; rate: { gain: number; use: number } }) {
   const state = game().state;

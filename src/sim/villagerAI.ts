@@ -11,6 +11,8 @@ import { practiceSkill, skillMultiplier } from './progression';
 import { produceKnowledge } from './research';
 import { completeConstruction, completeUpgrade } from './construction';
 import { buildingStats, siteWork } from './levels';
+import { finishItem, startNextItem } from './crafting';
+import { RECIPES } from '../config/recipes';
 import type { BuildingInstance, GameState, Job, ResourceNode, Vec2, Villager, WalkPurpose } from './types';
 import type { World } from './world';
 
@@ -292,6 +294,28 @@ export function beginBatch(state: GameState, world: World, v: Villager, sink: Ev
     return;
   }
   const def = JOBS[jt];
+  if (jt === 'craft' && job.kind === 'operate') {
+    const b = findBuilding(state, job.buildingId);
+    if (!b) {
+      becomeIdle(state, world, v, sink, 'removed');
+      return;
+    }
+    const start = startNextItem(state, b);
+    if (!start.ok) {
+      const already = v.activity === 'blocked' && v.blockedReason === start.reason;
+      v.activity = 'blocked';
+      v.blockedReason = start.reason;
+      v.workProgress = 0;
+      v.batchWork = 0;
+      if (!already && start.reason === 'storageFull') sink.push({ type: 'storageFull', resource: start.resource, villagerId: v.id });
+      return;
+    }
+    v.activity = 'working';
+    v.blockedReason = null;
+    v.workProgress = 0;
+    v.batchWork = RECIPES[start.recipe].work;
+    return;
+  }
   if (def.output?.delivery === 'direct') {
     const r = def.output.resource;
     const researching = r === 'knowledge' && state.research.active !== null;
@@ -344,6 +368,13 @@ function completeBatch(state: GameState, world: World, v: Villager, sink: EventS
     }
     case 'operate': {
       const b = findBuilding(state, job.buildingId);
+      if (b && jt === 'craft') {
+        finishItem(state, b, v.id, sink);
+        v.workProgress = 0;
+        v.batchWork = 0;
+        beginBatch(state, world, v, sink);
+        return;
+      }
       if (!b || !def.output) {
         becomeIdle(state, world, v, sink, 'removed');
         return;
@@ -572,8 +603,14 @@ export function settleVillagers(state: GameState, world: World, sink: EventSink)
         } else {
           const jt = v.job ? jobTypeOf(state, v.job) : null;
           const out = jt ? JOBS[jt].output : undefined;
-          if (out && state.resources[out.resource] < capacity(state, out.resource)) beginBatch(state, world, v, sink);
+          if (jt === 'craft') beginBatch(state, world, v, sink);
+          else if (out && state.resources[out.resource] < capacity(state, out.resource)) beginBatch(state, world, v, sink);
         }
+        break;
+      case 'noOrders':
+      case 'noInputs':
+        // Workshops re-check their orders and inputs; beginBatch stays blocked (silently) if nothing changed.
+        beginBatch(state, world, v, sink);
         break;
       case 'knowledgeFull':
         if (state.research.active !== null || state.resources.knowledge < capacity(state, 'knowledge')) beginBatch(state, world, v, sink);

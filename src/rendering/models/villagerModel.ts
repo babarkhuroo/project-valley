@@ -75,6 +75,18 @@ function buildTool(id: ToolId): THREE.Object3D {
       g.add(head);
       break;
     }
+    case 'saw': {
+      g.add(mesh(new THREE.BoxGeometry(0.05, 0.12, 0.05), handle, 0, -0.04, 0));
+      const blade = new THREE.Shape();
+      blade.moveTo(0, 0);
+      blade.lineTo(0.07, 0);
+      blade.lineTo(0.03, -0.42);
+      blade.lineTo(0, -0.42);
+      blade.closePath();
+      const plate = mesh(new THREE.ShapeGeometry(blade), mat('#cfd6df', { side: THREE.DoubleSide }), -0.02, -0.08, 0.01);
+      g.add(plate);
+      break;
+    }
     case 'pickaxe': {
       g.add(mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.46, 6), handle, 0, -0.18, 0));
       const head = new THREE.Group();
@@ -229,6 +241,7 @@ export function createVillagerRig(a: Appearance): VillagerRig {
   const tools = {
     axe: buildTool('axe'),
     pickaxe: buildTool('pickaxe'),
+    saw: buildTool('saw'),
     shovel: buildTool('shovel'),
     ladle: buildTool('ladle'),
     book: buildTool('book'),

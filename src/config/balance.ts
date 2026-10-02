@@ -50,7 +50,7 @@ export const BALANCE = {
     maxSeconds: 7 * 24 * 3600,
   },
   start: {
-    resources: { timber: 20, clay: 0, stone: 0, stew: 30, knowledge: 0 } as Record<ResourceId, number>,
+    resources: { timber: 20, clay: 0, stone: 0, planks: 0, bricks: 0, stew: 30, knowledge: 0 } as Record<ResourceId, number>,
     level: 1,
   },
   /** XP granted for finishing tutorial beats. */

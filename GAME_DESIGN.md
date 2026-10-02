@@ -68,6 +68,8 @@ The opening tension: two villagers, one cook sustains ≈2.5 full-time workers. 
 | Timber | Trees → carried to Timber Yards | Every building |
 | Clay | Clay banks (after *Clay Digging*) → Clay Sheds | Later homes, third Timber Yard, every upgrade |
 | Stone | Rock Outcrops in the north-east hills (after *Stonecutting*) → Stone Yards | Building upgrades |
+| Planks | Sawmill: 4 timber → 2 planks (after *Carpentry*) | Level-3 upgrades, Lodge extension, third Cottage, Warehouse |
+| Bricks | Brickworks: 3 clay + 1 timber → 2 bricks (after *Brickmaking*) | Level-3 Cookhouse/Academy, third Cottage |
 | Stew | Cookhouse | Keeps labour at full speed |
 | Knowledge | Academy scholars | Research |
 
@@ -76,6 +78,12 @@ Storage is shared across buildings of a kind; building more storage raises the c
 ## Construction
 
 Costs are paid when placed; a builder then contributes work (up to two per site). Visual stages: foundation slab → scaffold → walls rising (clipping plane) → finished bounce with confetti. Cancelling refunds everything. Moving any building is free and instant; decorations place instantly.
+
+## Workshops & crafting
+
+Processing moves the economy from gathering to manufacturing. A workshop (Sawmill, Brickworks) holds up to 4 **orders** — 1–50 items or *keep making* — that can be reordered or cancelled. Its assigned crafter (Crafting skill) works through them one item per batch: an item's inputs are taken when it starts (cancelling refunds a started item) and its output is stored when it finishes. Everything is part of the deterministic sim, so workshops keep producing while you are away.
+
+The crafter never stalls silently: *Waiting for timber*, *Planks storage full* and *No orders* show in the worker list and the panel, resolve by themselves when the situation changes, and an emptied queue sends one notification. The Warehouse stores finished goods for both workshops.
 
 ## Building upgrades
 
@@ -130,7 +138,7 @@ Contextual coach card + world arrow, each beat completes by doing the thing (and
 
 ## Roadmap
 
-- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ⏳ processing chains (Sawmill → planks, Brickworks → bricks) with offline crafting queues · ⏳ research tiers 4–5, more homes, permanent production areas · ⏳ economy simulation / balancing tools.
+- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ⏳ research tiers 4–5, more homes, permanent production areas · ⏳ economy simulation / balancing tools.
 - **Milestone 3:** The Hearthlands (shared Valley) map, Valley buildings & research, contributions, guild training, merchants, reputation — with simulated neighbours first.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

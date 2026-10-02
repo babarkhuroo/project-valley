@@ -8,6 +8,8 @@ export type ResearchId =
   | 'clayDigging'
   | 'stonecutting'
   | 'masonry'
+  | 'carpentry'
+  | 'brickmaking'
   | 'heartyRecipes'
   | 'growingHamlet'
   | 'sturdyRacks'
@@ -19,7 +21,7 @@ export type ResearchId =
   | 'woodlandTending'
   | 'buildersPlans';
 
-export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge';
+export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge' | 'crafting';
 
 export type ResearchEffect =
   | { type: 'unlockBuilding'; building: BuildingId }
@@ -56,6 +58,7 @@ export const RESEARCH_CATEGORY_LABEL: Record<ResearchCategory, string> = {
   food: 'Food',
   production: 'Production',
   knowledge: 'Knowledge',
+  crafting: 'Crafting',
 };
 
 export const RESEARCH: Record<ResearchId, ResearchDef> = {
@@ -157,6 +160,33 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     effects: [{ type: 'jobRate', job: 'study', mult: 1.25 }],
     xp: 50,
     row: 5,
+  },
+  carpentry: {
+    id: 'carpentry',
+    name: 'Carpentry',
+    description: 'Saw pits and trestles: build a Sawmill and turn timber into planks.',
+    category: 'crafting',
+    tier: 2,
+    cost: 55,
+    prereqs: [],
+    effects: [{ type: 'unlockBuilding', building: 'sawmill' }],
+    xp: 55,
+    row: 6,
+  },
+  brickmaking: {
+    id: 'brickmaking',
+    name: 'Brickmaking',
+    description: 'Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods.',
+    category: 'crafting',
+    tier: 3,
+    cost: 110,
+    prereqs: ['carpentry', 'clayDigging'],
+    effects: [
+      { type: 'unlockBuilding', building: 'brickworks' },
+      { type: 'unlockBuilding', building: 'warehouse' },
+    ],
+    xp: 110,
+    row: 6,
   },
   villageCommons: {
     id: 'villageCommons',

@@ -7,6 +7,8 @@ import { canAfford, addResource, nearestStorage, pay, refund } from './economy';
 import type { EventSink } from './events';
 import { checkBuildable, checkFootprint, completeConstruction, completeUpgrade, nextCost } from './construction';
 import { buildingStats, nextUpgrade, siteWork, upgradeBlocker } from './levels';
+import { newCraftState, refundCurrent } from './crafting';
+import { MAX_ORDER, REPEAT_ORDER, type RecipeId } from '../config/recipes';
 import { isNodeUnlocked } from './modifiers';
 import { checkNewcomers, createVillager, homeWithSpace } from './population';
 import { drainBankIntoActive, researchStatus } from './research';
@@ -159,6 +161,7 @@ export function placeBuilding(
     completedAt: null,
     variant: state.nextId % 4,
     upgrade: null,
+    craft: BUILDINGS[defId].workshop ? newCraftState() : null,
   };
   state.buildings.push(b);
   syncWorld(world, state);
@@ -218,6 +221,44 @@ export function cancelUpgrade(state: GameState, world: World, buildingId: number
   }
   refund(state, b.upgrade.paid);
   b.upgrade = null;
+  return { ok: true };
+}
+
+/** Adds an order to a workshop (merging into the last order when it is the same recipe). */
+export function queueCraft(state: GameState, world: World, buildingId: number, recipe: RecipeId, count: number, sink: EventSink): CommandResult {
+  const b = findBuilding(state, buildingId);
+  const shop = b ? BUILDINGS[b.defId].workshop : undefined;
+  if (!b || !shop || !b.craft) return fail('This building doesn’t take orders');
+  if (b.status !== 'complete') return fail('Finish building it first');
+  if (!shop.recipes.includes(recipe)) return fail('This workshop can’t make that');
+  if (count !== REPEAT_ORDER && (count < 1 || count > MAX_ORDER || !Number.isInteger(count))) return fail(`Orders are 1–${MAX_ORDER} items`);
+  const last = b.craft.orders.at(-1);
+  if (last && last.recipe === recipe && last.count !== REPEAT_ORDER && count !== REPEAT_ORDER) {
+    last.count = Math.min(MAX_ORDER, last.count + count);
+  } else {
+    if (b.craft.orders.length >= shop.orderSlots) return fail(`All ${shop.orderSlots} order slots are in use`);
+    b.craft.orders.push({ recipe, count });
+  }
+  settleVillagers(state, world, sink);
+  return { ok: true };
+}
+
+export function cancelCraftOrder(state: GameState, world: World, buildingId: number, index: number, sink: EventSink): CommandResult {
+  const b = findBuilding(state, buildingId);
+  const craft = b?.craft;
+  if (!b || !craft || !craft.orders[index]) return fail('No such order');
+  const [removed] = craft.orders.splice(index, 1);
+  // An item already started for this recipe gives its inputs back if nothing else will finish it.
+  if (craft.current === removed.recipe && !craft.orders.some((o) => o.recipe === removed.recipe)) refundCurrent(state, b);
+  settleVillagers(state, world, sink);
+  return { ok: true };
+}
+
+export function moveCraftOrder(state: GameState, buildingId: number, index: number, delta: -1 | 1): CommandResult {
+  const craft = findBuilding(state, buildingId)?.craft;
+  const to = index + delta;
+  if (!craft || !craft.orders[index] || !craft.orders[to]) return fail('Can’t move that order');
+  [craft.orders[index], craft.orders[to]] = [craft.orders[to], craft.orders[index]];
   return { ok: true };
 }
 
