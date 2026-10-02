@@ -17,6 +17,8 @@ export type SimEvent =
   | { type: 'nodeRegrown'; nodeId: number }
   | { type: 'constructionStarted'; buildingId: number; defId: BuildingId }
   | { type: 'constructionComplete'; buildingId: number; defId: BuildingId }
+  | { type: 'upgradeStarted'; buildingId: number; defId: BuildingId; level: number }
+  | { type: 'upgradeComplete'; buildingId: number; defId: BuildingId; level: number }
   | { type: 'researchComplete'; researchId: ResearchId }
   | { type: 'xp'; amount: number; reason: string }
   | { type: 'levelUp'; level: number }

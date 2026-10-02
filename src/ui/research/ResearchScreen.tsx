@@ -24,7 +24,7 @@ const PAD_Y = 70;
 const CATEGORY_ICON: Record<ResearchCategory, IconName> = {
   villagers: 'villager',
   resources: 'leaf',
-  storage: 'carry',
+  storage: 'crate',
   food: 'stew',
   production: 'build',
   knowledge: 'study',
@@ -46,6 +46,8 @@ function effectText(e: ResearchEffect): string {
       return `Each bowl of Stew lasts +${Math.round((e.mult - 1) * 100)}%`;
     case 'regrow':
       return `${NODES[e.node].name}s regrow ${e.mult}× faster`;
+    case 'upgradeTier':
+      return `Buildings can be upgraded to level ${e.level}`;
   }
 }
 

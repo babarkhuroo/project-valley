@@ -1,6 +1,7 @@
-import { BUILDINGS, type ResourceBundle } from '../config/buildings';
+import type { ResourceBundle } from '../config/buildings';
 import { RESOURCE_ORDER, type ResourceId } from '../config/resources';
 import { getModifiers } from './modifiers';
+import { buildingStats } from './levels';
 import type { BuildingInstance, GameState, Vec2 } from './types';
 import { buildingCenter } from './grid';
 
@@ -9,7 +10,7 @@ export function capacity(state: GameState, resource: ResourceId): number {
   let cap = 0;
   for (const b of state.buildings) {
     if (b.status !== 'complete') continue;
-    cap += BUILDINGS[b.defId].storage?.[resource] ?? 0;
+    cap += buildingStats(b.defId, b.level).storage[resource] ?? 0;
   }
   return Math.floor(cap * (getModifiers(state).storageMult[resource] ?? 1));
 }
@@ -51,7 +52,7 @@ export function refund(state: GameState, bundle: ResourceBundle): void {
 }
 
 export function storageBuildingsFor(state: GameState, resource: ResourceId): BuildingInstance[] {
-  return state.buildings.filter((b) => b.status === 'complete' && (BUILDINGS[b.defId].storage?.[resource] ?? 0) > 0);
+  return state.buildings.filter((b) => b.status === 'complete' && (buildingStats(b.defId, b.level).storage[resource] ?? 0) > 0);
 }
 
 export function nearestStorage(state: GameState, resource: ResourceId, from: Vec2): BuildingInstance | null {

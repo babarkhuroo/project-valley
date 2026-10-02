@@ -6,6 +6,7 @@ import type { Game } from '../game/Game';
 import type { AudioEngine } from '../audio/AudioEngine';
 import type { SimEvent } from '../sim/events';
 import { capacity } from '../sim/economy';
+import { siteWork } from '../sim/levels';
 import { buildingCenter } from '../sim/grid';
 import { constructionFraction, villagerTask } from '../sim/selectors';
 import { findBuilding, findNode, findVillager, villagerPosition } from '../sim/villagerAI';
@@ -151,6 +152,11 @@ export class GameRenderer {
         if (Math.random() < 0.35) this.particles.emit('leaves', e.position.clone().setY(e.position.y + 1.4), 2, 0.8);
         if (e.nodeId !== null) this.nature.shake(e.nodeId, this.realTime);
         this.audio.playAt('chop', e.position);
+      } else if (e.anim === 'mine') {
+        this.particles.emit('rubble', e.position, 5, 0.2);
+        this.particles.emit('sparkle', e.position.clone().setY(e.position.y + 0.2), 1, 0.1);
+        if (e.nodeId !== null) this.nature.shake(e.nodeId, this.realTime);
+        this.audio.playAt('pick', e.position);
       } else if (e.anim === 'dig') {
         this.particles.emit('clods', e.position, 4, 0.2);
         this.audio.playAt('dig', e.position);
@@ -316,7 +322,7 @@ export class GameRenderer {
           const p = this.positionOf({ kind: 'building', id: e.buildingId });
           if (p) {
             p.y += 1.6;
-            this.overlay.float(p, `<span class="ico">${ICONS[e.resource === 'clay' ? 'clay' : 'timber']}</span>+${Math.round(e.amount)}`, `wo-float res-${e.resource}`);
+            this.overlay.float(p, `<span class="ico">${ICONS[e.resource]}</span>+${Math.round(e.amount)}`, `wo-float res-${e.resource}`);
             this.particles.emit('dust', p.clone().setY(p.y - 1.4), 2, 0.5);
             this.audio.playAt('deposit', p);
           }
@@ -326,7 +332,7 @@ export class GameRenderer {
           const p = this.positionOf({ kind: 'building', id: e.buildingId });
           if (p) {
             p.y += 2.2;
-            this.overlay.float(p, `<span class="ico">${ICONS[e.resource === 'knowledge' ? 'knowledge' : 'stew']}</span>+${e.amount}`, `wo-float res-${e.resource}`);
+            this.overlay.float(p, `<span class="ico">${ICONS[e.resource]}</span>+${e.amount}`, `wo-float res-${e.resource}`);
             if (e.resource === 'stew') this.audio.playAt('bubble', p);
           }
           break;
@@ -339,7 +345,14 @@ export class GameRenderer {
           }
           break;
         }
-        case 'constructionComplete': {
+        case 'upgradeStarted': {
+          const p = this.positionOf({ kind: 'building', id: e.buildingId });
+          if (p) this.particles.emit('dust', p.clone().setY(p.y + 0.3), 10, 1.6);
+          this.audio.play('place');
+          break;
+        }
+        case 'constructionComplete':
+        case 'upgradeComplete': {
           const p = this.positionOf({ kind: 'building', id: e.buildingId });
           if (p && BUILDINGS[e.defId].category !== 'decor') {
             this.particles.emit('confetti', p.clone().setY(p.y + BUILDINGS[e.defId].height), 40, 1);
@@ -415,7 +428,7 @@ export class GameRenderer {
     this.input.update(dt);
     this.cameraCtl.update(dt);
 
-    const layout = state.buildings.map((b) => `${b.id}:${b.cellX}:${b.cellZ}:${b.rotation}:${b.status}`).join('|');
+    const layout = state.buildings.map((b) => `${b.id}:${b.cellX}:${b.cellZ}:${b.rotation}:${b.status}:${b.level}:${b.upgrade ? 1 : 0}`).join('|');
     if (layout !== this.lastLayout) {
       this.lastLayout = layout;
       this.buildings.sync(state);
@@ -515,11 +528,11 @@ export class GameRenderer {
       if (icon || name) o.badge(`v${v.id}`, tmp, `${icon ? `<span class="wo-ico">${ICONS[icon]}</span>` : ''}${name}`, `wo-villager ${cls}`);
     }
     for (const b of state.buildings) {
-      if (b.status === 'construction') {
+      if (siteWork(b)) {
         const p = this.positionOf({ kind: 'building', id: b.id })!;
         const f = constructionFraction(state, b);
-        // Float just above whatever has been built so far.
-        p.y += 1.3 + Math.max(0, f - 0.1) * BUILDINGS[b.defId].height;
+        // New sites: float just above what's built so far. Upgrades: above the standing building.
+        p.y += b.upgrade ? BUILDINGS[b.defId].height + 0.6 : 1.3 + Math.max(0, f - 0.1) * BUILDINGS[b.defId].height;
         const builders = state.villagers.some((v) => v.job?.kind === 'construct' && v.job.buildingId === b.id);
         o.badge(
           `b${b.id}`,

@@ -37,6 +37,11 @@ export function attachNotifications(game: Game): () => void {
           ui.toast({ kind: 'success', title: `${def.name} complete!`, body: def.xp ? `+${def.xp} village XP` : undefined, icon: 'hammerHouse', target: { kind: 'building', id: e.buildingId } });
           break;
         }
+        case 'upgradeComplete': {
+          const def = BUILDINGS[e.defId];
+          ui.toast({ kind: 'success', title: `${def.name} reached level ${e.level}!`, body: `+${def.upgrades?.[e.level - 2]?.xp ?? 0} village XP`, icon: 'upgrade', target: { kind: 'building', id: e.buildingId } });
+          break;
+        }
         case 'researchComplete':
           ui.toast({ kind: 'success', title: `Research complete: ${RESEARCH[e.researchId].name}`, body: RESEARCH[e.researchId].description, icon: 'research' }, 6000);
           break;

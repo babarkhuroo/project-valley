@@ -6,7 +6,7 @@ import { isBuildingUnlocked, maxBuildingCount } from './modifiers';
 import { checkNewcomers } from './population';
 import { addXp } from './progression';
 import type { BuildingInstance, GameState, Rotation } from './types';
-import { becomeIdle, villagerPosition } from './villagerAI';
+import { becomeIdle, settleVillagers, villagerPosition } from './villagerAI';
 import type { World } from './world';
 
 export function countBuildings(state: GameState, id: BuildingId): number {
@@ -77,6 +77,22 @@ export function completeConstruction(state: GameState, world: World, b: Building
     if (v.job?.kind === 'construct' && v.job.buildingId === b.id) becomeIdle(state, world, v, sink, 'finished');
   }
   if (BUILDINGS[b.defId].housing) checkNewcomers(state, sink);
+}
+
+export function completeUpgrade(state: GameState, world: World, b: BuildingInstance, sink: EventSink): void {
+  const up = b.upgrade;
+  if (!up) return;
+  b.level = up.toLevel;
+  b.upgrade = null;
+  bumpStat(state, 'buildings.upgraded');
+  sink.push({ type: 'upgradeComplete', buildingId: b.id, defId: b.defId, level: b.level });
+  addXp(state, BUILDINGS[b.defId].upgrades?.[b.level - 2]?.xp ?? 0, `Upgraded ${BUILDINGS[b.defId].name}`, sink);
+  for (const v of state.villagers) {
+    if (v.job?.kind === 'construct' && v.job.buildingId === b.id) becomeIdle(state, world, v, sink, 'finished');
+  }
+  // More storage, beds or slots may unblock waiting villagers or invite newcomers.
+  settleVillagers(state, world, sink);
+  checkNewcomers(state, sink);
 }
 
 export function villagersInFootprint(state: GameState, b: BuildingInstance): number[] {

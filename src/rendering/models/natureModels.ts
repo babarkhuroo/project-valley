@@ -73,6 +73,17 @@ export function clayGeometry(): THREE.BufferGeometry {
   return merge([mound, lumpA, lumpB, lumpC, wet]);
 }
 
+/** Quarriable rock outcrop: chunky grey stones with pale, freshly split faces. */
+export function stoneOutcropGeometry(): THREE.BufferGeometry {
+  const main = paint(at(new THREE.DodecahedronGeometry(0.55, 0), 0, 0.28, 0, 1.15, 0.85, 1), '#9aa1ab', 0.09, 211);
+  const side = paint(at(new THREE.DodecahedronGeometry(0.36, 0), 0.55, 0.18, 0.18, 1, 0.9, 1.1), '#8a919c', 0.08, 223);
+  const back = paint(at(new THREE.DodecahedronGeometry(0.3, 0), -0.45, 0.16, -0.3, 1.1, 0.8, 1), '#a9afb8', 0.08, 227);
+  const cut = paint(at(new THREE.BoxGeometry(0.34, 0.2, 0.3), -0.38, 0.1, 0.42, 1, 1, 1, 0.4), '#d6d9de', 0.04, 229);
+  const chip = paint(at(new THREE.BoxGeometry(0.16, 0.1, 0.14), 0.25, 0.05, 0.58, 1, 1, 1, 1.1), '#c8ccd2', 0.03, 233);
+  const moss = paint(at(new THREE.IcosahedronGeometry(0.22, 0), 0.1, 0.62, -0.1, 1.4, 0.3, 1.2), PALETTE.grassDark, 0.05, 239);
+  return merge([main, side, back, cut, chip, moss]);
+}
+
 export function boulderGeometry(): THREE.BufferGeometry {
   const a = paint(at(new THREE.DodecahedronGeometry(0.6, 0), 0, 0.3, 0, 1.2, 0.8, 1), PALETTE.rock, 0.08, 83);
   const b = paint(at(new THREE.DodecahedronGeometry(0.34, 0), 0.62, 0.15, 0.25, 1, 0.8, 1), PALETTE.rockDark, 0.06, 89);

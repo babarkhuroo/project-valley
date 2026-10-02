@@ -51,6 +51,16 @@ export interface BuildingInstance {
   completedAt: number | null;
   /** Cosmetic variant (roof colour, etc.). */
   variant: number;
+  /** In-progress upgrade; the building keeps working meanwhile. */
+  upgrade: UpgradeProgress | null;
+}
+
+export interface UpgradeProgress {
+  toLevel: number;
+  progress: number;
+  workRequired: number;
+  /** Resources paid, refunded if the upgrade is cancelled. */
+  paid: Partial<Record<ResourceId, number>>;
 }
 
 export type Job =

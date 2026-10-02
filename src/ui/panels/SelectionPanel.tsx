@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { BUILDINGS } from '../../config/buildings';
+import { BUILDINGS, BUILD_MENU_ORDER } from '../../config/buildings';
 import { JOBS } from '../../config/jobs';
 import { NODES } from '../../config/nodes';
-import { RESEARCH } from '../../config/research';
+import { RESEARCH, type ResearchId } from '../../config/research';
 import { RESOURCES, type ResourceId } from '../../config/resources';
 import { SKILLS, SKILL_ORDER } from '../../config/skills';
 import { BALANCE } from '../../config/balance';
@@ -15,10 +15,11 @@ import { residents } from '../../sim/population';
 import { practiceProgress } from '../../sim/progression';
 import { researchProgress } from '../../sim/research';
 import { constructionEta, constructionFraction, estimateJob, productionSummary, villagerTask, type JobEstimate } from '../../sim/selectors';
-import type { GameState, Job, Villager } from '../../sim/types';
+import type { BuildingInstance, GameState, Job, Villager } from '../../sim/types';
 import { findBuilding, findNode, findVillager, jobTypeOf, villagerPosition } from '../../sim/villagerAI';
-import { assign, beginAssign, cancelSite, focus, selectAndFocus, startMove, unassign } from '../actions';
-import { Bar, Pill, Section } from '../common/Bits';
+import { assign, beginAssign, cancelBuildingUpgrade, cancelSite, focus, selectAndFocus, startMove, unassign, upgradeBuilding } from '../actions';
+import { buildingStats, canAffordUpgrade, maxLevel, nextUpgrade, upgradeBlocker } from '../../sim/levels';
+import { Bar, Cost, Pill, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
 import { BuildingThumb, Portrait } from '../common/Portrait';
 import { formatDuration, useGameState } from '../hooks';
@@ -87,7 +88,7 @@ function AssignList({ job }: { job: Job }) {
     });
   return (
     <>
-      <Section title={`Workers ${workers.length}/${slots}`}>
+      <Section title={`${job.kind === 'construct' ? 'Builders' : 'Workers'} ${workers.length}/${slots}`}>
         {workers.length === 0 ? <p className="empty-slot">Nobody is working here yet.</p> : null}
         {workers.map((v) => {
           const est = estimateJob(state, g.world, v, job);
@@ -118,7 +119,7 @@ function AssignList({ job }: { job: Job }) {
               Research
             </button>
           ) : blocker.startsWith('Build') ? (
-            <button className="btn small" onClick={() => ui.set({ panel: 'build', buildHighlight: 'clayShed' })}>
+            <button className="btn small" onClick={() => ui.set({ panel: 'build', buildHighlight: BUILD_MENU_ORDER.find((id) => blocker.includes(BUILDINGS[id].name)) ?? null })}>
               Build
             </button>
           ) : null}
@@ -326,6 +327,70 @@ function StorageBars({ resources }: { resources: ResourceId[] }) {
   );
 }
 
+const PERCENT = (m: number) => `+${Math.round((m - 1) * 100)}%`;
+
+/** What the next level brings, what it costs, and exactly why it can't start yet. */
+function UpgradeSection({ b }: { b: BuildingInstance }) {
+  const state = useGameState();
+  const up = nextUpgrade(b.defId, b.level);
+  const top = maxLevel(b.defId);
+  if (!up) {
+    return top > 1 ? (
+      <Section title="Upgrades">
+        <p className="muted small">Fully upgraded — level {top} is the highest for now.</p>
+      </Section>
+    ) : null;
+  }
+  const def = BUILDINGS[b.defId];
+  const now = buildingStats(b.defId, b.level);
+  const next = buildingStats(b.defId, b.level + 1);
+  const perks: string[] = [];
+  for (const r of Object.keys(next.storage) as ResourceId[]) {
+    if ((next.storage[r] ?? 0) !== (now.storage[r] ?? 0)) perks.push(`Stores ${now.storage[r] ?? 0} → ${next.storage[r]} ${RESOURCES[r].name}`);
+  }
+  if (next.housing !== now.housing) perks.push(`Beds ${now.housing} → ${next.housing} (room for a new villager)`);
+  if (next.slots !== now.slots && def.operate) perks.push(`Worker slots ${now.slots} → ${next.slots}`);
+  if (next.outputMult !== now.outputMult && def.operate) perks.push(`${JOBS[def.operate.job].verb} ${PERCENT(next.outputMult)} (was ${now.outputMult === 1 ? '+0%' : PERCENT(now.outputMult)})`);
+  const blocker = upgradeBlocker(state, b);
+  const research = blocker?.startsWith('needs-research:') ? (blocker.slice(15) as ResearchId) : null;
+  const affordable = canAffordUpgrade(state, b);
+  return (
+    <Section title={`Upgrade to level ${b.level + 1}`} aside={<small className="muted">+{up.xp} XP</small>}>
+      <ul className="perks">
+        {perks.map((p) => (
+          <li key={p}>
+            <Icon name="upgrade" size={16} /> {p}
+          </li>
+        ))}
+        <li className="muted">Looks grander, too — and keeps working while builders upgrade it.</li>
+      </ul>
+      <div className="upgrade-cost">
+        <Cost bundle={up.cost.resources} state={state} />
+        <small className="muted">
+          <Icon name="build" size={14} /> {up.cost.work} work
+        </small>
+      </div>
+      {research ? (
+        <div className="blocker">
+          <Icon name="lock" size={20} />
+          <span>Needs {RESEARCH[research].name} research</span>
+          <button className="btn small" onClick={() => ui.set({ panel: 'research', researchFocus: research })}>
+            Research
+          </button>
+        </div>
+      ) : blocker ? (
+        <p className="blocker">
+          <Icon name="lock" size={20} /> {blocker}
+        </p>
+      ) : (
+        <button className="btn green wide" disabled={!affordable} onClick={() => upgradeBuilding(b.id)}>
+          <Icon name="upgrade" size={18} /> {affordable ? `Upgrade to level ${b.level + 1}` : 'Need more resources'}
+        </button>
+      )}
+    </Section>
+  );
+}
+
 function BuildingPanel({ id }: { id: number }) {
   const state = useGameState();
   const g = game();
@@ -333,13 +398,14 @@ function BuildingPanel({ id }: { id: number }) {
   if (!b) return null;
   const def = BUILDINGS[b.defId];
   const building = b.status === 'construction';
-  const storage = def.storage ? (Object.keys(def.storage) as ResourceId[]) : [];
+  const stats = buildingStats(b.defId, b.level);
+  const storage = Object.keys(stats.storage) as ResourceId[];
   const rates = productionSummary(state, g.world);
   return (
     <>
       <PanelHeader
         title={building ? `${def.name} (building)` : def.name}
-        subtitle={def.description}
+        subtitle={`${maxLevel(b.defId) > 1 && !building ? `Level ${b.level} of ${maxLevel(b.defId)} · ` : ''}${def.description}`}
         media={<BuildingThumb id={b.defId} size={64} />}
         onClose={() => ui.select(null)}
       />
@@ -364,6 +430,17 @@ function BuildingPanel({ id }: { id: number }) {
         </>
       ) : (
         <>
+          {b.upgrade ? (
+            <>
+              <Section title={`Upgrading to level ${b.upgrade.toLevel}`}>
+                <Bar value={constructionFraction(state, b)} tone="green" label={`${Math.floor(constructionFraction(state, b) * 100)}%`} />
+                <p className="muted small">
+                  {constructionEta(state, b) !== null ? `About ${formatDuration(constructionEta(state, b)!)} left.` : 'Assign a builder to start the upgrade.'} The building keeps working meanwhile.
+                </p>
+              </Section>
+              <AssignList job={{ kind: 'construct', buildingId: b.id }} />
+            </>
+          ) : null}
           {b.defId === 'cookhouse' ? (
             <Section title="Pantry">
               <StorageBars resources={['stew']} />
@@ -399,8 +476,8 @@ function BuildingPanel({ id }: { id: number }) {
               <StorageBars resources={storage} />
             </Section>
           ) : null}
-          {def.housing ? (
-            <Section title={`Residents ${residents(state, b.id).length}/${def.housing}`}>
+          {stats.housing ? (
+            <Section title={`Residents ${residents(state, b.id).length}/${stats.housing}`}>
               <div className="residents">
                 {residents(state, b.id).map((v) => (
                   <button key={v.id} onClick={() => selectAndFocus({ kind: 'villager', id: v.id }, 14)}>
@@ -408,15 +485,21 @@ function BuildingPanel({ id }: { id: number }) {
                     <small>{v.name}</small>
                   </button>
                 ))}
-                {residents(state, b.id).length < def.housing ? <span className="muted small">A bed is free — someone will arrive soon.</span> : null}
+                {residents(state, b.id).length < stats.housing ? <span className="muted small">A bed is free — someone will arrive soon.</span> : null}
               </div>
             </Section>
           ) : null}
           {def.operate ? <AssignList job={{ kind: 'operate', buildingId: b.id }} /> : null}
+          {!b.upgrade ? <UpgradeSection b={b} /> : null}
           <div className="row-buttons">
             <button className="btn ghost" onClick={() => startMove(b.id)}>
               <Icon name="move" size={18} /> Move
             </button>
+            {b.upgrade ? (
+              <button className="btn danger" onClick={() => cancelBuildingUpgrade(b.id)}>
+                <Icon name="trash" size={18} /> Cancel upgrade
+              </button>
+            ) : null}
           </div>
         </>
       )}

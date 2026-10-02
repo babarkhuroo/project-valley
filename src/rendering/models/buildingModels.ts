@@ -368,7 +368,152 @@ function bench(): BuildingModel {
   return m;
 }
 
-export function createBuildingModel(id: BuildingId, variant: number): BuildingModel {
+function stoneYard(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  // Flagstone floor with a little colour variation per slab.
+  const slabs = [mat('#b9b2a6', { flat: true }), mat('#aaa397', { flat: true }), mat('#c4bdb0', { flat: true })];
+  for (let ix = 0; ix < 3; ix++) {
+    for (let iz = 0; iz < 3; iz++) box(r, 0.58, 0.1, 0.58, slabs[(ix * 2 + iz) % 3], -0.6 + ix * 0.6, 0.05, -0.6 + iz * 0.6);
+  }
+  // A-frame hoist at the back.
+  const wood = mat(PALETTE.woodDark);
+  for (const x of [-0.75, 0.75]) {
+    const a = box(r, 0.09, 1.9, 0.09, wood, x, 0.95, -0.72);
+    a.rotation.x = 0.12;
+  }
+  box(r, 1.65, 0.1, 0.1, wood, 0, 1.86, -0.62);
+  cyl(r, 0.012, 0.012, 0.75, mat(PALETTE.iron), 0.25, 1.45, -0.6, 4);
+  box(r, 0.1, 0.12, 0.1, mat(PALETTE.iron), 0.25, 1.05, -0.6);
+  // Cut-stone blocks stacked in tiers; they appear as the yard fills.
+  const stoneMats = [mat('#a7adb7', { flat: true }), mat('#959ba6', { flat: true }), mat('#b8bdc6', { flat: true })];
+  const items: THREE.Object3D[] = [];
+  const tiers: [number, number][][] = [
+    [[-0.5, -0.25], [-0.05, -0.25], [0.4, -0.25], [-0.5, 0.25], [-0.05, 0.25], [0.4, 0.25], [-0.3, 0.7], [0.2, 0.7]],
+    [[-0.28, -0.25], [0.18, -0.25], [-0.28, 0.25], [0.18, 0.25], [-0.05, 0.7]],
+    [[-0.05, -0.25], [-0.05, 0.25]],
+    [[-0.05, 0]],
+  ];
+  tiers.forEach((tier, ti) => {
+    for (const [x, z] of tier) {
+      const b = box(r, 0.4, 0.2, 0.36, stoneMats[(items.length * 7) % 3], x, 0.2 + ti * 0.21, z);
+      b.rotation.y = ((items.length * 37) % 9) * 0.02 - 0.08;
+      items.push(b);
+    }
+  });
+  m.fill = { resource: 'stone', items };
+  return m;
+}
+
+/** Small flag that tells the building's level at a glance (blue = 2, gold = 3). */
+function levelPennant(m: BuildingModel, level: number, x: number, z: number, height: number): void {
+  const pole = new THREE.Group();
+  pole.position.set(x, 0, z);
+  cyl(pole, 0.025, 0.03, height, mat(PALETTE.woodDark), 0, height / 2, 0, 6);
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.lineTo(0.42, -0.1);
+  shape.lineTo(0, -0.24);
+  shape.closePath();
+  const flagPivot = new THREE.Group();
+  flagPivot.position.set(0.02, height - 0.02, 0);
+  const flag = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat(level >= 3 ? PALETTE.gold : '#6fa8dc', { side: THREE.DoubleSide }));
+  flagPivot.add(flag);
+  pole.add(flagPivot);
+  for (let i = 0; i < level; i++) box(pole, 0.07, 0.07, 0.07, mat(level >= 3 ? PALETTE.gold : '#e8f1fb'), 0, height - 0.32 - i * 0.12, 0.03);
+  m.root.add(pole);
+  m.wavers.push({ obj: flagPivot, amp: 0.25, speed: 2.4 + x, base: 0 });
+}
+
+/** Layers visible improvements onto a base model for each level above 1. */
+function addLevelDetails(m: BuildingModel, id: BuildingId, level: number): void {
+  if (level < 2) return;
+  const r = m.root;
+  const stone = mat(PALETTE.stone, { flat: true });
+  const stoneDark = mat(PALETTE.stoneDark, { flat: true });
+  switch (id) {
+    case 'timberYard':
+    case 'clayShed':
+    case 'stoneYard': {
+      // Level 2: a cut-stone footing around the yard.
+      for (const [w, d, x, z] of [[2.0, 0.12, 0, 0.94], [2.0, 0.12, 0, -0.94], [0.12, 2.0, 0.94, 0], [0.12, 2.0, -0.94, 0]] as const) {
+        box(r, w, 0.16, d, stoneDark, x, 0.08, z);
+      }
+      levelPennant(m, level, 0.92, -0.92, 2.4);
+      if (level >= 3) {
+        if (id === 'clayShed') {
+          // A little brick kiln for firing the best clay.
+          cyl(r, 0.28, 0.34, 0.5, mat('#b5654a', { flat: true }), -0.62, 0.35, 0.7, 8);
+          const dome = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), mat('#a95a40', { flat: true }));
+          dome.position.set(-0.62, 0.6, 0.7);
+          r.add(dome);
+          m.smoke.push(new THREE.Vector3(-0.62, 0.95, 0.7));
+        } else {
+          // Timber hoist: post, jib and hanging hook.
+          const wood = mat(PALETTE.woodDark);
+          box(r, 0.1, 2.3, 0.1, wood, -0.85, 1.15, -0.85);
+          box(r, 0.9, 0.08, 0.08, wood, -0.45, 2.2, -0.85);
+          cyl(r, 0.01, 0.01, 0.6, mat(PALETTE.iron), -0.1, 1.9, -0.85, 4);
+        }
+      }
+      break;
+    }
+    case 'cookhouse': {
+      // Level 2: stone cladding, an awning over the pot and a second chimney.
+      box(r, 2.26, 0.45, 1.91, stone, 0, 0.45, -0.2);
+      const awning = box(r, 1.3, 0.05, 0.75, mat(PALETTE.terracotta, { flat: true }), -0.15, 1.55, 1.2);
+      awning.rotation.x = 0.28;
+      for (const x of [-0.75, 0.45]) box(r, 0.07, 1.5, 0.07, mat(PALETTE.woodDark), x, 0.75, 1.52);
+      box(r, 0.3, 1.0, 0.3, stoneDark, -0.75, 2.0, -0.7);
+      m.smoke.push(new THREE.Vector3(-0.75, 2.6, -0.7));
+      levelPennant(m, level, 1.25, -1.2, 3.1);
+      if (level >= 3) {
+        // Bread oven beside the kitchen.
+        const oven = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#c98a5e', { flat: true }));
+        oven.position.set(1.12, 0.22, 0.75);
+        r.add(oven);
+        box(r, 0.2, 0.2, 0.05, mat('#3b2f2a'), 1.12, 0.32, 1.15);
+        m.smoke.push(new THREE.Vector3(1.12, 0.75, 0.75));
+      }
+      break;
+    }
+    case 'academy': {
+      // Level 2: gilded weathervane and taller banners; level 3: a second domed observatory.
+      cyl(r, 0.02, 0.02, 0.5, mat(PALETTE.gold), 0.95, 4.7, -0.85, 4);
+      const vane = box(r, 0.4, 0.05, 0.02, mat(PALETTE.gold), 0.95, 4.92, -0.85);
+      m.spinners.push({ obj: vane, axis: 'y', speed: 0.6 });
+      levelPennant(m, level, -1.25, -1.15, 3.2);
+      if (level >= 3) {
+        cyl(r, 0.36, 0.4, 2.2, mat('#e2d9c6'), -0.95, 1.32, -0.95, 12);
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(PALETTE.gold, { flat: true }));
+        dome.position.set(-0.95, 2.42, -0.95);
+        r.add(dome);
+        windowPane(r, -0.95, 1.9, -0.55, 0.18, 0.26);
+      }
+      break;
+    }
+    case 'lodge': {
+      // Level 2: a dormer for the extra bed, a stone chimney and a covered porch.
+      const dormer = new THREE.Group();
+      dormer.position.set(0.6, 1.55, 0.35);
+      box(dormer, 0.55, 0.45, 0.4, mat(PALETTE.wood), 0, 0, 0);
+      gableRoof(dormer, 0.7, 0.32, 0.55, mat(PALETTE.thatch, { flat: true }), 0.22, false);
+      windowPane(dormer, 0, 0, 0.21, 0.24, 0.22);
+      r.add(dormer);
+      box(r, 0.32, 1.2, 0.32, stoneDark, 0.95, 1.8, -0.4);
+      m.smoke.push(new THREE.Vector3(0.95, 2.5, -0.4));
+      const porch = box(r, 1.0, 0.05, 0.4, mat(PALETTE.thatchDark, { flat: true }), 0, 1.05, 0.88);
+      porch.rotation.x = 0.25;
+      for (const x of [-0.42, 0.42]) box(r, 0.06, 0.9, 0.06, mat(PALETTE.woodDark), x, 0.55, 1.02);
+      levelPennant(m, level, -1.3, -0.8, 2.9);
+      break;
+    }
+    default:
+      levelPennant(m, level, 0.8, -0.8, 2.2);
+  }
+}
+
+export function createBuildingModel(id: BuildingId, variant: number, level = 1): BuildingModel {
   let model: BuildingModel;
   switch (id) {
     case 'cookhouse':
@@ -382,6 +527,9 @@ export function createBuildingModel(id: BuildingId, variant: number): BuildingMo
       break;
     case 'clayShed':
       model = clayShed();
+      break;
+    case 'stoneYard':
+      model = stoneYard();
       break;
     case 'academy':
       model = academy();
@@ -399,6 +547,7 @@ export function createBuildingModel(id: BuildingId, variant: number): BuildingMo
       model = bench();
       break;
   }
+  addLevelDetails(model, id, level);
   mergeStatic(model);
   model.root.traverse((o) => {
     const mesh = o as THREE.Mesh;

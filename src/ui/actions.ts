@@ -6,6 +6,8 @@ import {
   acceptNewcomer,
   assignVillager,
   cancelConstruction,
+  cancelUpgrade,
+  startUpgrade,
   moveBuilding,
   placeBuilding,
   renameVillage,
@@ -162,6 +164,18 @@ export function cancelSite(buildingId: number): void {
     runtime.audio.play('close');
     ui.select(null);
   });
+}
+
+export function upgradeBuilding(buildingId: number): void {
+  const res = game().run((s, w, sink) => startUpgrade(s, w, buildingId, sink));
+  feedback(res, () => {
+    const b = findBuilding(game().state, buildingId);
+    if (b?.upgrade) ui.toast({ kind: 'info', title: `${BUILDINGS[b.defId].name} upgrade started`, body: 'Assign a builder — it keeps working meanwhile.', icon: 'upgrade', target: { kind: 'building', id: b.id } }, 3500);
+  });
+}
+
+export function cancelBuildingUpgrade(buildingId: number): void {
+  feedback(game().run((s, w, sink) => cancelUpgrade(s, w, buildingId, sink)), () => runtime.audio.play('close'));
 }
 
 export function chooseResearch(id: ResearchId | null): void {

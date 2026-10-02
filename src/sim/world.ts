@@ -87,5 +87,26 @@ export function generateNodes(world: World, firstId: number): ResourceNode[] {
       placed++;
     }
   }
+  // Appended last so existing tree/clay layouts (and their ids) never shift.
+  for (const [x, z] of map.stoneDeposits) {
+    if (usable(x, z, 1.4)) addNode('stone', x, z, Math.floor(rng() * 3));
+  }
   return nodes;
+}
+
+/**
+ * Adds map nodes that a save doesn't know about yet (e.g. stone outcrops added after the
+ * save was made). Existing nodes are matched by kind and position and never touched.
+ */
+export function ensureMapNodes(state: GameState, world: World): number {
+  const key = (n: { kind: string; x: number; z: number }) => `${n.kind}:${n.x.toFixed(2)}:${n.z.toFixed(2)}`;
+  const known = new Set(state.nodes.map(key));
+  let added = 0;
+  for (const n of generateNodes(world, 0)) {
+    if (known.has(key(n))) continue;
+    state.nodes.push({ ...n, id: state.nextId++ });
+    added++;
+  }
+  if (added > 0) syncWorld(world, state);
+  return added;
 }

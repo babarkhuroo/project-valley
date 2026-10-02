@@ -66,7 +66,8 @@ The opening tension: two villagers, one cook sustains ≈2.5 full-time workers. 
 | Resource | Source | Uses |
 | --- | --- | --- |
 | Timber | Trees → carried to Timber Yards | Every building |
-| Clay | Clay banks (after *Clay Digging*) → Clay Sheds | Later homes, third Timber Yard |
+| Clay | Clay banks (after *Clay Digging*) → Clay Sheds | Later homes, third Timber Yard, every upgrade |
+| Stone | Rock Outcrops in the north-east hills (after *Stonecutting*) → Stone Yards | Building upgrades |
 | Stew | Cookhouse | Keeps labour at full speed |
 | Knowledge | Academy scholars | Research |
 
@@ -75,6 +76,19 @@ Storage is shared across buildings of a kind; building more storage raises the c
 ## Construction
 
 Costs are paid when placed; a builder then contributes work (up to two per site). Visual stages: foundation slab → scaffold → walls rising (clipping plane) → finished bounce with confetti. Cancelling refunds everything. Moving any building is free and instant; decorations place instantly.
+
+## Building upgrades
+
+Most buildings have levels (data in `config/buildings.ts`, `upgrades`). An upgrade is paid up front, then builders work on it while the building **keeps working**. Each level is visible: stone footings, awnings, extra chimneys, a dormer, ovens, kilns, hoists, a second observatory, plus a blue (level 2) or gold (level 3) pennant.
+
+| Building | Level 2 | Level 3 (needs *Masonry*, village level 3) |
+| --- | --- | --- |
+| Timber Yard / Clay Shed / Stone Yard | more storage (no stone needed for the first two) | more storage |
+| Cookhouse | bigger pantry, 2 cooks, cooking ×1.2 | bigger pantry, cooking ×1.4 |
+| Academy | bigger bank, 2 scholars, study ×1.2 | bigger bank, study ×1.4 |
+| Founders' Lodge | third bed (needs *Masonry*) | — |
+
+Speed bonuses appear as their own factor in the productivity formula ("Cookhouse level 2 ×1.20"). When storage is full, *Next steps* points at an affordable upgrade before suggesting a new building.
 
 ## Research & levels
 
@@ -116,7 +130,7 @@ Contextual coach card + world arrow, each beat completes by doing the thing (and
 
 ## Roadmap
 
-- **Milestone 2:** Stone, building upgrades with visual levels, larger research tree, crafting queues, advanced materials (planks, bricks), more homes, balancing tools.
+- **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ⏳ processing chains (Sawmill → planks, Brickworks → bricks) with offline crafting queues · ⏳ research tiers 4–5, more homes, permanent production areas · ⏳ economy simulation / balancing tools.
 - **Milestone 3:** The Hearthlands (shared Valley) map, Valley buildings & research, contributions, guild training, merchants, reputation — with simulated neighbours first.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

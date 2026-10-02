@@ -1,14 +1,14 @@
 import { BALANCE } from '../config/balance';
-import { BUILDINGS } from '../config/buildings';
 import { SKILL_ORDER, type SkillId } from '../config/skills';
 import { APPEARANCE_PALETTE, NEWCOMER_NAMES, type Appearance, type VillagerTemplate } from '../config/villagers';
 import { mulberry32 } from '../world/noise';
+import { buildingStats } from './levels';
 import { mealDuration } from './modifiers';
 import type { EventSink } from './events';
 import type { BuildingInstance, GameState, NewcomerCandidate, SkillState, Villager } from './types';
 
 export function housingCapacity(state: GameState): number {
-  return state.buildings.reduce((sum, b) => sum + (b.status === 'complete' ? (BUILDINGS[b.defId].housing ?? 0) : 0), 0);
+  return state.buildings.reduce((sum, b) => sum + (b.status === 'complete' ? buildingStats(b.defId, b.level).housing : 0), 0);
 }
 
 export function residents(state: GameState, homeId: number): Villager[] {
@@ -17,7 +17,7 @@ export function residents(state: GameState, homeId: number): Villager[] {
 
 export function homeWithSpace(state: GameState): BuildingInstance | null {
   for (const b of state.buildings) {
-    const beds = b.status === 'complete' ? (BUILDINGS[b.defId].housing ?? 0) : 0;
+    const beds = b.status === 'complete' ? buildingStats(b.defId, b.level).housing : 0;
     if (beds > residents(state, b.id).length) return b;
   }
   return null;

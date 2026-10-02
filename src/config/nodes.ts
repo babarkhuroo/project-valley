@@ -1,7 +1,7 @@
 import type { JobType } from './jobs';
 import type { ResearchId } from './research';
 
-export type NodeKind = 'tree' | 'clay';
+export type NodeKind = 'tree' | 'clay' | 'stone';
 
 export interface NodeDef {
   kind: NodeKind;
@@ -37,6 +37,16 @@ export const NODES: Record<NodeKind, NodeDef> = {
     requiresResearch: 'clayDigging',
     amount: 40,
     regrowSeconds: 1200,
+    maxWorkers: 1,
+  },
+  stone: {
+    kind: 'stone',
+    name: 'Rock Outcrop',
+    description: 'Weathered rock on the hillside. Quarry it for stone; loose rock slowly gathers again.',
+    job: 'quarry',
+    requiresResearch: 'stonecutting',
+    amount: 60,
+    regrowSeconds: 2400,
     maxWorkers: 1,
   },
 };

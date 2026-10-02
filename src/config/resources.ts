@@ -1,4 +1,4 @@
-export type ResourceId = 'timber' | 'clay' | 'stew' | 'knowledge';
+export type ResourceId = 'timber' | 'clay' | 'stone' | 'stew' | 'knowledge';
 
 export interface ResourceDef {
   id: ResourceId;
@@ -25,6 +25,13 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
     color: '#d0673f',
     hud: true,
   },
+  stone: {
+    id: 'stone',
+    name: 'Stone',
+    description: 'Quarried from the rocky hills. Foundations, chimneys and every serious upgrade need it.',
+    color: '#8f97a3',
+    hud: true,
+  },
   stew: {
     id: 'stew',
     name: 'Stew',
@@ -41,4 +48,4 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   },
 };
 
-export const RESOURCE_ORDER: ResourceId[] = ['timber', 'clay', 'stew', 'knowledge'];
+export const RESOURCE_ORDER: ResourceId[] = ['timber', 'clay', 'stone', 'stew', 'knowledge'];

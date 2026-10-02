@@ -1,5 +1,5 @@
 import { createInitialState } from '../sim/initialState';
-import { createWorld } from '../sim/world';
+import { createWorld, ensureMapNodes } from '../sim/world';
 import type { SimEvent } from '../sim/events';
 import { now } from './clock';
 import { Game } from './Game';
@@ -22,6 +22,7 @@ export async function bootGame(): Promise<BootResult> {
   const world = createWorld();
   const loaded = await loadGame();
   const state = loaded.state ?? createInitialState(world, now());
+  ensureMapNodes(state, world);
   const game = new Game(state, world);
   let away: AwaySummary | null = null;
   if (loaded.state && loaded.elapsedSeconds > 1) {

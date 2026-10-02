@@ -35,6 +35,7 @@ interface Visual {
   steamLevel: number;
   sparkleClock: number;
   lastFill: number;
+  level: number;
 }
 
 const hitMaterial = new THREE.MeshBasicMaterial({ visible: false });
@@ -88,12 +89,12 @@ export class BuildingsView {
   }
 
   private keyFor(b: BuildingInstance): string {
-    return `${b.defId}:${b.status}:${b.cellX}:${b.cellZ}:${b.rotation}:${b.level}`;
+    return `${b.defId}:${b.status}:${b.cellX}:${b.cellZ}:${b.rotation}:${b.level}:${b.upgrade ? 'u' : ''}`;
   }
 
   private create(b: BuildingInstance): Visual {
     const def = BUILDINGS[b.defId];
-    const model = createBuildingModel(b.defId, b.variant);
+    const model = createBuildingModel(b.defId, b.variant, b.level);
     const group = new THREE.Group();
     const c = buildingCenter(b);
     const baseY = this.groundYFor(b);
@@ -116,6 +117,7 @@ export class BuildingsView {
 
     let construction: ConstructionParts | null = null;
     if (b.status === 'construction') construction = this.decorateConstruction(group, model, w, d, def.height);
+    else if (b.upgrade) this.decorateUpgrade(group, w, d, def.height);
 
     this.group.add(group);
 
@@ -143,6 +145,7 @@ export class BuildingsView {
       steamLevel: 0,
       sparkleClock: Math.random(),
       lastFill: -1,
+      level: b.level,
     };
   }
 
@@ -185,6 +188,14 @@ export class BuildingsView {
     }
     group.add(foundation);
 
+    const scaffold = this.buildScaffold(w, d, height);
+    scaffold.visible = false;
+    group.add(scaffold);
+    return { foundation, scaffold, plane, materials };
+  }
+
+  /** Poles and planks around a footprint, shared by new construction and upgrades. */
+  private buildScaffold(w: number, d: number, height: number): THREE.Group {
     const scaffold = new THREE.Group();
     const pole = mat(PALETTE.woodLight);
     const plank = mat(PALETTE.wood);
@@ -210,9 +221,26 @@ export class BuildingsView {
         scaffold.add(board);
       }
     }
-    scaffold.visible = false;
-    group.add(scaffold);
-    return { foundation, scaffold, plane, materials };
+    return scaffold;
+  }
+
+  /** Upgrade in progress: scaffolding around the working building and a pile of materials. */
+  private decorateUpgrade(group: THREE.Group, w: number, d: number, height: number): void {
+    group.add(this.buildScaffold(w, d, height));
+    const pile = new THREE.Group();
+    pile.position.set(w / 2 + 0.25, 0, d / 2 + 0.2);
+    for (let i = 0; i < 3; i++) {
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 7), mat(PALETTE.bark));
+      log.rotation.z = Math.PI / 2;
+      log.position.set(0, 0.07 + (i === 2 ? 0.12 : 0), i === 2 ? 0 : (i - 0.5) * 0.15);
+      log.castShadow = true;
+      pile.add(log);
+    }
+    const block = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, 0.25), mat('#a7adb7', { flat: true }));
+    block.position.set(0.05, 0.09, 0.3);
+    block.castShadow = true;
+    pile.add(block);
+    group.add(pile);
   }
 
   /** Reconciles visuals with state; returns ids of buildings that just finished. */
@@ -225,9 +253,10 @@ export class BuildingsView {
       const key = this.keyFor(b);
       if (existing && existing.key === key) continue;
       const wasConstruction = existing?.construction !== null && existing !== undefined;
+      const leveledUp = !!existing && existing.level < b.level;
       if (existing) this.dispose(existing);
       const v = this.create(b);
-      if (wasConstruction && b.status === 'complete') {
+      if ((wasConstruction && b.status === 'complete') || leveledUp) {
         v.bounce = 1;
         finished.push(b.id);
       }

@@ -4,7 +4,7 @@ import { RESOURCE_ORDER, type ResourceId } from '../config/resources';
 import { NEWCOMER_NAMES, APPEARANCE_PALETTE } from '../config/villagers';
 import { capacity } from './economy';
 import type { EventSink } from './events';
-import { completeConstruction } from './construction';
+import { completeConstruction, completeUpgrade } from './construction';
 import { createVillager } from './population';
 import { addXp } from './progression';
 import { completeResearch } from './research';
@@ -46,7 +46,10 @@ export const devCommands = {
     settleVillagers(state, world, sink);
   },
   completeConstructions(state: GameState, world: World, sink: EventSink): void {
-    for (const b of state.buildings) if (b.status === 'construction') completeConstruction(state, world, b, sink);
+    for (const b of state.buildings) {
+      if (b.status === 'construction') completeConstruction(state, world, b, sink);
+      else if (b.upgrade) completeUpgrade(state, world, b, sink);
+    }
   },
   addVillager(state: GameState, world: World, at: Vec2, sink: EventSink): void {
     const n = state.villagers.length;

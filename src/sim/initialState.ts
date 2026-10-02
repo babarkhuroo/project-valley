@@ -43,6 +43,7 @@ export function createInitialState(world: World, now: number, seed = world.map.s
       paid: {},
       completedAt: 0,
       variant: 0,
+      upgrade: null,
     };
     state.buildings.push(b);
   }

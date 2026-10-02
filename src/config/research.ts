@@ -6,6 +6,8 @@ import type { ResourceId } from './resources';
 export type ResearchId =
   | 'cottageCraft'
   | 'clayDigging'
+  | 'stonecutting'
+  | 'masonry'
   | 'heartyRecipes'
   | 'growingHamlet'
   | 'sturdyRacks'
@@ -26,7 +28,9 @@ export type ResearchEffect =
   | { type: 'jobRate'; job: JobType; mult: number }
   | { type: 'storage'; resources: ResourceId[]; mult: number }
   | { type: 'mealDuration'; mult: number }
-  | { type: 'regrow'; node: NodeKind; mult: number };
+  | { type: 'regrow'; node: NodeKind; mult: number }
+  /** Informational: opens building upgrades up to this level (checked by upgrade definitions). */
+  | { type: 'upgradeTier'; level: number };
 
 export interface ResearchDef {
   id: ResearchId;
@@ -168,15 +172,45 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
   },
   claySpades: {
     id: 'claySpades',
-    name: 'Clay Spades',
-    description: 'Narrow, sharpened spades make digging clay 20% faster.',
+    name: 'Iron-shod Spades',
+    description: 'Iron edges on every spade and pick. Digging clay and quarrying stone are 20% faster.',
     category: 'production',
     tier: 3,
     cost: 80,
-    prereqs: ['clayDigging'],
-    effects: [{ type: 'jobRate', job: 'dig', mult: 1.2 }],
+    prereqs: ['stonecutting'],
+    effects: [
+      { type: 'jobRate', job: 'dig', mult: 1.2 },
+      { type: 'jobRate', job: 'quarry', mult: 1.2 },
+    ],
     xp: 80,
     row: 1,
+  },
+  stonecutting: {
+    id: 'stonecutting',
+    name: 'Stonecutting',
+    description: 'Learn to split the hillside rock. Quarry Rock Outcrops and store stone in a Stone Yard.',
+    category: 'resources',
+    tier: 2,
+    cost: 50,
+    prereqs: ['clayDigging'],
+    effects: [
+      { type: 'unlockNode', node: 'stone' },
+      { type: 'unlockBuilding', building: 'stoneYard' },
+    ],
+    xp: 50,
+    row: 1,
+  },
+  masonry: {
+    id: 'masonry',
+    name: 'Masonry',
+    description: 'Mortar, footings and true walls. Buildings can be raised to level 3, and the Founders’ Lodge can grow a third bed.',
+    category: 'storage',
+    tier: 3,
+    cost: 100,
+    prereqs: ['stonecutting'],
+    effects: [{ type: 'upgradeTier', level: 3 }],
+    xp: 100,
+    row: 2,
   },
   woodlandTending: {
     id: 'woodlandTending',

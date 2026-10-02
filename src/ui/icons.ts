@@ -21,6 +21,25 @@ export const ICONS = {
      <path d="M8 12.5c1.5-1.4 3-2 5-1.8" stroke="#f0a27c" stroke-width="1.6" fill="none" stroke-linecap="round"/>
      <circle cx="15.5" cy="15" r="1.2" fill="#a84e2e"/><circle cx="9.5" cy="16.5" r="0.9" fill="#a84e2e"/>`,
   ),
+  stone: svg(
+    `<path d="M3.5 15l3-6 6-2.5 6 2 2.5 6.5-4 4H8z" fill="#a7adb7" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M6.5 9l5.5 2.5 6-2M12 11.5V19" stroke="${O}" stroke-width="1.1" fill="none" opacity=".55"/>
+     <path d="M8 13.5l2.5 1.2" stroke="#e4e7ec" stroke-width="1.3" stroke-linecap="round"/>`,
+  ),
+  quarry: svg(
+    `<path d="M7 21l8.5-12" stroke="#8a5a3b" stroke-width="2.4" stroke-linecap="round"/>
+     <path d="M5 6.5c3.5-3 9.5-3.5 14-1-3.5-.4-6.4.6-8.6 3.2z" fill="#b9c3cf" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M11.4 8.7c2.3-2.4 5.3-3.3 7.6-3.2" stroke="${O}" stroke-width="1" fill="none" opacity=".5"/>`,
+  ),
+  crate: svg(
+    `<rect x="3.5" y="5.5" width="17" height="14" rx="1.6" fill="#d7a86e" stroke="${O}" stroke-width="1.4"/>
+     <path d="M3.5 10.2h17M3.5 14.8h17" stroke="${O}" stroke-width="1.1" opacity=".55"/>
+     <path d="M5 6.5l14 12M19 6.5l-14 12" stroke="#8a5a3b" stroke-width="1.6" stroke-linecap="round"/>`,
+  ),
+  upgrade: svg(
+    `<circle cx="12" cy="12" r="9.5" fill="#9ee07c" stroke="${O}" stroke-width="1.4"/>
+     <path d="M12 17V7.5M7.5 11.5L12 7l4.5 4.5" stroke="${O}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ),
   stew: svg(
     `<path d="M5 8c2-1.5 1-3 3-4M11 8c2-1.5 1-3 3-4M17 8c2-1.5 1-3 3-4" stroke="#e8e0d4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".9"/>
      <path d="M3 11h18c0 5-4 9-9 9s-9-4-9-9z" fill="#c9824a" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>

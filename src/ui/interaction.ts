@@ -17,7 +17,8 @@ export function jobForTarget(target: PickTarget): Job | null {
   if (target.kind === 'building') {
     const b = findBuilding(state, target.id);
     if (!b) return null;
-    if (b.status === 'construction') return { kind: 'construct', buildingId: b.id };
+    // A building under construction or being upgraded takes builders first.
+    if (b.status === 'construction' || b.upgrade) return { kind: 'construct', buildingId: b.id };
     if (BUILDINGS[b.defId].operate) return { kind: 'operate', buildingId: b.id };
   }
   return null;

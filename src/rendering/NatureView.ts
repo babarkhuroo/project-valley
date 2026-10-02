@@ -17,6 +17,7 @@ import {
   pineTreeGeometry,
   reedGeometry,
   roundTreeGeometry,
+  stoneOutcropGeometry,
   stumpGeometry,
 } from './models/natureModels';
 import { applyWind } from './wind';
@@ -93,6 +94,7 @@ export class NatureView {
     const round = trees.filter((n) => n.variant === 0);
     const pines = trees.filter((n) => n.variant === 1);
     const clay = state.nodes.filter((n) => n.kind === 'clay');
+    const stone = state.nodes.filter((n) => n.kind === 'stone');
     const leafMat = applyWind(vertexColorMat(), 1, 0.9);
     const make = (levels: FieldLevel[], nodes: ResourceNode[], material: THREE.Material, sizeFor: (n: ResourceNode, r: () => number) => number): void => {
       const field = this.field(material, levels);
@@ -123,6 +125,7 @@ export class NatureView {
     make(treeLevels(roundTreeGeometry(1), roundTreeGeometry(0)), round, leafMat, (_n, r) => 0.85 + r() * 0.35);
     make(treeLevels(pineTreeGeometry(1), pineTreeGeometry(0)), pines, leafMat, (_n, r) => 0.85 + r() * 0.4);
     make([{ geometry: clayGeometry(), maxDistance: Infinity, castShadow: true }], clay, vertexColorMat(), (_n, r) => 0.9 + r() * 0.2);
+    make([{ geometry: stoneOutcropGeometry(), maxDistance: Infinity, castShadow: true }], stone, vertexColorMat(), (_n, r) => 0.95 + r() * 0.3);
 
     this.stumps = this.field(vertexColorMat(), [{ geometry: stumpGeometry(), maxDistance: 60, castShadow: true }]);
     for (const n of trees) {
@@ -172,7 +175,8 @@ export class NatureView {
         } else {
           scale = 0.18 + 0.3 * p;
         }
-      } else if (n.kind === 'clay') {
+      } else if (n.kind !== 'tree') {
+        // Clay banks and outcrops shrink as they are dug out.
         scale = 0.45 + 0.55 * (n.amount / def.amount);
       }
       const shaking = slot.shakeUntil > realTime;
@@ -183,7 +187,7 @@ export class NatureView {
           const wob = Math.sin(realTime * 60) * 0.05 * k;
           tmpQ.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(wob, 0, wob * 0.7)));
         }
-        if (n.kind === 'clay') tmpS.set(tmpS.x * (0.7 + 0.3 * scale), tmpS.y * scale, tmpS.z * (0.7 + 0.3 * scale));
+        if (n.kind !== 'tree') tmpS.set(tmpS.x * (0.7 + 0.3 * scale), tmpS.y * scale, tmpS.z * (0.7 + 0.3 * scale));
         else tmpS.multiplyScalar(scale);
         slot.field.setActive(slot.source, scale > 0);
         if (scale > 0) slot.field.setMatrix(slot.source, tmpM.compose(tmpP, tmpQ, tmpS));

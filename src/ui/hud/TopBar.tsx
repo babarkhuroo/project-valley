@@ -1,5 +1,5 @@
 import { levelBounds } from '../../config/balance';
-import { RESEARCH } from '../../config/research';
+import { RESEARCH, type ResearchId } from '../../config/research';
 import { RESOURCES, RESOURCE_ORDER, type ResourceId } from '../../config/resources';
 import { game } from '../../game/runtime';
 import { capacity } from '../../sim/economy';
@@ -32,6 +32,8 @@ function LevelBadge() {
   );
 }
 
+const UNLOCKED_BY: Partial<Record<ResourceId, ResearchId>> = { clay: 'clayDigging', stone: 'stonecutting' };
+
 function ResourceChip({ id, rate }: { id: ResourceId; rate: { gain: number; use: number } }) {
   const state = game().state;
   const amount = state.resources[id];
@@ -39,7 +41,9 @@ function ResourceChip({ id, rate }: { id: ResourceId; rate: { gain: number; use:
   const full = cap > 0 && amount >= cap;
   const net = rate.gain - rate.use;
   const active = id === 'knowledge' ? state.research.active : null;
-  const unlocked = id !== 'clay' || state.research.completed.includes('clayDigging') || amount > 0;
+  // Late resources stay out of the bar until the player can actually get them.
+  const gate = UNLOCKED_BY[id];
+  const unlocked = !gate || state.research.completed.includes(gate) || amount > 0;
   if (!unlocked) return null;
   let sub: string | null = null;
   if (Math.abs(net) >= 0.05) sub = `${net > 0 ? '+' : '−'}${Math.abs(net) < 10 ? Math.abs(net).toFixed(1) : Math.round(Math.abs(net))}/min`;

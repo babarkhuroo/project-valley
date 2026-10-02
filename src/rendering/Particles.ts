@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type ParticleKind = 'smoke' | 'steam' | 'dust' | 'sparkle' | 'chips' | 'clods' | 'confetti' | 'leaves' | 'knowledge';
+export type ParticleKind = 'smoke' | 'steam' | 'dust' | 'sparkle' | 'chips' | 'clods' | 'rubble' | 'confetti' | 'leaves' | 'knowledge';
 
 interface Particle {
   alive: boolean;
@@ -30,6 +30,7 @@ const COLORS: Record<ParticleKind, string[]> = {
   sparkle: ['#ffe07a', '#fff3b8', '#ffd24a'],
   chips: ['#d7a86e', '#b07a4b', '#8a5a3b'],
   clods: ['#c7643c', '#a84e2e', '#d0673f'],
+  rubble: ['#a7adb7', '#8f97a3', '#c4c8cf'],
   confetti: ['#e86b8a', '#f2c14e', '#6fc3e0', '#8fd16b', '#b58be0'],
   leaves: ['#6fae4f', '#8cc265', '#5f9748'],
   knowledge: ['#9fb6ff', '#c9d6ff', '#7f9cf5'],
@@ -151,7 +152,7 @@ export class Particles {
           const a = Math.random() * Math.PI * 2;
           p.vel.set(Math.cos(a) * 1.2, 1.4 + Math.random() * 1.2, Math.sin(a) * 1.2);
           p.life = 0.6 + Math.random() * 0.4;
-          p.size = kind === 'clods' ? 0.9 : 0.75;
+          p.size = kind === 'chips' ? 0.75 : 0.9;
           p.grow = 0;
           p.gravity = 7;
           p.drag = 0.6;

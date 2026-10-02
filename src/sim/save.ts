@@ -5,12 +5,21 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
 /** `MIGRATIONS[n]` upgrades a version-n save to version n+1. */
-export const MIGRATIONS: Record<number, Migration> = {};
+export const MIGRATIONS: Record<number, Migration> = {
+  // v2 (milestone 2): stone resource and building upgrades. Stone outcrops are added to
+  // old villages by `ensureMapNodes` on load, since node placement needs the world.
+  1: (d) => {
+    const out = { ...d };
+    if (d.resources && typeof d.resources === 'object') out.resources = { stone: 0, ...(d.resources as Record<string, number>) };
+    if (Array.isArray(d.buildings)) out.buildings = (d.buildings as Record<string, unknown>[]).map((b) => ({ upgrade: null, ...b }));
+    return out;
+  },
+};
 
 export class SaveError extends Error {}
 

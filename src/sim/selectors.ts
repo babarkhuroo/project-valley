@@ -7,6 +7,7 @@ import { RESOURCES, RESOURCE_ORDER, type ResourceId } from '../config/resources'
 import { canAfford, capacity, nearestStorage } from './economy';
 import { buildingCenter } from './grid';
 import { checkBuildable, nextCost } from './construction';
+import { canAffordUpgrade, siteWork, upgradeBlocker } from './levels';
 import { mealDuration } from './modifiers';
 import { findPath, pathLength } from './pathfinding';
 import { housingCapacity } from './population';
@@ -81,7 +82,8 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
     const active = state.research.active;
     label = active ? `Studying ${RESEARCH[active].name}` : 'Studying';
   } else if (jt === 'build') {
-    label = `Building ${target}`;
+    const site = v.job.kind === 'construct' ? findBuilding(state, v.job.buildingId) : undefined;
+    label = site?.upgrade ? `Upgrading ${target}` : `Building ${target}`;
   }
   const progress = v.batchWork > 0 ? Math.min(1, v.workProgress / v.batchWork) : 0;
   return { label, icon: warning ? 'hungry' : jt, progress, warning, idle: false };
@@ -110,6 +112,12 @@ export interface JobEstimate {
 
 const travelCache = new Map<string, number>();
 
+const STORE_FOR: Record<'timber' | 'clay' | 'stone', BuildingId> = {
+  timber: 'timberYard',
+  clay: 'clayShed',
+  stone: 'stoneYard',
+};
+
 function roundTripSeconds(state: GameState, world: World, nodeId: number, resource: ResourceId): { seconds: number; storage: BuildingInstance | null } {
   const node = findNode(state, nodeId);
   if (!node) return { seconds: 0, storage: null };
@@ -134,7 +142,7 @@ export function estimateJob(state: GameState, world: World, v: Villager, job: Jo
   const jt = jobTypeOf(state, job);
   if (!jt) return null;
   const def = JOBS[jt];
-  const { rate, factors } = workRateBreakdown(state, v, jt);
+  const { rate, factors } = workRateBreakdown(state, v, jt, job);
   const workSeconds = def.batchWork / rate;
   let travelSeconds = 0;
   let destination: string | null = null;
@@ -170,23 +178,25 @@ export function productionSummary(state: GameState, world: World): Record<Resour
 }
 
 export function constructionEta(state: GameState, b: BuildingInstance): number | null {
-  if (b.status !== 'construction') return null;
+  const site = siteWork(b);
+  if (!site) return null;
   const builders = state.villagers.filter((v) => v.job?.kind === 'construct' && v.job.buildingId === b.id && v.activity === 'working');
   const rate = builders.reduce((sum, v) => sum + workRateBreakdown(state, v, 'build').rate, 0);
   if (rate <= 0) return null;
   const inFlight = builders.reduce((sum, v) => sum + v.workProgress, 0);
-  return Math.max(0, b.workRequired - b.progress - inFlight) / rate;
+  return Math.max(0, site.required - site.progress - inFlight) / rate;
 }
 
-/** Construction progress 0..1 including builders' in-progress batches (for smooth visuals). */
+/** Construction or upgrade progress 0..1 including builders' in-progress batches (for smooth visuals). */
 export function constructionFraction(state: GameState, b: BuildingInstance): number {
-  if (b.status === 'complete') return 1;
-  if (b.workRequired <= 0) return 0;
-  let p = b.progress;
+  const site = siteWork(b);
+  if (!site) return 1;
+  if (site.required <= 0) return 0;
+  let p = site.progress;
   for (const v of state.villagers) {
     if (v.job?.kind === 'construct' && v.job.buildingId === b.id && v.activity === 'working') p += Math.min(v.workProgress, v.batchWork);
   }
-  return Math.max(0, Math.min(1, p / b.workRequired));
+  return Math.max(0, Math.min(1, p / site.required));
 }
 
 // ---------------------------------------------------------------------------
@@ -218,14 +228,24 @@ export function nextSteps(state: GameState): Suggestion[] {
     const kitchen = state.buildings.find((b) => b.defId === 'cookhouse');
     tips.push({ id: 'food', kind: 'warning', text: 'Stew is running low — put someone on the pot', action: kitchen ? { type: 'selectBuilding', id: kitchen.id } : undefined });
   }
-  for (const r of ['timber', 'clay'] as ResourceId[]) {
+  for (const r of ['timber', 'clay', 'stone'] as const) {
     const cap = capacity(state, r);
-    if (cap > 0 && state.resources[r] >= cap) tips.push({ id: `full-${r}`, kind: 'warning', text: `${RESOURCES[r].name} storage is full`, action: { type: 'openBuild', building: r === 'timber' ? 'timberYard' : 'clayShed' } });
+    if (cap > 0 && state.resources[r] >= cap) {
+      // Prefer pointing at an affordable upgrade of an existing store over building a new one.
+      const store = STORE_FOR[r];
+      const upgradable = state.buildings.find((b) => b.defId === store && !upgradeBlocker(state, b) && canAffordUpgrade(state, b));
+      tips.push(
+        upgradable
+          ? { id: `full-${r}`, kind: 'warning', text: `${RESOURCES[r].name} storage is full — upgrade the ${BUILDINGS[store].name}`, action: { type: 'selectBuilding', id: upgradable.id } }
+          : { id: `full-${r}`, kind: 'warning', text: `${RESOURCES[r].name} storage is full`, action: { type: 'openBuild', building: store } },
+      );
+    }
   }
-  const sites = state.buildings.filter((b) => b.status === 'construction');
-  for (const b of sites) {
+  for (const b of state.buildings) {
+    if (!siteWork(b)) continue;
     const builders = state.villagers.filter((v) => v.job?.kind === 'construct' && v.job.buildingId === b.id).length;
-    if (builders === 0) tips.push({ id: `site-${b.id}`, kind: 'warning', text: `${BUILDINGS[b.defId].name} site needs a builder`, action: { type: 'selectBuilding', id: b.id } });
+    const what = b.upgrade ? `${BUILDINGS[b.defId].name} upgrade` : `${BUILDINGS[b.defId].name} site`;
+    if (builders === 0) tips.push({ id: `site-${b.id}`, kind: 'warning', text: `${what} needs a builder`, action: { type: 'selectBuilding', id: b.id } });
   }
   const academy = state.buildings.find((b) => b.defId === 'academy' && b.status === 'complete');
   if (academy && !state.research.active) {
@@ -241,6 +261,10 @@ export function nextSteps(state: GameState): Suggestion[] {
     if (id === 'cottage' && housingCapacity(state) <= state.villagers.length && canAfford(state, nextCost(state, id).resources)) {
       tips.push({ id: 'cottage', kind: 'idea', text: 'You can afford a Cottage — room for a new villager', action: { type: 'openBuild', building: 'cottage' } });
     }
+  }
+  if (!state.buildings.some((b) => b.upgrade)) {
+    const ready = state.buildings.find((b) => !upgradeBlocker(state, b) && canAffordUpgrade(state, b) && BUILDINGS[b.defId].category !== 'storage');
+    if (ready) tips.push({ id: `upgrade-${ready.id}`, kind: 'idea', text: `You can afford to upgrade the ${BUILDINGS[ready.defId].name}`, action: { type: 'selectBuilding', id: ready.id } });
   }
   const lockedTier = RESEARCH_IDS.find((id) => researchStatus(state, id) === 'locked-level');
   if (lockedTier && tips.length < 3) {

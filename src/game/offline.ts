@@ -44,6 +44,9 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
       case 'constructionComplete':
         built.push(BUILDINGS[e.defId].name);
         break;
+      case 'upgradeComplete':
+        built.push(`${BUILDINGS[e.defId].name} (level ${e.level})`);
+        break;
       case 'researchComplete':
         researched.push(RESEARCH[e.researchId].name);
         break;

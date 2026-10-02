@@ -32,7 +32,9 @@ export interface VillageMapDef {
   /** Hand-placed trees near the clearing so the first minutes feel close and quick. */
   loneTrees: Point[];
   clayDeposits: Point[];
-  /** Decorative boulders: x, z, scale. Future stone quarrying uses this area. */
+  /** Quarriable rock outcrops (stone nodes) in the hills. */
+  stoneDeposits: Point[];
+  /** Decorative boulders: x, z, scale. */
   boulders: [number, number, number][];
   /** Flower-rich meadows (decorative density hint). */
   meadows: Point[][];
@@ -103,6 +105,9 @@ export const VILLAGE_MAP: VillageMapDef = {
   ],
   clayDeposits: [
     [45.6, 31.4], [46.2, 34.6], [44.0, 38.6], [42.2, 42.0], [40.4, 44.0], [36.0, 46.6], [51.8, 33.8], [52.4, 40.8], [47.8, 43.4],
+  ],
+  stoneDeposits: [
+    [45, 9], [48, 15], [51.5, 13], [49, 6.5], [43, 12], [47.5, 19], [41.5, 15.5],
   ],
   boulders: [
     [50, 10, 1.3], [55, 14, 1.7], [58.5, 9, 1.1], [52, 17.5, 0.9], [47, 12, 1.0], [60.5, 18.5, 1.4],

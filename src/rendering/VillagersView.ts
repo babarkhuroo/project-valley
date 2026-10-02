@@ -34,6 +34,7 @@ interface Visual {
 const WORK_CYCLE: Record<WorkAnim, { period: number; impact: number | null }> = {
   chop: { period: 1.1, impact: 0.66 },
   dig: { period: 1.3, impact: 0.55 },
+  mine: { period: 1.25, impact: 0.62 },
   cook: { period: 1.8, impact: null },
   research: { period: 3.2, impact: null },
   build: { period: 0.6, impact: 0.5 },
@@ -247,6 +248,22 @@ export class VillagersView {
         rig.body.rotation.y = ph < 0.55 ? -0.25 * ease(ph / 0.55) : -0.25 + 0.35 * Math.min(1, (ph - 0.55) / 0.13);
         rig.body.rotation.x = ph > 0.55 && ph < 0.8 ? 0.15 : 0.02;
         rig.legL.rotation.x = -0.15;
+        rig.legR.rotation.x = 0.2;
+        break;
+      }
+      case 'mine': {
+        // Two-handed overhead swing, body following through into the strike.
+        let a: number;
+        if (ph < 0.5) a = -2.7 * ease(ph / 0.5);
+        else if (ph < 0.62) a = -2.7 + 2.3 * ((ph - 0.5) / 0.12);
+        else a = -0.4 * (1 - ease((ph - 0.62) / 0.38));
+        rig.armR.rotation.x = a;
+        rig.armL.rotation.x = a * 0.95;
+        rig.armL.rotation.z = -0.35;
+        rig.armR.rotation.z = 0.15;
+        rig.body.rotation.x = ph > 0.5 && ph < 0.75 ? 0.25 : -0.05;
+        rig.body.position.y = ph < 0.5 ? 0.02 * ease(ph / 0.5) : 0;
+        rig.legL.rotation.x = -0.2;
         rig.legR.rotation.x = 0.2;
         break;
       }

@@ -1,11 +1,12 @@
-import { BUILDINGS, type BuildingId } from '../config/buildings';
+import { BUILDINGS, BUILD_MENU_ORDER, type BuildingId } from '../config/buildings';
 import { JOBS } from '../config/jobs';
 import { NODES } from '../config/nodes';
 import { RESEARCH, type ResearchId } from '../config/research';
 import { RESOURCES } from '../config/resources';
 import { canAfford, addResource, nearestStorage, pay, refund } from './economy';
 import type { EventSink } from './events';
-import { checkBuildable, checkFootprint, completeConstruction, nextCost } from './construction';
+import { checkBuildable, checkFootprint, completeConstruction, completeUpgrade, nextCost } from './construction';
+import { buildingStats, nextUpgrade, siteWork, upgradeBlocker } from './levels';
 import { isNodeUnlocked } from './modifiers';
 import { checkNewcomers, createVillager, homeWithSpace } from './population';
 import { drainBankIntoActive, researchStatus } from './research';
@@ -43,7 +44,7 @@ export function jobSlots(state: GameState, job: Job): number {
   const b = findBuilding(state, job.buildingId);
   if (!b) return 0;
   if (job.kind === 'construct') return BALANCE.villager.buildersPerSite;
-  return BUILDINGS[b.defId].operate?.slots ?? 0;
+  return BUILDINGS[b.defId].operate ? buildingStats(b.defId, b.level).slots : 0;
 }
 
 export function workersOn(state: GameState, job: Job, exceptId = -1): Villager[] {
@@ -62,7 +63,8 @@ export function jobBlocker(state: GameState, job: Job): string | null {
       if (node.amount <= 0) return 'Exhausted — regrowing';
       const out = JOBS[def.job].output?.resource;
       if (out && !nearestStorage(state, out, node)) {
-        return out === 'clay' ? 'Build a Clay Shed to store clay' : `Build storage for ${RESOURCES[out].name}`;
+        const store = BUILD_MENU_ORDER.find((id) => BUILDINGS[id].storage?.[out]);
+        return store ? `Build a ${BUILDINGS[store].name} to store ${RESOURCES[out].name.toLowerCase()}` : `Build storage for ${RESOURCES[out].name}`;
       }
       return null;
     }
@@ -74,7 +76,7 @@ export function jobBlocker(state: GameState, job: Job): string | null {
     }
     case 'construct': {
       const b = findBuilding(state, job.buildingId);
-      if (!b || b.status !== 'construction') return 'Nothing to build here';
+      if (!b || !siteWork(b)) return 'Nothing to build here';
       return null;
     }
   }
@@ -156,6 +158,7 @@ export function placeBuilding(
     paid: { ...cost.resources },
     completedAt: null,
     variant: state.nextId % 4,
+    upgrade: null,
   };
   state.buildings.push(b);
   syncWorld(world, state);
@@ -188,6 +191,33 @@ export function cancelConstruction(state: GameState, world: World, buildingId: n
   state.buildings = state.buildings.filter((o) => o.id !== b.id);
   syncWorld(world, state);
   refreshAfterGridChange(state, world, sink);
+  return { ok: true };
+}
+
+/** Pays for the next level and opens the building to builders. It keeps working meanwhile. */
+export function startUpgrade(state: GameState, world: World, buildingId: number, sink: EventSink): CommandResult {
+  const b = findBuilding(state, buildingId);
+  if (!b) return fail('Unknown building');
+  const blocker = upgradeBlocker(state, b);
+  if (blocker) return fail(blocker.startsWith('needs-research:') ? `Research ${RESEARCH[blocker.slice(15) as ResearchId].name} first` : blocker);
+  const up = nextUpgrade(b.defId, b.level)!;
+  if (!canAfford(state, up.cost.resources)) return fail('Not enough resources');
+  pay(state, up.cost.resources);
+  b.upgrade = { toLevel: b.level + 1, progress: 0, workRequired: up.cost.work, paid: { ...up.cost.resources } };
+  sink.push({ type: 'upgradeStarted', buildingId: b.id, defId: b.defId, level: b.level + 1 });
+  if (up.cost.work <= 0) completeUpgrade(state, world, b, sink);
+  settleVillagers(state, world, sink);
+  return { ok: true };
+}
+
+export function cancelUpgrade(state: GameState, world: World, buildingId: number, sink: EventSink): CommandResult {
+  const b = findBuilding(state, buildingId);
+  if (!b?.upgrade) return fail('No upgrade in progress');
+  for (const v of state.villagers) {
+    if (v.job?.kind === 'construct' && v.job.buildingId === b.id) becomeIdle(state, world, v, sink, 'removed');
+  }
+  refund(state, b.upgrade.paid);
+  b.upgrade = null;
   return { ok: true };
 }
 

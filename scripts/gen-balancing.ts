@@ -105,6 +105,28 @@ table(
   }),
 );
 
+out('## Building upgrades');
+out();
+out('Upgrades keep the footprint, are paid up front, need builder work, and the building keeps working meanwhile. Stats replace the previous level\'s values.');
+out();
+table(
+  ['Building', 'Level', 'Cost', 'Work', 'Requires', 'Effect', 'XP'],
+  listed.flatMap((id) =>
+    (BUILDINGS[id].upgrades ?? []).map((u, i) => {
+      const effect = [
+        u.storage ? `stores ${bundle(u.storage)}` : '',
+        u.housing !== undefined ? `houses ${u.housing}` : '',
+        u.slots !== undefined ? `${u.slots} worker slots` : '',
+        u.outputMult !== undefined ? `work ×${u.outputMult}` : '',
+      ]
+        .filter(Boolean)
+        .join('; ');
+      const req = [u.requiresResearch ? RESEARCH[u.requiresResearch].name : '', u.minPlayerLevel ? `village level ${u.minPlayerLevel}` : ''].filter(Boolean).join(', ');
+      return [BUILDINGS[id].name, `${i + 1} → ${i + 2}`, bundle(u.cost.resources), u.cost.work, req || '—', effect, u.xp];
+    }),
+  ),
+);
+
 out('## Research');
 out();
 table(

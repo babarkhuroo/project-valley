@@ -7,6 +7,7 @@ export type BuildingId =
   | 'lodge'
   | 'timberYard'
   | 'clayShed'
+  | 'stoneYard'
   | 'academy'
   | 'cottage'
   | 'flowerBed'
@@ -21,6 +22,25 @@ export interface BuildCost {
   resources: ResourceBundle;
   /** Construction work units. A builder contributes `workRate` units/second. 0 = placed instantly. */
   work: number;
+}
+
+/**
+ * One upgrade step. Stats listed here replace the building's previous values from this
+ * level on; anything omitted carries over. Upgrades keep the footprint and the building
+ * keeps working while builders upgrade it.
+ */
+export interface UpgradeDef {
+  cost: BuildCost;
+  requiresResearch?: ResearchId;
+  /** Village level needed to start this upgrade. */
+  minPlayerLevel?: number;
+  storage?: Partial<Record<ResourceId, number>>;
+  housing?: number;
+  /** Worker slots for the building's operate job. */
+  slots?: number;
+  /** Work-rate multiplier for the building's operate job. */
+  outputMult?: number;
+  xp: number;
 }
 
 export interface BuildingDef {
@@ -46,6 +66,8 @@ export interface BuildingDef {
   model: string;
   /** Approximate finished height, used for construction and label placement. */
   height: number;
+  /** Upgrade steps: `upgrades[0]` raises the building to level 2, and so on. */
+  upgrades?: UpgradeDef[];
 }
 
 export const BUILDINGS: Record<BuildingId, BuildingDef> = {
@@ -63,11 +85,15 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     operate: { job: 'cook', slots: 1 },
     model: 'cookhouse',
     height: 3.4,
+    upgrades: [
+      { cost: { resources: { timber: 120, clay: 50, stone: 40 }, work: 60 }, storage: { stew: 60 }, slots: 2, outputMult: 1.2, xp: 40 },
+      { cost: { resources: { timber: 200, clay: 100, stone: 120 }, work: 90 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stew: 90 }, outputMult: 1.4, xp: 60 },
+    ],
   },
   lodge: {
     id: 'lodge',
     name: "Founders' Lodge",
-    description: 'The long hall where the first settlers live. Home to two villagers.',
+    description: 'The long hall where the first settlers live. Home to two villagers — three once extended.',
     category: 'homes',
     footprint: { w: 3, d: 2 },
     buildable: false,
@@ -77,6 +103,9 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     housing: 2,
     model: 'lodge',
     height: 2.8,
+    upgrades: [
+      { cost: { resources: { timber: 150, clay: 80, stone: 80 }, work: 80 }, requiresResearch: 'masonry', housing: 3, xp: 60 },
+    ],
   },
   timberYard: {
     id: 'timberYard',
@@ -95,6 +124,10 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     storage: { timber: 120 },
     model: 'timberYard',
     height: 1.9,
+    upgrades: [
+      { cost: { resources: { timber: 80, clay: 30 }, work: 30 }, storage: { timber: 200 }, xp: 20 },
+      { cost: { resources: { timber: 120, clay: 40, stone: 60 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { timber: 320 }, xp: 35 },
+    ],
   },
   clayShed: {
     id: 'clayShed',
@@ -113,6 +146,32 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     storage: { clay: 100 },
     model: 'clayShed',
     height: 2.1,
+    upgrades: [
+      { cost: { resources: { timber: 90, clay: 40 }, work: 30 }, storage: { clay: 170 }, xp: 20 },
+      { cost: { resources: { timber: 120, clay: 60, stone: 60 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { clay: 260 }, xp: 35 },
+    ],
+  },
+  stoneYard: {
+    id: 'stoneYard',
+    name: 'Stone Yard',
+    description: 'A paved yard with a hoist for stacking cut stone. Quarrymen deliver here.',
+    category: 'storage',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresResearch: 'stonecutting',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 60, clay: 20 }, work: 35 },
+      { resources: { timber: 90, clay: 40 }, work: 45 },
+    ],
+    xp: 25,
+    storage: { stone: 100 },
+    model: 'stoneYard',
+    height: 2.2,
+    upgrades: [
+      { cost: { resources: { timber: 80, clay: 30, stone: 40 }, work: 35 }, storage: { stone: 170 }, xp: 25 },
+      { cost: { resources: { timber: 120, clay: 60, stone: 100 }, work: 50 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stone: 260 }, xp: 40 },
+    ],
   },
   academy: {
     id: 'academy',
@@ -128,6 +187,10 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     operate: { job: 'study', slots: 1 },
     model: 'academy',
     height: 4.4,
+    upgrades: [
+      { cost: { resources: { timber: 140, clay: 60, stone: 50 }, work: 70 }, storage: { knowledge: 50 }, slots: 2, outputMult: 1.2, xp: 45 },
+      { cost: { resources: { timber: 220, clay: 120, stone: 140 }, work: 100 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { knowledge: 80 }, outputMult: 1.4, xp: 70 },
+    ],
   },
   cottage: {
     id: 'cottage',
@@ -193,6 +256,7 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'academy',
   'timberYard',
   'clayShed',
+  'stoneYard',
   'cottage',
   'flowerBed',
   'lantern',

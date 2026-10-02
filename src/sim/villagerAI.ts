@@ -9,7 +9,8 @@ import { getModifiers, isNodeUnlocked, mealDuration, regrowSeconds } from './mod
 import { buildRoute, findPath, routeEnd, sampleRoute } from './pathfinding';
 import { practiceSkill, skillMultiplier } from './progression';
 import { produceKnowledge } from './research';
-import { completeConstruction } from './construction';
+import { completeConstruction, completeUpgrade } from './construction';
+import { buildingStats, siteWork } from './levels';
 import type { BuildingInstance, GameState, Job, ResourceNode, Vec2, Villager, WalkPurpose } from './types';
 import type { World } from './world';
 
@@ -75,7 +76,7 @@ export interface RateFactor {
 }
 
 /** Work units per second for this villager on this job, with a readable breakdown. */
-export function workRateBreakdown(state: GameState, v: Villager, jt: JobType): { rate: number; factors: RateFactor[] } {
+export function workRateBreakdown(state: GameState, v: Villager, jt: JobType, job: Job | null = v.job): { rate: number; factors: RateFactor[] } {
   const def = JOBS[jt];
   const factors: RateFactor[] = [{ label: 'Base work rate', mult: BALANCE.work.baseRate }];
   const skill = v.skills[def.skill];
@@ -83,6 +84,11 @@ export function workRateBreakdown(state: GameState, v: Villager, jt: JobType): {
   if (skillMult !== 1) factors.push({ label: `Skill level ${skill.level}`, mult: skillMult });
   const research = getModifiers(state).jobRate[jt];
   if (research && research.mult !== 1) factors.push({ label: 'Research', mult: research.mult });
+  if (job?.kind === 'operate') {
+    const b = findBuilding(state, job.buildingId);
+    const mult = b ? buildingStats(b.defId, b.level).outputMult : 1;
+    if (b && mult !== 1) factors.push({ label: `${BUILDINGS[b.defId].name} level ${b.level}`, mult });
+  }
   if (def.consumesFood && v.hungry) factors.push({ label: 'Hungry — no Stew', mult: BALANCE.villager.hungryWorkMult });
   const rate = factors.reduce((acc, f) => acc * f.mult, 1);
   return { rate, factors };
@@ -263,8 +269,8 @@ function arriveAtWork(state: GameState, world: World, v: Villager, sink: EventSi
     }
   } else {
     const b = findBuilding(state, job.buildingId);
-    const wantStatus = job.kind === 'construct' ? 'construction' : 'complete';
-    if (!b || b.status !== wantStatus) {
+    const valid = job.kind === 'construct' ? !!b && siteWork(b) !== null : b?.status === 'complete';
+    if (!b || !valid) {
       becomeIdle(state, world, v, sink, job.kind === 'construct' ? 'finished' : 'removed');
       return;
     }
@@ -301,8 +307,9 @@ export function beginBatch(state: GameState, world: World, v: Villager, sink: Ev
   let batch = def.batchWork;
   if (job.kind === 'construct') {
     const b = findBuilding(state, job.buildingId);
-    if (!b) return;
-    batch = Math.max(0.01, Math.min(batch, b.workRequired - b.progress));
+    const site = b ? siteWork(b) : null;
+    if (!site) return;
+    batch = Math.max(0.01, Math.min(batch, site.required - site.progress));
   }
   v.activity = 'working';
   v.blockedReason = null;
@@ -354,8 +361,15 @@ function completeBatch(state: GameState, world: World, v: Villager, sink: EventS
         becomeIdle(state, world, v, sink, 'removed');
         return;
       }
-      b.progress = Math.min(b.workRequired, b.progress + v.batchWork);
       v.workProgress = 0;
+      if (b.upgrade && b.status === 'complete') {
+        b.upgrade.progress = Math.min(b.upgrade.workRequired, b.upgrade.progress + v.batchWork);
+        v.batchWork = 0;
+        if (b.upgrade.progress >= b.upgrade.workRequired - EPS) completeUpgrade(state, world, b, sink);
+        else beginBatch(state, world, v, sink);
+        return;
+      }
+      b.progress = Math.min(b.workRequired, b.progress + v.batchWork);
       v.batchWork = 0;
       if (b.progress >= b.workRequired - EPS) completeConstruction(state, world, b, sink);
       else beginBatch(state, world, v, sink);
