@@ -1,6 +1,7 @@
 import type { ResourceId } from '../config/resources';
 import type { ValleyBuildingId } from '../config/valley';
 import type { ValleyResearchId } from '../config/valleyResearch';
+import type { FestivalId } from '../config/festivals';
 
 /**
  * Shared Valley state. Owned by the server and advanced by the server clock (wall-clock
@@ -46,7 +47,11 @@ export type ValleyLogEntry =
   | { id: number; at: number; kind: 'finished'; building: ValleyBuildingId; level: number }
   | { id: number; at: number; kind: 'opened'; building: ValleyBuildingId }
   | { id: number; at: number; kind: 'knowledge'; member: string; amount: number }
-  | { id: number; at: number; kind: 'researched'; research: ValleyResearchId };
+  | { id: number; at: number; kind: 'researched'; research: ValleyResearchId }
+  | { id: number; at: number; kind: 'festivalStarted'; festival: FestivalId }
+  | { id: number; at: number; kind: 'festivalGift'; member: string; festival: FestivalId; resources: ResourceBag }
+  | { id: number; at: number; kind: 'festivalWon'; festival: FestivalId }
+  | { id: number; at: number; kind: 'festivalLost'; festival: FestivalId };
 
 export interface ContributionResult {
   accepted: ResourceBag;
@@ -71,10 +76,28 @@ export interface ValleyState {
   members: ValleyMember[];
   buildings: Record<ValleyBuildingId, ValleyBuildingState>;
   log: ValleyLogEntry[];
+  /** The current festival, or the last one until the next begins. */
+  festival: ValleyFestival | null;
+  /** When the next festival starts (null until the Festival Grounds open, or while one runs). */
+  nextFestivalAt: number | null;
   /** Shared Valley research and the Knowledge waiting for it (banked until the Library opens). */
   research: ValleyResearchState;
   /** Recent contribution op ids per member → result, so retried requests are idempotent. */
   ops: Record<string, Record<string, ContributionResult>>;
+}
+
+export interface ValleyFestival {
+  id: number;
+  kind: FestivalId;
+  startsAt: number;
+  endsAt: number;
+  goal: ResourceBag;
+  delivered: ResourceBag;
+  /** Value each member delivered. Everyone with a share is rewarded if the Valley wins. */
+  shares: Record<string, number>;
+  outcome: 'running' | 'won' | 'lost';
+  /** Reward multiplier from the Festival Grounds level when it started. */
+  rewardMult: number;
 }
 
 export interface ValleyResearchState {

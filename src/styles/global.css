@@ -3469,6 +3469,43 @@ h4 {
   cursor: pointer;
 }
 
+.vs-festival {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border-radius: 12px;
+  background: #fff4dc;
+  border: 2px solid var(--honey);
+  cursor: pointer;
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+.vs-festival strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.vs-festival small {
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.vs-festival .bar {
+  margin: 3px 0 0;
+}
+
+.festival-won {
+  color: var(--leaf-dark);
+}
+
 .vs-research:hover {
   background: #e3e9ff;
 }

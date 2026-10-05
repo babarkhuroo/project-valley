@@ -4,7 +4,8 @@ import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VA
 import type { ValleyBonuses } from '../sim/types';
 import { newValleyBonuses } from '../sim/save';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER, type ValleyResearchId } from '../config/valleyResearch';
-import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleyState } from './types';
+import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../config/festivals';
+import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestival, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleyState } from './types';
 
 /**
  * The shared Valley as a deterministic, discrete-event simulation over wall-clock
@@ -13,7 +14,7 @@ import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyLogEnt
  * same Valley advanced in one step or in many ends up identical.
  */
 
-export const VALLEY_SCHEMA = 3;
+export const VALLEY_SCHEMA = 4;
 const HOUR = 3_600_000;
 const MINUTE = 60_000;
 const MAX_EVENTS_PER_ADVANCE = 250_000;
@@ -64,7 +65,7 @@ export function deliveredFraction(b: ValleyBuildingState): number {
 
 export function valueOf(resources: ResourceBag): number {
   let v = 0;
-  for (const r of VALLEY_RESOURCES) v += (resources[r] ?? 0) * (VALLEY_BALANCE.value[r] ?? 1);
+  for (const [r, n] of Object.entries(resources) as [ResourceId, number][]) v += (n ?? 0) * (VALLEY_BALANCE.value[r] ?? 1);
   return v;
 }
 
@@ -91,7 +92,9 @@ function log(v: ValleyState, entry: NewLogEntry): void {
 
 function requirementMet(v: ValleyState, id: ValleyBuildingId): boolean {
   const req = VALLEY_BUILDINGS[id].requires;
-  return !req || v.buildings[req.building].level >= req.level;
+  if (!req) return true;
+  if ('research' in req) return v.research.completed.includes(req.research);
+  return v.buildings[req.building].level >= req.level;
 }
 
 function openUnlocked(v: ValleyState, at: number): void {
@@ -124,6 +127,98 @@ function finishBuilding(v: ValleyState, b: ValleyBuildingState, at: number): voi
   openUnlocked(v, at);
   // A newly opened Library puts the banked Knowledge to work.
   if (b.id === 'greatLibrary') spendKnowledge(v, at);
+  // Newly opened Festival Grounds: the first festival is not far off.
+  if (b.id === 'festivalGrounds' && b.level === 1 && v.nextFestivalAt === null && v.festival === null) {
+    v.nextFestivalAt = at + FESTIVAL_BALANCE.firstDelayHours * HOUR;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Festivals
+// ---------------------------------------------------------------------------
+
+function festivalRewardMult(v: ValleyState): number {
+  let mult = 1;
+  for (let l = 0; l < v.buildings.festivalGrounds.level; l++) {
+    for (const e of VALLEY_BUILDINGS.festivalGrounds.levels[l].effects) if (e.type === 'festival') mult *= e.rewardMult;
+  }
+  return mult;
+}
+
+export function festivalRemaining(f: ValleyFestival): ResourceBag {
+  const out: ResourceBag = {};
+  for (const [r, n] of Object.entries(f.goal) as [ResourceId, number][]) {
+    const left = n - (f.delivered[r] ?? 0);
+    if (left > 0) out[r] = left;
+  }
+  return out;
+}
+
+export function festivalFraction(f: ValleyFestival): number {
+  const goal = valueOf(f.goal);
+  return goal > 0 ? Math.min(1, valueOf(f.delivered) / goal) : 1;
+}
+
+function startFestival(v: ValleyState, at: number): void {
+  const last = v.festival?.kind;
+  const choices = FESTIVAL_ORDER.filter((k) => k !== last);
+  const kind = choices[Math.floor(rand(v) * choices.length) % choices.length];
+  v.festival = {
+    id: v.nextLogId,
+    kind,
+    startsAt: at,
+    endsAt: at + FESTIVAL_BALANCE.durationHours * HOUR,
+    goal: { ...FESTIVALS[kind].goal },
+    delivered: {},
+    shares: {},
+    outcome: 'running',
+    rewardMult: festivalRewardMult(v),
+  };
+  v.nextFestivalAt = null;
+  log(v, { at, kind: 'festivalStarted', festival: kind });
+}
+
+function scheduleNextFestival(v: ValleyState, from: number): void {
+  const { min, max } = FESTIVAL_BALANCE.gapHours;
+  v.nextFestivalAt = Math.round(from + (min + rand(v) * (max - min)) * HOUR);
+}
+
+function endFestival(v: ValleyState, at: number): void {
+  const f = v.festival!;
+  f.outcome = 'lost';
+  log(v, { at, kind: 'festivalLost', festival: f.kind });
+  scheduleNextFestival(v, at);
+}
+
+/** Delivers to the running festival; a full goal wins it for everyone who helped. */
+function giveToFestival(v: ValleyState, member: ValleyMember, resources: ResourceBag, at: number): { accepted: ResourceBag; returned: ResourceBag; value: number } {
+  const f = v.festival!;
+  const remaining = festivalRemaining(f);
+  const accepted: ResourceBag = {};
+  const returned: ResourceBag = {};
+  for (const [r, raw] of Object.entries(resources) as [ResourceId, number][]) {
+    const amount = Math.max(0, Math.floor(raw ?? 0));
+    if (amount <= 0) continue;
+    const take = Math.min(amount, remaining[r] ?? 0);
+    if (take > 0) {
+      accepted[r] = take;
+      f.delivered[r] = (f.delivered[r] ?? 0) + take;
+    }
+    if (amount > take) returned[r] = amount - take;
+  }
+  const value = valueOf(accepted);
+  if (value > 0) {
+    f.shares[member.id] = (f.shares[member.id] ?? 0) + value;
+    member.lifetimeValue += value;
+    log(v, { at, kind: 'festivalGift', member: member.id, festival: f.kind, resources: accepted });
+    if (Object.keys(festivalRemaining(f)).length === 0) {
+      f.outcome = 'won';
+      log(v, { at, kind: 'festivalWon', festival: f.kind });
+      raiseKnowledge(v, FESTIVALS[f.kind].reward.knowledge * f.rewardMult, at);
+      scheduleNextFestival(v, f.endsAt);
+    }
+  }
+  return { accepted, returned, value };
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +295,7 @@ function spendKnowledge(v: ValleyState, at: number): void {
       r.completed.push(target);
       log(v, { at, kind: 'researched', research: target });
       settleVotes(v);
+      openUnlocked(v, at);
     }
   }
 }
@@ -278,6 +374,19 @@ function weightedPick<T>(v: ValleyState, items: T[], weight: (t: T) => number): 
 
 function neighbourVisit(v: ValleyState, m: ValleyMember, at: number): void {
   const def = NEIGHBOURS[m.neighbour!];
+  const f = v.festival;
+  if (f && f.outcome === 'running' && rand(v) < FESTIVAL_BALANCE.neighbourShare) {
+    const remaining = festivalRemaining(f);
+    const needed = Object.keys(remaining) as ResourceId[];
+    const resource = weightedPick(v, needed, (r) => remaining[r] ?? 0);
+    if (resource) {
+      const { min, max } = VALLEY_BALANCE.neighbours.parcelValue;
+      const value = (min + rand(v) * (max - min)) * def.generosity;
+      giveToFestival(v, m, { [resource]: Math.max(1, Math.round(value / (VALLEY_BALANCE.value[resource] ?? 1))) }, at);
+      scheduleVisit(v, m, at);
+      return;
+    }
+  }
   const open = VALLEY_BUILDING_ORDER.map((id) => v.buildings[id]).filter((b) => b.status === 'collecting');
   // Neighbours like to finish things: the closer a project is, the likelier they help it.
   const target = weightedPick(v, open, (b) => 0.35 + deliveredFraction(b));
@@ -328,6 +437,8 @@ export function createValley(id: string, seed: number, now: number, player: Foun
     buildings,
     log: [],
     research: newResearchState(),
+    festival: null,
+    nextFestivalAt: null,
     ops: {},
   };
   NEIGHBOURS.forEach((n, i) => {
@@ -372,6 +483,11 @@ export function upgradeValley(v: ValleyState, now: number): boolean {
     settleVotes(v);
     changed = true;
   }
+  if (v.festival === undefined) {
+    v.festival = null;
+    v.nextFestivalAt = null;
+    changed = true;
+  }
   for (const id of VALLEY_BUILDING_ORDER) {
     if (v.buildings[id]) continue;
     v.buildings[id] = { id, level: 0, status: 'locked', delivered: {}, shares: {}, doneAt: null };
@@ -406,8 +522,19 @@ export function advanceValley(v: ValleyState, now: number): void {
         visitor = null;
       }
     }
+    let festival: 'start' | 'end' | null = null;
+    if (v.nextFestivalAt !== null && v.nextFestivalAt < at) {
+      at = v.nextFestivalAt;
+      festival = 'start';
+    }
+    if (v.festival?.outcome === 'running' && v.festival.endsAt < at) {
+      at = v.festival.endsAt;
+      festival = 'end';
+    }
     if (at > now) break;
-    if (site) finishBuilding(v, site, at);
+    if (festival === 'start') startFestival(v, at);
+    else if (festival === 'end') endFestival(v, at);
+    else if (site) finishBuilding(v, site, at);
     else if (visitor) neighbourVisit(v, visitor, at);
   }
   v.time = Math.max(v.time, now);
@@ -458,6 +585,30 @@ export function contributeKnowledge(v: ValleyState, memberId: string, amount: nu
     raiseKnowledge(v, n, now);
   }
   const result: ContributionResult = { accepted: {}, returned: {}, value: 0, reputation: 0, knowledge: n };
+  const ops = (v.ops[memberId] ??= {});
+  ops[opId] = result;
+  const keys = Object.keys(ops);
+  for (let i = 0; i < keys.length - OPS_KEPT; i++) delete ops[keys[i]];
+  return { ok: true, result };
+}
+
+/** A member's delivery to the running festival. Idempotent per `opId`; late deliveries come home. */
+export function contributeFestival(v: ValleyState, memberId: string, festivalId: number, resources: ResourceBag, opId: string): ContributeOutcome {
+  const member = v.members.find((m) => m.id === memberId);
+  if (!member) return { ok: false, reason: 'Not a member of this Valley' };
+  const seen = v.ops[memberId]?.[opId];
+  if (seen) return { ok: true, result: seen };
+  let result: ContributionResult;
+  const f = v.festival;
+  if (!f || f.id !== festivalId || f.outcome !== 'running') {
+    const returned: ResourceBag = {};
+    for (const [r, n] of Object.entries(resources) as [ResourceId, number][]) if (n > 0) returned[r] = Math.floor(n);
+    result = { accepted: {}, returned, value: 0, reputation: 0 };
+  } else {
+    const d = giveToFestival(v, member, resources, v.time);
+    result = { accepted: d.accepted, returned: d.returned, value: d.value, reputation: reputationFor(d.value) };
+    raiseKnowledge(v, d.value * VALLEY_BALANCE.knowledgePerValue, v.time);
+  }
   const ops = (v.ops[memberId] ??= {});
   ops[opId] = result;
   const keys = Object.keys(ops);

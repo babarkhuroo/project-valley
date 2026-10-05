@@ -22,7 +22,8 @@ export type BuildingId =
   | 'lantern'
   | 'bench'
   | 'valleyBanner'
-  | 'fountain';
+  | 'fountain'
+  | 'festivalLanterns';
 
 export type BuildingCategory = 'essentials' | 'production' | 'storage' | 'homes' | 'decor';
 
@@ -63,8 +64,8 @@ export interface BuildingDef {
   /** Whether the player can place new copies from the build menu. */
   buildable: boolean;
   requiresResearch?: ResearchId;
-  /** Unlocked by a Reputation Road reward instead of research. */
-  requiresRoadReward?: boolean;
+  /** Unlocked by a Valley reward (Reputation Road, festivals) instead of research. */
+  requiresReward?: boolean;
   /** Copies allowed before research bonuses. */
   maxCount: number;
   /** Cost of the next copy, indexed by copies already owned. The last entry repeats. */
@@ -401,12 +402,26 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     category: 'decor',
     footprint: { w: 1, d: 1 },
     buildable: true,
-    requiresRoadReward: true,
+    requiresReward: true,
     maxCount: 8,
     costs: [{ resources: { timber: 10 }, work: 0 }],
     xp: 2,
     model: 'valleyBanner',
     height: 2.6,
+  },
+  festivalLanterns: {
+    id: 'festivalLanterns',
+    name: 'Festival Lanterns',
+    description: 'Paper lanterns strung between two posts. Earned by helping a Valley festival succeed.',
+    category: 'decor',
+    footprint: { w: 2, d: 1 },
+    buildable: true,
+    requiresReward: true,
+    maxCount: 6,
+    costs: [{ resources: { timber: 15 }, work: 0 }],
+    xp: 3,
+    model: 'festivalLanterns',
+    height: 2.2,
   },
   fountain: {
     id: 'fountain',
@@ -415,7 +430,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     category: 'decor',
     footprint: { w: 2, d: 2 },
     buildable: true,
-    requiresRoadReward: true,
+    requiresReward: true,
     maxCount: 2,
     costs: [{ resources: { stone: 30 }, work: 0 }],
     xp: 5,
@@ -442,6 +457,7 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'bench',
   'valleyBanner',
   'fountain',
+  'festivalLanterns',
 ];
 
 export const BUILDING_CATEGORY_LABEL: Record<BuildingCategory, string> = {

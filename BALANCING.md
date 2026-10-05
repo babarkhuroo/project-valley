@@ -68,6 +68,7 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Garden Bench | 1×1 | 12 | #1: 15 Timber | instant | 1 | decoration | — |
 | Valley Banner | 1×1 | 8 | #1: 10 Timber | instant | 2 | decoration | — |
 | Fountain | 2×2 | 2 | #1: 30 Stone | instant | 5 | decoration | — |
+| Festival Lanterns | 2×1 | 6 | #1: 15 Timber | instant | 3 | decoration | — |
 
 ## Workshop recipes
 
@@ -188,6 +189,9 @@ Shared projects restored by every member. Costs are Valley-wide totals. Reputati
 | Great Library | 1 | 3000 Timber, 1200 Clay, 800 Stone | 3h | Opens Valley research; Study +5% for every member | Hearth Hall 1 |
 |  | 2 | 6000 Timber, 2500 Stone, 1200 Planks | 6h | Valley Knowledge gathers 25% faster |  |
 |  | 3 | 10000 Timber, 4000 Stone, 2000 Planks, 2000 Bricks | 12h | Knowledge +25% more; Study +5% more |  |
+| Festival Grounds | 1 | 3500 Timber, 1500 Clay, 600 Planks | 3h | Festivals every few days, with rewards for everyone who helps | Research: Festival Charter |
+|  | 2 | 6000 Timber, 2000 Stone, 1500 Planks | 6h | Festival rewards +50% |  |
+|  | 3 | 9000 Timber, 2500 Planks, 2500 Bricks | 12h | Festival rewards doubled in all |  |
 | Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
 |  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting ×1.10 in all; trains up to level 5 |  |
 |  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting ×1.16 in all; trains up to level 6 |  |
@@ -231,15 +235,18 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | 7.3 days | Cooks' Guild → level 2 |
 | 7.4 days | Craftsfolk's Guild → level 2 |
 | 8.5 days | Great Library → level 2 |
-| 12.9 days | Foresters' Lodge → level 3 |
-| 13.3 days | Trading Post → level 3 |
-| 14.5 days | Builders' Guild → level 3 |
-| 14.6 days | Miners' Guild → level 3 |
-| 15.6 days | Cooks' Guild → level 3 |
-| 15.8 days | Scholars' Guild → level 3 |
-| 16.3 days | Craftsfolk's Guild → level 3 |
-| 16.8 days | Great Library → level 3 |
-| 16.8 days | Hearth Hall → level 3 |
+| 9.2 days | Festival Grounds → level 1 |
+| 14.4 days | Trading Post → level 3 |
+| 14.9 days | Foresters' Lodge → level 3 |
+| 15.3 days | Festival Grounds → level 2 |
+| 15.6 days | Builders' Guild → level 3 |
+| 16.4 days | Miners' Guild → level 3 |
+| 16.8 days | Scholars' Guild → level 3 |
+| 17.4 days | Craftsfolk's Guild → level 3 |
+| 18.5 days | Cooks' Guild → level 3 |
+| 18.9 days | Great Library → level 3 |
+| 19.0 days | Hearth Hall → level 3 |
+| 19.5 days | Festival Grounds → level 3 |
 
 ## Valley research
 
@@ -253,6 +260,18 @@ Valley Knowledge: 0.04 per point of contributed value (every member, neighbours 
 | Deep Storehouses | 2 | 1200 | Shared Larders | Cellars dug under every village store: +10% storage. |
 | Trade Winds | 2 | 1200 | Merchant Charts | Word spreads along the coast: merchant ships return 20% sooner. |
 | Master Teachers | 2 | 1200 | Guild Tutors | The guilds share their best teachers: lessons cost 25% fewer coins. |
+| Festival Charter | 2 | 1000 | Shared Larders | The villages agree to celebrate together: opens the Festival Grounds on Market Green. |
+
+## Festivals
+
+Once the Festival Grounds are restored (after the Festival Charter research), a festival starts 1h later and runs 48h; the next follows 24–48h after one ends. Neighbours send 35% of their visits to a running festival. If the goal is met, every member who delivered gets the reward (× Festival Grounds level bonus); the Valley gets the Knowledge.
+
+| Festival | Goal | Reward per helper | Valley Knowledge | Decoration |
+| --- | --- | --- | --- | --- |
+| Harvest Festival | 3000 Timber, 2500 Stew | 180 coins, 40 reputation | 150 | Festival Lanterns |
+| Great Construction Project | 5000 Timber, 2500 Stone | 220 coins, 50 reputation | 200 | — |
+| Expedition Supplies | 1200 Planks, 1500 Stew | 250 coins, 50 reputation | 220 | — |
+| Lantern Fair | 2500 Clay, 900 Bricks | 240 coins, 50 reputation | 200 | Festival Lanterns |
 
 ## Guild training
 

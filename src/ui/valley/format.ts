@@ -1,6 +1,7 @@
 import { RESOURCES } from '../../config/resources';
 import { VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../../config/valley';
 import { VALLEY_RESEARCH } from '../../config/valleyResearch';
+import { FESTIVALS } from '../../config/festivals';
 import type { ResourceBag, ValleyLogEntry, ValleySnapshot } from '../../valley/types';
 
 export function memberName(snapshot: ValleySnapshot, id: string, me: string | null): string {
@@ -9,7 +10,7 @@ export function memberName(snapshot: ValleySnapshot, id: string, me: string | nu
 }
 
 export function bagText(bag: ResourceBag): string {
-  return VALLEY_RESOURCES.filter((r) => (bag[r] ?? 0) > 0)
+  return [...VALLEY_RESOURCES, 'stew' as const].filter((r) => (bag[r] ?? 0) > 0)
     .map((r) => `${bag[r]} ${RESOURCES[r].name}`)
     .join(' + ');
 }
@@ -31,6 +32,14 @@ export function describeLog(e: ValleyLogEntry, snapshot: ValleySnapshot, me: str
       return `${memberName(snapshot, e.member, me)} brought ${e.amount} Valley Knowledge from trading`;
     case 'researched':
       return `The Valley finished researching ${VALLEY_RESEARCH[e.research].name}!`;
+    case 'festivalStarted':
+      return `The ${FESTIVALS[e.festival].name} has begun on Market Green!`;
+    case 'festivalGift':
+      return `${memberName(snapshot, e.member, me)} brought ${bagText(e.resources)} to the ${FESTIVALS[e.festival].name}`;
+    case 'festivalWon':
+      return `The ${FESTIVALS[e.festival].name} was a triumph!`;
+    case 'festivalLost':
+      return `The ${FESTIVALS[e.festival].name} ended before the goal was met`;
   }
 }
 

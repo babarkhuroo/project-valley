@@ -19,6 +19,7 @@ export const VALLEY_MODEL_SIZE: Record<ValleyBuildingDef['model'], { hx: number;
   guild: { hx: 2.6, hz: 2.1, height: 4.4 },
   post: { hx: 2.7, hz: 2.2, height: 4.2 },
   library: { hx: 3.3, hz: 2.7, height: 6.4 },
+  grounds: { hx: 3.6, hz: 3.0, height: 5.2 },
 };
 
 /** Length of the Trading Post's pier, out from its front wall. */
@@ -350,6 +351,103 @@ function library(def: ValleyBuildingDef, level: number): BuildingModel {
 }
 
 // ---------------------------------------------------------------------------
+// Festival Grounds
+// ---------------------------------------------------------------------------
+
+const BUNTING = ['#d9544a', '#f4b83e', '#5fae4f', '#6f8fe0', '#d97a9a'];
+
+/** A sagging line of pennants between two points (local space). */
+function bunting(r: THREE.Object3D, a: THREE.Vector3, b: THREE.Vector3, sag = 0.35): void {
+  const n = 9;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const p = new THREE.Vector3().lerpVectors(a, b, t);
+    p.y -= Math.sin(t * Math.PI) * sag;
+    if (i < n) {
+      const flag = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.24, 3), mat(BUNTING[i % BUNTING.length], { flat: true }));
+      flag.rotation.x = Math.PI;
+      flag.position.set(p.x, p.y - 0.12, p.z);
+      r.add(flag);
+    }
+  }
+  const len = a.distanceTo(b);
+  const line = cyl(r, 0.01, 0.01, len, mat(PALETTE.woodDark), (a.x + b.x) / 2, (a.y + b.y) / 2 - sag * 0.6, (a.z + b.z) / 2, 4);
+  line.lookAt(b.x, b.y - sag * 0.6, b.z);
+  line.rotateX(Math.PI / 2);
+}
+
+function grounds(def: ValleyBuildingDef, level: number): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const { hx, hz } = VALLEY_MODEL_SIZE.grounds;
+  // A trodden green with a low stone edge rather than a full plinth.
+  box(r, hx * 2, 0.12, hz * 2, mat('#b5d07a', { flat: true }), 0, 0.06, 0);
+  for (const [w, d, x, z] of [[hx * 2, 0.2, 0, -hz], [0.2, hz * 2, -hx, 0], [0.2, hz * 2, hx, 0]] as const) box(r, w, 0.22, d, mat(PALETTE.stone), x, 0.11, z);
+  const wood = mat(PALETTE.wood);
+  const beam = mat(PALETTE.woodDark);
+  // Stage at the back.
+  box(r, 3.4, 0.5, 1.8, wood, 0, 0.35, -2.0);
+  for (const x of [-1.6, 1.6]) box(r, 0.12, 2.2, 0.12, beam, x, 1.6, -2.8);
+  const roof = box(r, 3.8, 0.08, 2.0, mat(def.color, { flat: true }), 0, 2.75, -2.1);
+  roof.rotation.x = -0.18;
+  for (const x of [-1.6, 1.6]) box(r, 0.1, 1.9, 0.1, beam, x, 1.55, -1.2);
+  // Maypole with spinning ribbons.
+  cyl(r, 0.07, 0.09, 4.4, mat('#fff8ea'), 1.6, 2.2, 1.0, 8);
+  const crown = new THREE.Group();
+  crown.position.set(1.6, 4.3, 1.0);
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const ribbon = box(crown, 0.06, 2.6, 0.02, mat(BUNTING[i % BUNTING.length], { side: THREE.DoubleSide }), Math.sin(a) * 0.6, -1.2, Math.cos(a) * 0.6);
+    ribbon.rotation.set(Math.cos(a) * 0.45, 0, -Math.sin(a) * 0.45);
+  }
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), mat(PALETTE.gold));
+  crown.add(top);
+  r.add(crown);
+  m.spinners.push({ obj: crown, axis: 'y', speed: 0.6 });
+  // Striped tents.
+  for (const [x, z, c] of [[-2.4, 1.2, def.color], [-1.0, 2.2, '#6f8fe0']] as const) {
+    const tent = new THREE.Mesh(new THREE.ConeGeometry(0.75, 1.3, 8), mat(c, { flat: true }));
+    tent.position.set(x, 0.75, z);
+    r.add(tent);
+    cyl(r, 0.02, 0.02, 0.4, mat(PALETTE.woodDark), x, 1.55, z, 4);
+  }
+  // Long tables with benches.
+  for (const z of [0.3, 1.4]) {
+    box(r, 1.8, 0.08, 0.5, wood, 0.0, 0.55, z);
+    for (const dz of [-0.4, 0.4]) box(r, 1.8, 0.06, 0.2, mat(PALETTE.woodLight), 0, 0.32, z + dz);
+  }
+  // Bunting poles around the green.
+  const corners = [new THREE.Vector3(-hx + 0.3, 2.6, -hz + 0.3), new THREE.Vector3(hx - 0.3, 2.6, -hz + 0.3), new THREE.Vector3(hx - 0.3, 2.6, hz - 0.3), new THREE.Vector3(-hx + 0.3, 2.6, hz - 0.3)];
+  for (const c of corners) cyl(r, 0.05, 0.06, 2.6, beam, c.x, 1.3, c.z, 6);
+  for (let i = 0; i < 4; i++) bunting(r, corners[i], corners[(i + 1) % 4]);
+  if (level >= 2) {
+    // A bandstand-style canopy over the stage and lanterns along the front.
+    const dome = new THREE.Mesh(new THREE.ConeGeometry(2.2, 0.9, 8), mat(def.color, { flat: true }));
+    dome.position.set(0, 3.3, -2.0);
+    r.add(dome);
+    for (const x of [-2.6, -0.9, 0.9, 2.6]) m.flames.push(box(r, 0.2, 0.26, 0.2, mat(PALETTE.glow, { emissive: '#ffb347', emissiveIntensity: 0.9 }), x, 2.3, hz - 0.3));
+    levelPennant(m, level, -hx + 0.3, -hz + 0.3, 3.6);
+  }
+  if (level >= 3) {
+    // A carousel.
+    const carousel = new THREE.Group();
+    carousel.position.set(-2.2, 0, -0.6);
+    cyl(carousel, 0.9, 0.9, 0.12, mat(PALETTE.woodLight), 0, 0.2, 0, 12);
+    cyl(carousel, 0.06, 0.06, 1.6, mat(PALETTE.gold), 0, 1.0, 0, 6);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(1.0, 0.6, 12), mat('#d9544a', { flat: true }));
+    cap.position.y = 2.0;
+    carousel.add(cap);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      box(carousel, 0.25, 0.3, 0.45, mat(BUNTING[i]), Math.sin(a) * 0.65, 0.55, Math.cos(a) * 0.65);
+    }
+    r.add(carousel);
+    m.spinners.push({ obj: carousel, axis: 'y', speed: 0.5 });
+  }
+  return m;
+}
+
+// ---------------------------------------------------------------------------
 // Ruins and scaffolding
 // ---------------------------------------------------------------------------
 
@@ -464,6 +562,7 @@ export function createValleyModel(def: ValleyBuildingDef, level: number, deckY =
   } else if (def.model === 'hall') model = hall(def, level);
   else if (def.model === 'post') model = tradingPost(def, level, deckY);
   else if (def.model === 'library') model = library(def, level);
+  else if (def.model === 'grounds') model = grounds(def, level);
   else model = guild(def, level);
   mergeStatic(model);
   model.root.traverse((o) => {

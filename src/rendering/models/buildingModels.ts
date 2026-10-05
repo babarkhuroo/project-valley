@@ -376,6 +376,29 @@ function valleyBanner(): BuildingModel {
   return m;
 }
 
+/** Festival reward: paper lanterns strung between two posts. */
+function festivalLanterns(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  for (const x of [-0.85, 0.85]) {
+    cyl(r, 0.1, 0.12, 0.12, mat(PALETTE.stone), x, 0.06, 0, 8);
+    cyl(r, 0.04, 0.05, 2.0, mat(PALETTE.woodDark), x, 1.05, 0, 6);
+  }
+  const colours = ['#d9544a', '#f4b83e', '#6f8fe0', '#5fae4f', '#d97a9a'];
+  for (let i = 0; i < 5; i++) {
+    const t = (i + 0.5) / 5;
+    const x = -0.85 + t * 1.7;
+    const y = 1.95 - Math.sin(t * Math.PI) * 0.35;
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), mat(colours[i], { emissive: colours[i], emissiveIntensity: 0.45 }));
+    lamp.scale.y = 1.25;
+    lamp.position.set(x, y - 0.12, 0);
+    r.add(lamp);
+    m.flames.push(lamp);
+  }
+  box(r, 1.7, 0.015, 0.015, mat(PALETTE.woodDark), 0, 1.8, 0);
+  return m;
+}
+
 /** Reputation Road reward: a carved stone fountain with a gently spilling basin. */
 function fountain(): BuildingModel {
   const m = emptyModel();
@@ -862,6 +885,9 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
       break;
     case 'fountain':
       model = fountain();
+      break;
+    case 'festivalLanterns':
+      model = festivalLanterns();
       break;
   }
   addLevelDetails(model, id, level);

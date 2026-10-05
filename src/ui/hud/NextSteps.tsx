@@ -1,8 +1,9 @@
 import { nextSteps, type Suggestion } from '../../sim/selectors';
 import { currentStep } from '../../game/tutorial';
-import { openHarbour, selectAndFocus, travelToValley } from '../actions';
+import { openHarbour, openValleyBuilding, selectAndFocus, travelToValley } from '../actions';
+import { FESTIVALS } from '../../config/festivals';
 import { Icon } from '../common/Icon';
-import { useGameState } from '../hooks';
+import { useGameState, useValley } from '../hooks';
 import { ui, useUI } from '../store';
 
 function run(s: Suggestion): void {
@@ -30,6 +31,9 @@ function run(s: Suggestion): void {
     case 'openRoad':
       ui.set({ panel: 'road' });
       break;
+    case 'openFestival':
+      openValleyBuilding('festivalGrounds');
+      break;
   }
 }
 
@@ -37,8 +41,15 @@ function run(s: Suggestion): void {
 export function NextSteps() {
   const state = useGameState();
   const mode = useUI((s) => s.mode.kind);
+  const { snapshot } = useValley();
   if (currentStep(state) !== null || mode !== 'normal') return null;
   const tips = nextSteps(state);
+  // Festivals live in the Valley snapshot, which the village simulation never sees.
+  const f = snapshot?.festival;
+  if (f && f.outcome === 'running') {
+    tips.unshift({ id: 'festival', kind: 'idea', text: `The ${FESTIVALS[f.kind].name} is on in the Valley — bring what you can spare`, action: { type: 'openFestival' } });
+    tips.splice(4);
+  }
   if (tips.length === 0) return null;
   return (
     <div className="next-steps panel">

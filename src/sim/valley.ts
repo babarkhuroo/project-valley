@@ -4,7 +4,9 @@ import type { CommandResult } from './commands';
 import { bumpStat } from './economy';
 import type { EventSink } from './events';
 import { isValleyUnlocked } from './modifiers';
-import type { GameState, ValleyBonuses } from './types';
+import type { GameState, ValleyBonuses, ValleyTarget } from './types';
+import { FESTIVALS, type FestivalId } from '../config/festivals';
+import type { BuildingId } from '../config/buildings';
 
 /**
  * The village's side of the Valley. Deliveries leave the village immediately and wait
@@ -22,11 +24,20 @@ export function joinValley(state: GameState, valleyId: string): void {
 
 /** Sends resources towards a Valley project. `limit` is what the project still needs, as last seen. */
 export function sendToValley(state: GameState, building: ValleyBuildingId, resources: ResourceAmounts, opId: string, sink: EventSink, limit?: ResourceAmounts): CommandResult {
+  return queueDelivery(state, { kind: 'building', id: building }, VALLEY_RESOURCES, resources, opId, sink, limit);
+}
+
+/** Sends resources (Stew included) to the running festival. */
+export function sendToFestival(state: GameState, festivalId: number, resources: ResourceAmounts, opId: string, sink: EventSink, limit: ResourceAmounts): CommandResult {
+  return queueDelivery(state, { kind: 'festival', festivalId }, Object.keys(limit) as ResourceId[], resources, opId, sink, limit);
+}
+
+function queueDelivery(state: GameState, target: ValleyTarget, allowed: readonly ResourceId[], resources: ResourceAmounts, opId: string, sink: EventSink, limit?: ResourceAmounts): CommandResult {
   if (!isValleyUnlocked(state)) return fail('Research The Valley Road first');
   if (!state.valley.valleyId) return fail('Visit the Valley first');
   const sent: ResourceAmounts = {};
   let any = false;
-  for (const r of VALLEY_RESOURCES) {
+  for (const r of allowed) {
     let amount = Math.floor(resources[r] ?? 0);
     if (limit) amount = Math.min(amount, limit[r] ?? 0);
     if (amount <= 0) continue;
@@ -35,13 +46,29 @@ export function sendToValley(state: GameState, building: ValleyBuildingId, resou
     any = true;
   }
   if (!any) return fail('Nothing to send');
-  for (const r of VALLEY_RESOURCES) {
-    const n = sent[r] ?? 0;
-    if (n > 0) state.resources[r] -= n;
-  }
-  state.valley.outbox.push({ opId, target: { kind: 'building', id: building }, resources: sent, at: state.time });
-  sink.push({ type: 'valleySent', building, resources: sent });
+  for (const [r, n] of Object.entries(sent) as [ResourceId, number][]) state.resources[r] -= n;
+  state.valley.outbox.push({ opId, target, resources: sent, at: state.time });
+  sink.push({ type: 'valleySent', target, resources: sent });
   return { ok: true };
+}
+
+/** Collects a won festival's rewards (once per festival). */
+export function claimFestival(state: GameState, festivalId: number, kind: FestivalId, rewardMult: number, sink: EventSink): boolean {
+  if (state.trade.festivalsClaimed.includes(festivalId)) return false;
+  state.trade.festivalsClaimed.push(festivalId);
+  if (state.trade.festivalsClaimed.length > 50) state.trade.festivalsClaimed.shift();
+  const def = FESTIVALS[kind];
+  const coins = Math.round(def.reward.coins * rewardMult);
+  const reputation = Math.round(def.reward.reputation * rewardMult);
+  state.trade.coins += coins;
+  state.valley.reputation += reputation;
+  let decor: BuildingId | null = null;
+  if (def.decor && !state.trade.unlockedDecor.includes(def.decor)) {
+    state.trade.unlockedDecor.push(def.decor);
+    decor = def.decor;
+  }
+  sink.push({ type: 'festivalReward', festival: kind, coins, reputation, decor });
+  return true;
 }
 
 /** Queues Valley Knowledge (earned trading) for the shared research. Nothing leaves the village. */
@@ -57,7 +84,7 @@ export function settleValleyOp(state: GameState, opId: string, accepted: Resourc
   if (i < 0) return false;
   const op = state.valley.outbox[i];
   state.valley.outbox.splice(i, 1);
-  for (const r of VALLEY_RESOURCES) {
+  for (const r of [...VALLEY_RESOURCES, 'stew' as const]) {
     const back = returned[r] ?? 0;
     // Returned parcels go straight back into store, even past the cap — nothing is lost.
     if (back > 0) state.resources[r] += back;
@@ -69,6 +96,7 @@ export function settleValleyOp(state: GameState, opId: string, accepted: Resourc
   }
   state.valley.reputation += reputation;
   if (op.target.kind === 'building') sink.push({ type: 'valleyAccepted', building: op.target.id, accepted, returned, reputation });
+  else if (op.target.kind === 'festival') sink.push({ type: 'festivalAccepted', accepted, returned, reputation });
   else bumpStat(state, 'valley.knowledge', op.knowledge ?? 0);
   return true;
 }
@@ -78,7 +106,7 @@ export function returnValleyOp(state: GameState, opId: string): boolean {
   const i = state.valley.outbox.findIndex((o) => o.opId === opId);
   if (i < 0) return false;
   const [op] = state.valley.outbox.splice(i, 1);
-  for (const r of VALLEY_RESOURCES) state.resources[r] += op.resources[r] ?? 0;
+  for (const [r, n] of Object.entries(op.resources) as [ResourceId, number][]) state.resources[r] += n ?? 0;
   return true;
 }
 
@@ -92,7 +120,7 @@ export function setValleyBonuses(state: GameState, bonuses: ValleyBonuses): bool
 export function inTransit(state: GameState): ResourceAmounts {
   const out: ResourceAmounts = {};
   for (const op of state.valley.outbox) {
-    for (const r of VALLEY_RESOURCES) if (op.resources[r]) out[r] = (out[r] ?? 0) + op.resources[r]!;
+    for (const [r, n] of Object.entries(op.resources) as [ResourceId, number][]) if (n) out[r] = (out[r] ?? 0) + n;
   }
   return out;
 }

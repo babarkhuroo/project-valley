@@ -64,7 +64,7 @@ function BuildCard({ id, highlight }: { id: BuildingId; highlight: boolean }) {
   const cost = nextCost(state, id);
   const affordable = canAfford(state, cost.resources);
   let reason: string | null = null;
-  if (!unlocked && def.requiresRoadReward) reason = 'Reputation Road reward';
+  if (!unlocked && def.requiresReward) reason = 'Valley reward';
   else if (!unlocked && def.requiresResearch) reason = `Research ${RESEARCH[def.requiresResearch].name}`;
   else if (!buildable.ok) reason = count >= max ? (id === 'cottage' ? 'Research more homes to build another' : 'Limit reached') : buildable.reason;
   else if (!affordable) reason = 'Need more resources';

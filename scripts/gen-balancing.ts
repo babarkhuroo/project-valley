@@ -17,6 +17,7 @@ import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../src/config/valley.ts';
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
 import { TRAINING } from '../src/config/training.ts';
+import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../src/config/festivals.ts';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER } from '../src/config/valleyResearch.ts';
 import { BOOSTS, BOOST_ORDER, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS } from '../src/config/trade.ts';
 
@@ -208,7 +209,7 @@ table(
       bundle(l.cost),
       `${l.buildHours}h`,
       l.summary,
-      i === 0 && d.requires ? `${VALLEY_BUILDINGS[d.requires.building].name} ${d.requires.level}` : '',
+      i === 0 && d.requires ? ('research' in d.requires ? `Research: ${VALLEY_RESEARCH[d.requires.research].name}` : `${VALLEY_BUILDINGS[d.requires.building].name} ${d.requires.level}`) : '',
     ]);
   }),
 );
@@ -240,6 +241,15 @@ out();
 table(['Project', 'Tier', 'Knowledge', 'After', 'Effect'], VALLEY_RESEARCH_ORDER.map((id) => {
   const r = VALLEY_RESEARCH[id];
   return [r.name, r.tier, r.cost, r.requires.map((q) => VALLEY_RESEARCH[q].name).join(', ') || '—', r.description];
+}));
+
+out('## Festivals');
+out();
+out(`Once the Festival Grounds are restored (after the Festival Charter research), a festival starts ${FESTIVAL_BALANCE.firstDelayHours}h later and runs ${FESTIVAL_BALANCE.durationHours}h; the next follows ${FESTIVAL_BALANCE.gapHours.min}–${FESTIVAL_BALANCE.gapHours.max}h after one ends. Neighbours send ${FESTIVAL_BALANCE.neighbourShare * 100}% of their visits to a running festival. If the goal is met, every member who delivered gets the reward (× Festival Grounds level bonus); the Valley gets the Knowledge.`);
+out();
+table(['Festival', 'Goal', 'Reward per helper', 'Valley Knowledge', 'Decoration'], FESTIVAL_ORDER.map((id) => {
+  const f = FESTIVALS[id];
+  return [f.name, bundle(f.goal), `${f.reward.coins} coins, ${f.reward.reputation} reputation`, f.reward.knowledge, f.decor ? BUILDINGS[f.decor].name : '—'];
 }));
 
 out('## Guild training');

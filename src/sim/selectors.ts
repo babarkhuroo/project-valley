@@ -260,7 +260,7 @@ export interface Suggestion {
   id: string;
   text: string;
   kind: 'warning' | 'idea';
-  action?: { type: 'selectVillager'; id: number } | { type: 'openResearch' } | { type: 'openBuild'; building?: BuildingId } | { type: 'selectBuilding'; id: number } | { type: 'openValley' } | { type: 'openHarbour' } | { type: 'openRoad' };
+  action?: { type: 'selectVillager'; id: number } | { type: 'openResearch' } | { type: 'openBuild'; building?: BuildingId } | { type: 'selectBuilding'; id: number } | { type: 'openValley' } | { type: 'openHarbour' } | { type: 'openRoad' } | { type: 'openFestival' };
 }
 
 /** "What should I do next?" — a short, prioritised list of nudges. */

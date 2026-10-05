@@ -4,6 +4,7 @@ import { RESOURCES } from '../config/resources';
 import { SKILLS } from '../config/skills';
 import { VALLEY_BUILDINGS } from '../config/valley';
 import { VALLEY_RESEARCH } from '../config/valleyResearch';
+import { FESTIVALS } from '../config/festivals';
 import { BOOSTS, MERCHANTS } from '../config/trade';
 import { canClaimRoad } from '../sim/trade';
 import type { ValleyClient } from '../game/valleyClient';
@@ -126,6 +127,13 @@ export function attachNotifications(game: Game): () => void {
         case 'boostEnded':
           ui.toast({ kind: 'info', title: `${BOOSTS[e.boost].name} has worn off`, icon: 'potion' }, 3500);
           break;
+        case 'festivalAccepted':
+          if (e.reputation > 0) ui.toast({ kind: 'success', title: 'Delivered to the festival', body: `+${e.reputation} reputation${bagText(e.returned) ? ` · ${bagText(e.returned)} came home` : ''}`, icon: 'gift' }, 3500);
+          break;
+        case 'festivalReward':
+          ui.toast({ kind: 'success', title: `Festival rewards from the ${FESTIVALS[e.festival].name}`, body: `+${e.coins} coins, +${e.reputation} reputation${e.decor ? ' — and Festival Lanterns to build!' : ''}`, icon: 'gift' }, 7000);
+          runtime.audio.play('levelUp');
+          break;
         case 'valleyAccepted': {
           const name = VALLEY_BUILDINGS[e.building].name;
           const back = bagText(e.returned);
@@ -159,6 +167,9 @@ export function attachValleyNotifications(client: ValleyClient): void {
       runtime.audio.play('complete');
     }
     for (const e of entries) {
+      if (e.kind === 'festivalStarted' || e.kind === 'festivalLost') {
+        ui.toast({ kind: 'info', title: describeLog(e, snapshot, null), body: e.kind === 'festivalStarted' ? FESTIVALS[e.festival].description : undefined, icon: 'gift' }, 6500);
+      }
       if (e.kind !== 'researched') continue;
       ui.toast({ kind: 'success', title: describeLog(e, snapshot, null), body: VALLEY_RESEARCH[e.research].description, icon: 'knowledge' }, 6500);
     }

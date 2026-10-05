@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -48,6 +48,8 @@ export const MIGRATIONS: Record<number, Migration> = {
     const outbox = ((valley.outbox ?? []) as Record<string, unknown>[]).map(({ building, ...op }) => (op.target ? op : { ...op, target: { kind: 'building', id: building } }));
     return { ...d, valley: { ...valley, outbox, bonuses: { ...newValleyBonuses(), ...(valley.bonuses as object) } } };
   },
+  // v8: festival rewards collected.
+  7: (d) => ({ ...d, trade: { festivalsClaimed: [], ...((d.trade as object) ?? newTradeState()) } }),
 };
 
 /** Bonuses for a village with no Valley (or nothing restored yet). */
@@ -56,7 +58,7 @@ export function newValleyBonuses(): GameState['valley']['bonuses'] {
 }
 
 export function newTradeState(): GameState['trade'] {
-  return { coins: 0, ship: null, nextShipAt: null, shipsSeen: 0, inventory: {}, active: [], roadClaimed: 0, unlockedDecor: [] };
+  return { coins: 0, ship: null, nextShipAt: null, shipsSeen: 0, inventory: {}, active: [], roadClaimed: 0, unlockedDecor: [], festivalsClaimed: [] };
 }
 
 export function newValleyState(): GameState['valley'] {

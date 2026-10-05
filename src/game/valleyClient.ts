@@ -1,9 +1,9 @@
 import type { ValleyBuildingId } from '../config/valley';
 import type { ValleyResearchId } from '../config/valleyResearch';
 import { isValleyUnlocked } from '../sim/modifiers';
-import { joinValley, returnValleyOp, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
+import { claimFestival, joinValley, returnValleyOp, sendToFestival, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
 import type { ContributionResult, ValleyLogEntry, ValleySnapshot } from '../valley/types';
-import { remainingFor, valleyBonuses } from '../valley/valleySim';
+import { festivalRemaining, remainingFor, valleyBonuses } from '../valley/valleySim';
 import { now } from './clock';
 import type { Game } from './Game';
 import { playerId } from './persistence';
@@ -75,9 +75,12 @@ export class ValleyClient {
   private apply(view: ServerView): void {
     const fresh = this.lastLogId === null ? [] : view.valley.log.filter((e) => e.id > this.lastLogId!);
     this.lastLogId = view.valley.log.reduce((m, e) => Math.max(m, e.id), this.lastLogId ?? 0);
-    this.game.mutate((state) => {
+    const f = view.valley.festival;
+    this.game.mutate((state, _world, sink) => {
       if (state.valley.valleyId !== view.valley.id) joinValley(state, view.valley.id);
       setValleyBonuses(state, valleyBonuses(view.valley));
+      // A festival the village helped win: collect the rewards (once).
+      if (f && f.outcome === 'won' && (f.shares[view.memberId] ?? 0) > 0) claimFestival(state, f.id, f.kind, f.rewardMult, sink);
     });
     this.set({ snapshot: view.valley, connection: 'ready', fetchedAt: view.now, receivedAt: Date.now() });
     if (fresh.length > 0) this.onLog?.(fresh, view.valley);
@@ -135,6 +138,17 @@ export class ValleyClient {
     if (!b) return 'The Valley is out of reach right now';
     const opId = `${now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const result = this.game.run((state, _world, sink) => sendToValley(state, building, resources, opId, sink, remainingFor(b)));
+    if (!result.ok) return result.error;
+    void this.flush();
+    return null;
+  }
+
+  /** Sends resources to the running festival. Returns a refusal reason, or null. */
+  contributeFestival(resources: ResourceAmounts): string | null {
+    const f = this.view.snapshot?.festival;
+    if (!f || f.outcome !== 'running') return 'No festival is running right now';
+    const opId = `${now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const result = this.game.run((state, _world, sink) => sendToFestival(state, f.id, resources, opId, sink, festivalRemaining(f)));
     if (!result.ok) return result.error;
     void this.flush();
     return null;

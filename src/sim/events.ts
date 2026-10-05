@@ -5,6 +5,8 @@ import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
 import type { ValleyBuildingId } from '../config/valley';
 import type { BoostId } from '../config/trade';
+import type { FestivalId } from '../config/festivals';
+import type { ValleyTarget } from './types';
 
 /**
  * Transient facts emitted while the simulation advances. They are not saved: the
@@ -33,7 +35,9 @@ export type SimEvent =
   | { type: 'newcomersAvailable' }
   | { type: 'villagerJoined'; villagerId: number }
   | { type: 'autoContinue'; villagerId: number; nodeId: number }
-  | { type: 'valleySent'; building: ValleyBuildingId; resources: Partial<Record<ResourceId, number>> }
+  | { type: 'valleySent'; target: ValleyTarget; resources: Partial<Record<ResourceId, number>> }
+  | { type: 'festivalAccepted'; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number }
+  | { type: 'festivalReward'; festival: FestivalId; coins: number; reputation: number; decor: BuildingId | null }
   | { type: 'trainingStarted'; villagerId: number; skill: SkillId; level: number }
   | { type: 'trainingDone'; villagerId: number; skill: SkillId; level: number }
   | { type: 'shipArrived'; merchant: number; crates: number }

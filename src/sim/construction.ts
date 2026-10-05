@@ -60,7 +60,7 @@ export function checkFootprint(
 export function checkBuildable(state: GameState, defId: BuildingId): PlacementCheck {
   const def = BUILDINGS[defId];
   if (!def.buildable) return { ok: false, reason: 'Cannot be built' };
-  if (!isBuildingUnlocked(state, defId)) return { ok: false, reason: BUILDINGS[defId].requiresRoadReward ? 'A Reputation Road reward' : 'Needs research' };
+  if (!isBuildingUnlocked(state, defId)) return { ok: false, reason: BUILDINGS[defId].requiresReward ? 'A Valley reward (Reputation Road or festivals)' : 'Needs research' };
   if (countBuildings(state, defId) >= maxBuildingCount(state, defId)) return { ok: false, reason: 'Limit reached' };
   return { ok: true };
 }

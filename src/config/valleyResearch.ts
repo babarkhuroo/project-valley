@@ -5,7 +5,7 @@
  * member's village through the Valley bonuses.
  */
 
-export type ValleyResearchId = 'sharedLarders' | 'merchantCharts' | 'guildTutors' | 'deepStorehouses' | 'tradeWinds' | 'masterTeachers';
+export type ValleyResearchId = 'sharedLarders' | 'merchantCharts' | 'guildTutors' | 'deepStorehouses' | 'tradeWinds' | 'masterTeachers' | 'festivalCharter';
 
 export type ValleyResearchEffect =
   | { type: 'mealDuration'; mult: number }
@@ -81,6 +81,15 @@ export const VALLEY_RESEARCH: Record<ValleyResearchId, ValleyResearchDef> = {
     requires: ['guildTutors'],
     effects: [{ type: 'trainingCost', mult: 0.75 }],
   },
+  festivalCharter: {
+    id: 'festivalCharter',
+    name: 'Festival Charter',
+    description: 'The villages agree to celebrate together: opens the Festival Grounds on Market Green.',
+    cost: 1000,
+    tier: 2,
+    requires: ['sharedLarders'],
+    effects: [],
+  },
 };
 
-export const VALLEY_RESEARCH_ORDER: ValleyResearchId[] = ['sharedLarders', 'merchantCharts', 'guildTutors', 'deepStorehouses', 'tradeWinds', 'masterTeachers'];
+export const VALLEY_RESEARCH_ORDER: ValleyResearchId[] = ['sharedLarders', 'merchantCharts', 'guildTutors', 'deepStorehouses', 'tradeWinds', 'masterTeachers', 'festivalCharter'];

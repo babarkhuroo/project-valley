@@ -288,10 +288,14 @@ export function contributeToValley(id: ValleyBuildingId, resources: Partial<Reco
 // Merchants, tonics and the Reputation Road
 // ---------------------------------------------------------------------------
 
-/** Travels to the Valley (if needed) and opens the Trading Post. */
-export function openHarbour(): void {
+/** Travels to the Valley (if needed) and opens one of its buildings. */
+export function openValleyBuilding(id: ValleyBuildingId): void {
   if (ui.get().scene !== 'valley') travelToValley();
-  window.setTimeout(() => selectValleyBuilding('tradingPost', true), 120);
+  window.setTimeout(() => selectValleyBuilding(id, true), 120);
+}
+
+export function openHarbour(): void {
+  openValleyBuilding('tradingPost');
 }
 
 export function fillMerchantCrate(index: number): void {
@@ -325,4 +329,15 @@ export function voteValleyResearch(id: ValleyResearchId): void {
     if (error) ui.toast({ kind: 'warning', title: error, icon: 'info' }, 3000);
     else runtime.audio.play('click');
   });
+}
+
+export function contributeToFestival(resources: Partial<Record<ResourceId, number>>): boolean {
+  const error = runtime.valley ? runtime.valley.contributeFestival(resources) : 'The Valley is out of reach right now';
+  if (error) {
+    ui.toast({ kind: 'warning', title: 'Couldn’t send that', body: error, icon: 'info' }, 3000);
+    runtime.audio.play('error');
+    return false;
+  }
+  runtime.audio.play('deposit');
+  return true;
 }

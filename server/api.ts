@@ -166,20 +166,36 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
       else sendJson(res, 200, { result: out.result, ...out.view });
       return;
     }
+    if (target.kind === 'festival') {
+      if (typeof (target as { festivalId?: unknown }).festivalId !== 'number' || !resources || typeof resources !== 'object') {
+        sendJson(res, 400, { error: 'malformed contribution' });
+        return;
+      }
+      const out = await valleys.festival(playerId, (target as { festivalId: number }).festivalId, cleanBag(resources), opId);
+      if (!out) sendJson(res, 404, { error: 'not in a valley' });
+      else if (!out.ok) sendJson(res, 422, { error: out.reason });
+      else sendJson(res, 200, { result: out.result, ...out.view });
+      return;
+    }
     const building = target.id;
     if (target.kind !== 'building' || typeof building !== 'string' || !resources || typeof resources !== 'object') {
       sendJson(res, 400, { error: 'malformed contribution' });
       return;
     }
-    const clean: ResourceBag = {};
-    for (const [r, n] of Object.entries(resources as Record<string, unknown>)) {
-      if (typeof n === 'number' && Number.isFinite(n) && n > 0) clean[r as keyof ResourceBag] = Math.floor(n);
-    }
-    const out = await valleys.contribute(playerId, building, clean, opId);
+    const out = await valleys.contribute(playerId, building, cleanBag(resources), opId);
     if (!out) sendJson(res, 404, { error: 'not in a valley' });
     else if (!out.ok) sendJson(res, 422, { error: out.reason });
     else sendJson(res, 200, { result: out.result, ...out.view });
     return;
   }
   sendJson(res, 404, { error: 'not found' });
+}
+
+/** Keeps only positive, finite, whole amounts. */
+function cleanBag(resources: unknown): ResourceBag {
+  const clean: ResourceBag = {};
+  for (const [r, n] of Object.entries(resources as Record<string, unknown>)) {
+    if (typeof n === 'number' && Number.isFinite(n) && n > 0) clean[r as keyof ResourceBag] = Math.floor(n);
+  }
+  return clean;
 }

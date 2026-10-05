@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { DISTRICTS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES, type ValleyBuildingId } from '../../config/valley';
+import { VALLEY_RESEARCH } from '../../config/valleyResearch';
+import { DISTRICTS, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, type ValleyBuildingId } from '../../config/valley';
 import { IDENTITY } from '../../config/identity';
-import { RESOURCES, type ResourceId } from '../../config/resources';
 import { playerId } from '../../game/persistence';
-import type { ValleyBuildingState, ValleySnapshot } from '../../valley/types';
-import { deliveredFraction, levelDef, remainingFor, reputationFor, valueOf } from '../../valley/valleySim';
+import type { ValleyBuildingState } from '../../valley/types';
+import { deliveredFraction, levelDef } from '../../valley/valleySim';
 import { contributeToValley, returnToVillage, selectValleyBuilding } from '../actions';
 import { Bar, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
@@ -13,6 +12,8 @@ import { useUI } from '../store';
 import { agoText, describeLog } from './format';
 import { GuildTrainingSection, MerchantSection, roadProgress } from './TradeUi';
 import { ValleyResearchSection, ValleyResearchSummary } from './ResearchUi';
+import { FestivalCard, FestivalSection } from './FestivalUi';
+import { DeliveryForm, MemberShares } from './Delivery';
 import { ui as uiStore } from '../store';
 
 function statusText(b: ValleyBuildingState, serverNow: number): string {
@@ -20,7 +21,7 @@ function statusText(b: ValleyBuildingState, serverNow: number): string {
   switch (b.status) {
     case 'locked': {
       const req = def.requires!;
-      return `Opens when the ${VALLEY_BUILDINGS[req.building].name} is restored`;
+      return 'research' in req ? `Opens with the Valley research ${VALLEY_RESEARCH[req.research].name}` : `Opens when the ${VALLEY_BUILDINGS[req.building].name} is restored`;
     }
     case 'collecting':
       return b.level === 0 ? `Restoring · ${Math.round(deliveredFraction(b) * 100)}% gathered` : `Level ${b.level} · gathering for level ${b.level + 1}`;
@@ -79,6 +80,7 @@ export function ValleySidebar() {
         <small className="muted">{road.next !== null ? `Next Reputation Road reward at ${road.next}` : 'Reputation Road complete'}</small>
         {road.next !== null ? <Bar value={(state.valley.reputation - road.prev) / (road.next - road.prev)} tone="red" thin /> : null}
       </button>
+      <FestivalCard snapshot={snapshot} serverNow={serverNow} />
       <ValleyResearchSummary snapshot={snapshot} />
       <Section title="Projects">
         <ul className="vs-projects">
@@ -121,101 +123,11 @@ export function ValleySidebar() {
 // Right: one project and the contribution form
 // ---------------------------------------------------------------------------
 
-function MemberShares({ snapshot, b }: { snapshot: ValleySnapshot; b: ValleyBuildingState }) {
-  const me = playerId();
-  const total = Object.values(b.shares).reduce((s, v) => s + v, 0);
-  if (total <= 0) return <p className="small muted">Nobody has brought anything for this level yet — be the first!</p>;
-  const max = Math.max(...Object.values(b.shares));
-  // Fixed member order (never a leaderboard): you first, then neighbours as they joined.
-  const members = [...snapshot.members].sort((a, c) => (a.id === me ? -1 : c.id === me ? 1 : 0));
-  return (
-    <ul className="vp-shares">
-      {members.map((m) => {
-        const v = b.shares[m.id] ?? 0;
-        return (
-          <li key={m.id} className={m.id === me ? 'me' : ''}>
-            <span className="vp-member">
-              <strong>{m.id === me ? 'You' : m.name}</strong>
-              <small>{m.villageName}</small>
-            </span>
-            <span className="vp-share-bar">
-              <i style={{ width: `${(v / max) * 100}%` }} />
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 function ContributeForm({ id, b }: { id: ValleyBuildingId; b: ValleyBuildingState }) {
   const state = useGameState();
-  const { connection } = useValley();
-  const [amounts, setAmounts] = useState<Partial<Record<ResourceId, number>>>({});
-  useEffect(() => setAmounts({}), [id, b.level]);
   const def = levelDef(id, b.level)!;
-  const remaining = remainingFor(b);
-  const resources = VALLEY_RESOURCES.filter((r) => (def.cost[r] ?? 0) > 0);
-  const clamp = (r: ResourceId, n: number) => Math.max(0, Math.min(Math.floor(n), Math.floor(state.resources[r]), remaining[r] ?? 0));
-  const chosen: Partial<Record<ResourceId, number>> = {};
-  for (const r of resources) {
-    const n = clamp(r, amounts[r] ?? 0);
-    if (n > 0) chosen[r] = n;
-  }
-  const value = valueOf(chosen);
   const pending = state.valley.outbox.filter((o) => o.target.kind === 'building' && o.target.id === id).length;
-  const set = (r: ResourceId, n: number) => setAmounts((a) => ({ ...a, [r]: clamp(r, n) }));
-  return (
-    <>
-      <div className="vp-resources">
-        {resources.map((r) => {
-          const need = def.cost[r] ?? 0;
-          const got = Math.min(need, b.delivered[r] ?? 0);
-          const have = Math.floor(state.resources[r]);
-          const step = have >= 500 ? 100 : have >= 100 ? 25 : 5;
-          const n = clamp(r, amounts[r] ?? 0);
-          const done = got >= need;
-          return (
-            <div key={r} className={`vp-res ${done ? 'done' : ''}`}>
-              <Icon name={r} size={30} />
-              <div className="vp-res-main">
-                <Bar value={need > 0 ? got / need : 1} tone={done ? 'green' : 'honey'} label={`${formatNumber(got)} / ${formatNumber(need)} ${RESOURCES[r].name}`} />
-                {done ? (
-                  <small className="muted">All the {RESOURCES[r].name.toLowerCase()} it needs</small>
-                ) : (
-                  <div className="vp-stepper">
-                    <button className="icon-btn" disabled={n <= 0} onClick={() => set(r, n - step)} aria-label={`Less ${RESOURCES[r].name}`}>
-                      −
-                    </button>
-                    <span className="vp-amt">{n}</span>
-                    <button className="icon-btn" disabled={n >= Math.min(have, remaining[r] ?? 0)} onClick={() => set(r, n + step)} aria-label={`More ${RESOURCES[r].name}`}>
-                      +
-                    </button>
-                    <button className="btn small ghost" disabled={have <= 0} onClick={() => set(r, Infinity)}>
-                      All I can
-                    </button>
-                    <small className="muted">you have {formatNumber(have)}</small>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <button
-        className="btn green wide"
-        disabled={value <= 0 || connection !== 'ready'}
-        onClick={() => {
-          if (contributeToValley(id, chosen)) setAmounts({});
-        }}
-      >
-        <Icon name="gift" size={22} />
-        {value > 0 ? `Send · +${reputationFor(value)} reputation` : 'Choose what to send'}
-      </button>
-      {pending > 0 ? <p className="small muted vp-pending">{pending === 1 ? 'A parcel is' : `${pending} parcels are`} on the road…</p> : null}
-      <p className="small muted">Every {Math.round(1 / VALLEY_BALANCE.reputationPerValue)} timber’s worth earns 1 reputation. Stone, planks and bricks count for more.</p>
-    </>
-  );
+  return <DeliveryForm resetKey={`${id}:${b.level}`} cost={def.cost} delivered={b.delivered} pending={pending} onSend={(chosen) => contributeToValley(id, chosen)} />;
 }
 
 export function ValleyProjectPanel() {
@@ -257,6 +169,7 @@ export function ValleyProjectPanel() {
       {id === 'tradingPost' && b.level > 0 ? <MerchantSection /> : null}
       {def.trains && b.level > 0 ? <GuildTrainingSection skill={def.trains} /> : null}
       {id === 'greatLibrary' ? <ValleyResearchSection snapshot={snapshot} /> : null}
+      {id === 'festivalGrounds' && b.level > 0 ? <FestivalSection snapshot={snapshot} serverNow={serverNow} /> : null}
       {b.status === 'locked' ? (
         <p className="vp-note">
           <Icon name="lock" size={18} /> {statusText(b, serverNow)}.
@@ -274,7 +187,7 @@ export function ValleyProjectPanel() {
       ) : null}
       {b.status === 'collecting' || b.status === 'building' ? (
         <Section title="Who’s helping">
-          <MemberShares snapshot={snapshot} b={b} />
+          <MemberShares snapshot={snapshot} shares={b.shares} empty="Nobody has brought anything for this level yet — be the first!" />
         </Section>
       ) : null}
     </div>

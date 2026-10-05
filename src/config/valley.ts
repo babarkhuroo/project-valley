@@ -2,6 +2,7 @@ import type { Appearance } from './villagers';
 import type { JobType } from './jobs';
 import type { ResourceId } from './resources';
 import type { SkillId } from './skills';
+import type { ValleyResearchId } from './valleyResearch';
 
 /**
  * The shared Valley: districts, communal buildings restored through contributions,
@@ -56,7 +57,9 @@ export type ValleyEffect =
   /** The Great Library is open: Valley Knowledge goes into Valley research. */
   | { type: 'research' }
   /** Valley Knowledge from every source is multiplied by this (server side). */
-  | { type: 'knowledge'; mult: number };
+  | { type: 'knowledge'; mult: number }
+  /** Festivals run at Market Green; their rewards are multiplied by this. */
+  | { type: 'festival'; rewardMult: number };
 
 export interface ValleyLevelDef {
   /** Total resources the whole Valley must bring. */
@@ -68,9 +71,9 @@ export interface ValleyLevelDef {
   summary: string;
 }
 
-export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
+export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'festivalGrounds' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
 
-export type ValleyModel = 'hall' | 'guild' | 'post' | 'library';
+export type ValleyModel = 'hall' | 'guild' | 'post' | 'library' | 'grounds';
 
 export interface ValleyBuildingDef {
   id: ValleyBuildingId;
@@ -85,8 +88,8 @@ export interface ValleyBuildingDef {
   z: number;
   radius: number;
   facing: number;
-  /** Must reach this before restoration can start. */
-  requires: { building: ValleyBuildingId; level: number } | null;
+  /** Must be met before restoration can start: another building's level, or Valley research. */
+  requires: { building: ValleyBuildingId; level: number } | { research: ValleyResearchId } | null;
   levels: ValleyLevelDef[];
   /** The skill this guild trains villagers in, once restored. */
   trains?: SkillId;
@@ -200,6 +203,24 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
       },
     ],
   },
+  festivalGrounds: {
+    id: 'festivalGrounds',
+    name: 'Festival Grounds',
+    district: 'market',
+    description: 'A stage, a maypole and room for every village on Market Green. Restored, it hosts the Valley’s festivals.',
+    model: 'grounds',
+    color: '#d97a9a',
+    x: 82,
+    z: 88,
+    radius: 3.4,
+    facing: 0,
+    requires: { research: 'festivalCharter' },
+    levels: [
+      { cost: { timber: 3500, clay: 1500, planks: 600 }, buildHours: 3, effects: [{ type: 'festival', rewardMult: 1 }], summary: 'Festivals every few days, with rewards for everyone who helps' },
+      { cost: { timber: 6000, stone: 2000, planks: 1500 }, buildHours: 6, effects: [{ type: 'festival', rewardMult: 1.5 }], summary: 'Festival rewards +50%' },
+      { cost: { timber: 9000, planks: 2500, bricks: 2500 }, buildHours: 12, effects: [{ type: 'festival', rewardMult: 1.33 }], summary: 'Festival rewards doubled in all' },
+    ],
+  },
   forestersLodge: {
     id: 'forestersLodge',
     name: "Foresters' Lodge",
@@ -292,7 +313,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
   },
 };
 
-export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
+export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'festivalGrounds', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
 
 /** Resources the Valley accepts, in display order. */
 export const VALLEY_RESOURCES: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks'];
@@ -371,7 +392,7 @@ export const NEIGHBOURS: NeighbourDef[] = [
 
 export const VALLEY_BALANCE = {
   /** Relative worth of each resource, for reputation and neighbours' parcel sizes. */
-  value: { timber: 1, clay: 1, stone: 1.5, planks: 2.5, bricks: 3 } as Partial<Record<ResourceId, number>>,
+  value: { timber: 1, clay: 1, stone: 1.5, planks: 2.5, bricks: 3, stew: 1.2 } as Partial<Record<ResourceId, number>>,
   /** Reputation earned per point of contributed value. */
   reputationPerValue: 0.1,
   neighbours: {
