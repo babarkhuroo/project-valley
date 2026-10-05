@@ -102,7 +102,7 @@ function sameJob(a: Job | null, b: Job): boolean {
 export function assignVillager(state: GameState, world: World, villagerId: number, job: Job, sink: EventSink): CommandResult<{ replaced: number | null }> {
   const v = findVillager(state, villagerId);
   if (!v) return fail('Unknown villager');
-  if (v.training) return fail(`${v.name} is away training in the Valley`);
+  if (v.away) return fail(`${v.name} is away training in the Valley`);
   if (sameJob(v.job, job)) return { ok: true, value: { replaced: null } };
   const blocker = jobBlocker(state, job);
   if (blocker) return fail(blocker);
@@ -132,7 +132,7 @@ export function assignVillager(state: GameState, world: World, villagerId: numbe
 export function unassignVillager(state: GameState, world: World, villagerId: number, sink: EventSink): CommandResult {
   const v = findVillager(state, villagerId);
   if (!v) return fail('Unknown villager');
-  if (v.training) return fail(`${v.name} is away training in the Valley`);
+  if (v.away) return fail(`${v.name} is away training in the Valley`);
   if (!v.job) return { ok: true };
   becomeIdle(state, world, v, sink, 'unassigned');
   return { ok: true };

@@ -1,3 +1,4 @@
+import { MILLRACE } from '../config/millrace';
 import { TRAINING } from '../config/training';
 import { boostFor } from './trade';
 import { BALANCE } from '../config/balance';
@@ -226,11 +227,11 @@ function stopWalking(v: Villager, at: Vec2): void {
   v.purpose = null;
 }
 
-/** On reaching the Valley road: the villager is away until the lesson ends. */
-export function beginLesson(state: GameState, v: Villager): void {
-  const t = v.training!;
+/** On reaching the Valley road: the villager is away until the lesson or shift ends. */
+export function beginTrip(state: GameState, v: Villager): void {
+  const t = v.away!;
   v.activity = 'away';
-  t.duration = TRAINING.lessons[t.toLevel].hours * state.valley.bonuses.trainingTimeMult * 3600;
+  t.duration = t.kind === 'lesson' ? TRAINING.lessons[t.toLevel].hours * state.valley.bonuses.trainingTimeMult * 3600 : MILLRACE.shiftHours * 3600;
   t.until = state.time + t.duration;
 }
 
@@ -573,7 +574,7 @@ function needsFood(state: GameState, v: Villager): boolean {
 /** Absolute sim time of this villager's next state change, or Infinity. */
 export function villagerNextEvent(state: GameState, v: Villager): number {
   if (v.activity === 'walking') return v.route ? routeEnd(v.route) : state.time;
-  if (v.activity === 'away') return v.training?.until ?? Infinity;
+  if (v.activity === 'away') return v.away?.until ?? Infinity;
   if (v.activity !== 'working' || !v.job) return Infinity;
   const jt = jobTypeOf(state, v.job);
   if (!jt) return state.time;
@@ -605,7 +606,7 @@ export function processVillager(state: GameState, world: World, v: Villager, sin
     stopWalking(v, end);
     if (purpose === 'toWork') arriveAtWork(state, world, v, sink);
     else if (purpose === 'toStorage') deliver(state, world, v, sink);
-    else if (purpose === 'toValley' && v.training) beginLesson(state, v);
+    else if (purpose === 'toValley' && v.away) beginTrip(state, v);
     else v.activity = 'idle';
     return true;
   }

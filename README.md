@@ -2,7 +2,13 @@
 
 A peaceful, cooperative village-building game for the browser — TypeScript, three.js and React. Assign villagers to jobs, keep the stew pot going, research new ideas, raise homes and watch a wilderness clearing become a village.
 
-This repository currently contains the **vertical slice**: one hand-authored village, villagers with pathfinding and animated work, timber/clay/stew/knowledge economy, construction, a research tree, population growth, save/load with server-authoritative offline progress, a contextual tutorial and developer tools.
+What's here (milestones 1–3):
+
+- **The village** — a hand-authored valley floor, villagers with pathfinding and animated work, food, construction, a five-tier research tree, population growth, a contextual tutorial and developer tools.
+- **Economy depth** — stone, clay, planks and bricks; building upgrades with visible levels; workshops with offline crafting queues; permanent production areas; practice skills; an economy simulator that guards pacing.
+- **The shared Valley** — *The Hearthlands*, owned by the server and shared with seven simulated neighbours: communal buildings restored through contributions (with bonuses for every village), merchant ships and coins, tonics, the Reputation Road, guild training, Valley research with votes, festivals, and cooperative crafting shifts at the Millrace.
+
+Everything simulates deterministically and keeps running while you're away, measured by the server's clock. Real multiplayer (milestone 4) is next; see GAME_DESIGN.md.
 
 ## Run it
 

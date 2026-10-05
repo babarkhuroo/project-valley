@@ -137,12 +137,13 @@ export class ValleyFolk {
 
   /** Mirrors the player's villagers who are away training: they stand at their guild's door. */
   syncTrainees(villagers: readonly Villager[], villageName: string): void {
-    const away = villagers.filter((v) => v.activity === 'away' && v.training);
+    const away = villagers.filter((v) => v.activity === 'away' && v.away);
     const keep = new Set<number>();
     for (const v of away) {
       keep.add(v.id);
       if (this.trainees.has(v.id)) continue;
-      const guild = VALLEY_BUILDING_ORDER.find((id) => VALLEY_BUILDINGS[id].trains === v.training!.skill)!;
+      const trip = v.away!;
+      const guild = trip.kind === 'lesson' ? VALLEY_BUILDING_ORDER.find((id) => VALLEY_BUILDINGS[id].trains === trip.skill)! : 'millraceWorkshop';
       const def = VALLEY_BUILDINGS[guild];
       const n = [...this.trainees.values()].length;
       const fx = Math.sin(def.facing);
@@ -151,7 +152,7 @@ export class ValleyFolk {
       const spot = { x: def.x + fx * (def.radius + 0.6) + fz * side, z: def.z + fz * (def.radius + 0.6) - fx * side };
       const copy = createVillager(this.scenery, { name: v.name, appearance: v.appearance }, null, spot);
       this.scenery.villagers.push(copy);
-      this.trainees.set(v.id, { villager: copy, label: `${v.name} of ${villageName} · training` });
+      this.trainees.set(v.id, { villager: copy, label: `${v.name} of ${villageName} · ${trip.kind === 'lesson' ? 'training' : 'on shift'}` });
     }
     for (const [id, t] of this.trainees) {
       if (keep.has(id)) continue;

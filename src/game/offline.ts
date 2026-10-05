@@ -73,6 +73,11 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
       case 'villagerIdle':
         if (e.reason !== 'unassigned') idleIds.add(e.villagerId);
         break;
+      case 'shiftDone': {
+        const v = state.villagers.find((x) => x.id === e.villagerId);
+        if (v) trained.push(`${v.name}: a Millrace shift (${e.amount} ${e.resource} for the Valley)`);
+        break;
+      }
       case 'trainingDone': {
         const v = state.villagers.find((x) => x.id === e.villagerId);
         if (v) trained.push(`${v.name}: ${SKILLS[e.skill].name} ${e.level}`);
@@ -85,7 +90,7 @@ export function summarizeAway(before: Record<ResourceId, number>, state: GameSta
         break;
     }
   }
-  const idle = state.villagers.filter((v) => idleIds.has(v.id) && !v.job && !v.training).map((v) => v.name);
+  const idle = state.villagers.filter((v) => idleIds.has(v.id) && !v.job && !v.away).map((v) => v.name);
   return { seconds, cappedSeconds, gained, spent, built, researched, levels, newcomers, fullStorage: [...full], wentHungry, idle, shipsMissed, shipInPort: state.trade.ship !== null, trained };
 }
 

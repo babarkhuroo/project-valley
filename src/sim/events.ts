@@ -6,6 +6,7 @@ import type { SkillId } from '../config/skills';
 import type { ValleyBuildingId } from '../config/valley';
 import type { BoostId } from '../config/trade';
 import type { FestivalId } from '../config/festivals';
+import type { CoopRecipeId } from '../config/millrace';
 import type { ValleyTarget } from './types';
 
 /**
@@ -38,6 +39,8 @@ export type SimEvent =
   | { type: 'valleySent'; target: ValleyTarget; resources: Partial<Record<ResourceId, number>> }
   | { type: 'festivalAccepted'; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number }
   | { type: 'festivalReward'; festival: FestivalId; coins: number; reputation: number; decor: BuildingId | null }
+  | { type: 'shiftStarted'; villagerId: number; recipe: CoopRecipeId; project: ValleyBuildingId }
+  | { type: 'shiftDone'; villagerId: number; recipe: CoopRecipeId; project: ValleyBuildingId; resource: ResourceId; amount: number }
   | { type: 'trainingStarted'; villagerId: number; skill: SkillId; level: number }
   | { type: 'trainingDone'; villagerId: number; skill: SkillId; level: number }
   | { type: 'shipArrived'; merchant: number; crates: number }

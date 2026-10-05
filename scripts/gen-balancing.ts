@@ -18,6 +18,7 @@ import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VA
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
 import { TRAINING } from '../src/config/training.ts';
 import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../src/config/festivals.ts';
+import { COOP_RECIPES, COOP_RECIPE_ORDER, MILLRACE } from '../src/config/millrace.ts';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER } from '../src/config/valleyResearch.ts';
 import { BOOSTS, BOOST_ORDER, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS } from '../src/config/trade.ts';
 
@@ -250,6 +251,17 @@ out();
 table(['Festival', 'Goal', 'Reward per helper', 'Valley Knowledge', 'Decoration'], FESTIVAL_ORDER.map((id) => {
   const f = FESTIVALS[id];
   return [f.name, bundle(f.goal), `${f.reward.coins} coins, ${f.reward.reputation} reputation`, f.reward.knowledge, f.decor ? BUILDINGS[f.decor].name : '—'];
+}));
+
+out('## Millrace shifts');
+out();
+out(`A shift lasts ${MILLRACE.shiftHours}h (villager away). Output × (1 + ${MILLRACE.craftingBonusPerLevel} × Crafting level) × (1 + ${MILLRACE.helperBonus} × neighbours on shift, max ${MILLRACE.maxHelpers}) × Millrace level bonus (1 / 1.15 / 1.32), delivered to the chosen Valley project.`);
+out();
+table(['Recipe', 'Inputs', 'Base output', 'Value in → out'], COOP_RECIPE_ORDER.map((id) => {
+  const r = COOP_RECIPES[id];
+  const vIn = Object.entries(r.inputs).reduce((s, [res, n]) => s + (n ?? 0) * (VALLEY_BALANCE.value[res as keyof typeof VALLEY_BALANCE.value] ?? 1), 0);
+  const vOut = r.output.amount * (VALLEY_BALANCE.value[r.output.resource] ?? 1);
+  return [r.name, bundle(r.inputs), `${r.output.amount} ${RESOURCES[r.output.resource].name}`, `${vIn} → ${vOut}`];
 }));
 
 out('## Guild training');

@@ -6,6 +6,8 @@ import { isValleyUnlocked } from '../sim/modifiers';
 import type { BoostId } from '../config/trade';
 import { buyWare, claimRoadReward, fillCrate, useBoost } from '../sim/trade';
 import { startTraining } from '../sim/training';
+import { startShift } from '../sim/millrace';
+import type { CoopRecipeId } from '../config/millrace';
 import type { SkillId } from '../config/skills';
 import type { ValleyResearchId } from '../config/valleyResearch';
 import { RESEARCH, type ResearchId } from '../config/research';
@@ -340,4 +342,10 @@ export function contributeToFestival(resources: Partial<Record<ResourceId, numbe
   }
   runtime.audio.play('deposit');
   return true;
+}
+
+/** Sends a villager for a Millrace shift, credited to a Valley project. */
+export function sendOnShift(villagerId: number, recipe: CoopRecipeId, project: ValleyBuildingId, helpers: number): void {
+  const res = game().run((s, w, sink) => startShift(s, w, villagerId, recipe, project, helpers, sink));
+  feedback(res, () => runtime.audio.play('newcomer'));
 }

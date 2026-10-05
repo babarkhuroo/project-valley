@@ -59,7 +59,9 @@ export type ValleyEffect =
   /** Valley Knowledge from every source is multiplied by this (server side). */
   | { type: 'knowledge'; mult: number }
   /** Festivals run at Market Green; their rewards are multiplied by this. */
-  | { type: 'festival'; rewardMult: number };
+  | { type: 'festival'; rewardMult: number }
+  /** Millrace shifts are open; their output is multiplied by this. */
+  | { type: 'workshop'; yieldMult: number };
 
 export interface ValleyLevelDef {
   /** Total resources the whole Valley must bring. */
@@ -71,9 +73,9 @@ export interface ValleyLevelDef {
   summary: string;
 }
 
-export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'festivalGrounds' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
+export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'festivalGrounds' | 'millraceWorkshop' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
 
-export type ValleyModel = 'hall' | 'guild' | 'post' | 'library' | 'grounds';
+export type ValleyModel = 'hall' | 'guild' | 'post' | 'library' | 'grounds' | 'mill';
 
 export interface ValleyBuildingDef {
   id: ValleyBuildingId;
@@ -221,6 +223,24 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
       { cost: { timber: 9000, planks: 2500, bricks: 2500 }, buildHours: 12, effects: [{ type: 'festival', rewardMult: 1.33 }], summary: 'Festival rewards doubled in all' },
     ],
   },
+  millraceWorkshop: {
+    id: 'millraceWorkshop',
+    name: 'Millrace Workshop',
+    district: 'industry',
+    description: 'A waterwheel-driven saw and a shared kiln on the Silverrun. Villagers from every village work shifts here, turning materials into more than they would make alone.',
+    model: 'mill',
+    color: '#3f7a8c',
+    x: 35.6,
+    z: 84,
+    radius: 3,
+    facing: -Math.PI / 2,
+    requires: { research: 'millraceWorks' },
+    levels: [
+      { cost: { timber: 4000, clay: 1500, stone: 1500 }, buildHours: 3, effects: [{ type: 'workshop', yieldMult: 1 }], summary: 'Opens shifts: materials in, more goods out for a Valley project' },
+      { cost: { timber: 6000, stone: 2500, planks: 1500 }, buildHours: 6, effects: [{ type: 'workshop', yieldMult: 1.15 }], summary: 'A second wheel: shift output +15%' },
+      { cost: { timber: 9000, stone: 3500, planks: 2000, bricks: 2000 }, buildHours: 12, effects: [{ type: 'workshop', yieldMult: 1.15 }], summary: 'The great kiln: shift output +32% in all' },
+    ],
+  },
   forestersLodge: {
     id: 'forestersLodge',
     name: "Foresters' Lodge",
@@ -313,7 +333,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
   },
 };
 
-export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'festivalGrounds', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
+export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'festivalGrounds', 'millraceWorkshop', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
 
 /** Resources the Valley accepts, in display order. */
 export const VALLEY_RESOURCES: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks'];

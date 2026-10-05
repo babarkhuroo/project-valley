@@ -501,6 +501,18 @@ export function upgradeValley(v: ValleyState, now: number): boolean {
   return changed;
 }
 
+/**
+ * Neighbours working a Millrace shift at `now` (they take turns through their waking
+ * hours). Pure and shared by server and client, so both show the same crew.
+ */
+export function millraceCrew(v: ValleyState | ValleySnapshot, now: number): string[] {
+  if ((v.buildings.millraceWorkshop?.level ?? 0) <= 0) return [];
+  const hour = Math.floor(now / HOUR);
+  return v.members
+    .filter((m) => m.kind === 'simulated' && hoursIntoNight(m, now) < 0 && (hour + m.neighbour! * 5) % 7 < 3)
+    .map((m) => m.name);
+}
+
 /** Processes every neighbour visit and finished build up to `now`, in time order. */
 export function advanceValley(v: ValleyState, now: number): void {
   for (let guard = 0; guard < MAX_EVENTS_PER_ADVANCE; guard++) {
@@ -637,6 +649,10 @@ export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
         else if (e.type === 'storage') out.storageMult *= e.mult;
         else if (e.type === 'mealDuration') out.mealDurationMult *= e.mult;
         else if (e.type === 'trade') out.tradeLevel += 1;
+        else if (e.type === 'workshop') {
+          out.workshopLevel += 1;
+          out.workshopYield *= e.yieldMult;
+        }
       }
     }
   }

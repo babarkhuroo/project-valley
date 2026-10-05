@@ -5,7 +5,7 @@
  * member's village through the Valley bonuses.
  */
 
-export type ValleyResearchId = 'sharedLarders' | 'merchantCharts' | 'guildTutors' | 'deepStorehouses' | 'tradeWinds' | 'masterTeachers' | 'festivalCharter';
+export type ValleyResearchId = 'sharedLarders' | 'merchantCharts' | 'guildTutors' | 'deepStorehouses' | 'tradeWinds' | 'masterTeachers' | 'festivalCharter' | 'millraceWorks';
 
 export type ValleyResearchEffect =
   | { type: 'mealDuration'; mult: number }
@@ -90,6 +90,15 @@ export const VALLEY_RESEARCH: Record<ValleyResearchId, ValleyResearchDef> = {
     requires: ['sharedLarders'],
     effects: [],
   },
+  millraceWorks: {
+    id: 'millraceWorks',
+    name: 'Millrace Works',
+    description: 'Harness the river for everyone: opens the cooperative Millrace Workshop.',
+    cost: 1000,
+    tier: 2,
+    requires: ['guildTutors'],
+    effects: [],
+  },
 };
 
-export const VALLEY_RESEARCH_ORDER: ValleyResearchId[] = ['sharedLarders', 'merchantCharts', 'guildTutors', 'deepStorehouses', 'tradeWinds', 'masterTeachers', 'festivalCharter'];
+export const VALLEY_RESEARCH_ORDER: ValleyResearchId[] = ['sharedLarders', 'merchantCharts', 'guildTutors', 'deepStorehouses', 'tradeWinds', 'masterTeachers', 'festivalCharter', 'millraceWorks'];

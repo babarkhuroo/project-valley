@@ -3,7 +3,7 @@ import { BUILDINGS } from '../../config/buildings';
 import { RESOURCES, type ResourceId } from '../../config/resources';
 import { isValleyUnlocked } from '../../sim/modifiers';
 import { canClaimRoad, tradeOpen } from '../../sim/trade';
-import type { GameState } from '../../sim/types';
+import type { GameState, Lesson } from '../../sim/types';
 import { buyFromMerchant, claimRoad, drinkTonic, fillMerchantCrate, trainVillager } from '../actions';
 import { SKILLS, type SkillId } from '../../config/skills';
 import { TRAINING } from '../../config/training';
@@ -281,14 +281,14 @@ export function MerchantSection() {
 /** Who could train here, who is training now, and what it costs. */
 export function GuildTrainingSection({ skill }: { skill: SkillId }) {
   const state = useGameState();
-  const here = state.villagers.filter((v) => v.training?.skill === skill);
-  const offers = state.villagers.filter((v) => !v.training).map((v) => ({ v, offer: trainingOffer(state, v, skill) }));
+  const here = state.villagers.filter((v) => v.away?.kind === 'lesson' && v.away.skill === skill);
+  const offers = state.villagers.filter((v) => !v.away).map((v) => ({ v, offer: trainingOffer(state, v, skill) }));
   const able = offers.filter((o) => o.offer.ok);
   const practising = offers.filter((o) => !o.offer.ok && /Practice/.test(o.offer.reason)).length;
   return (
     <Section title={`${SKILLS[skill].name} lessons`} aside={<small className="muted">{state.trade.coins} coins</small>}>
       {here.map((v) => {
-        const t = v.training!;
+        const t = v.away as Lesson;
         const total = t.duration ?? TRAINING.lessons[t.toLevel].hours * 3600;
         return (
           <div key={v.id} className="trainee">

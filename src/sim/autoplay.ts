@@ -129,7 +129,7 @@ function keepWorkshopsBusy(state: GameState, world: World, sink: EventSink): voi
 
 /** A villager is free for reassignment when idle or stuck on something that won't clear soon. */
 function isFree(v: Villager): boolean {
-  if (v.training) return false;
+  if (v.away) return false;
   if (!v.job) return v.activity !== 'walking' || v.purpose === 'toRest';
   return v.activity === 'blocked' && v.blockedReason !== 'knowledgeFull';
 }

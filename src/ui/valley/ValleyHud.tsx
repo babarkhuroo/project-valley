@@ -14,6 +14,7 @@ import { GuildTrainingSection, MerchantSection, roadProgress } from './TradeUi';
 import { ValleyResearchSection, ValleyResearchSummary } from './ResearchUi';
 import { FestivalCard, FestivalSection } from './FestivalUi';
 import { DeliveryForm, MemberShares } from './Delivery';
+import { MillraceSection } from './MillraceUi';
 import { ui as uiStore } from '../store';
 
 function statusText(b: ValleyBuildingState, serverNow: number): string {
@@ -170,6 +171,7 @@ export function ValleyProjectPanel() {
       {def.trains && b.level > 0 ? <GuildTrainingSection skill={def.trains} /> : null}
       {id === 'greatLibrary' ? <ValleyResearchSection snapshot={snapshot} /> : null}
       {id === 'festivalGrounds' && b.level > 0 ? <FestivalSection snapshot={snapshot} serverNow={serverNow} /> : null}
+      {id === 'millraceWorkshop' && b.level > 0 ? <MillraceSection snapshot={snapshot} serverNow={serverNow} /> : null}
       {b.status === 'locked' ? (
         <p className="vp-note">
           <Icon name="lock" size={18} /> {statusText(b, serverNow)}.

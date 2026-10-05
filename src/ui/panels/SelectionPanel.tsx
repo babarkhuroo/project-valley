@@ -231,9 +231,11 @@ function VillagerPanel({ v }: { v: Villager }) {
         <span>
           <strong>{task.label}</strong>
           <small>
-            {v.training
-              ? v.training.until !== null
-                ? `Back with ${SKILLS[v.training.skill].name} ${v.training.toLevel} in ${formatDuration(v.training.until - state.time)}`
+            {v.away
+              ? v.away.until !== null
+                ? v.away.kind === 'lesson'
+                  ? `Back with ${SKILLS[v.away.skill].name} ${v.away.toLevel} in ${formatDuration(v.away.until - state.time)}`
+                  : `Back from the Millrace in ${formatDuration(v.away.until - state.time)}`
                 : 'Walking out along the Valley road'
               : task.idle
                 ? 'Waiting for your instructions.'
@@ -242,7 +244,7 @@ function VillagerPanel({ v }: { v: Villager }) {
           {task.progress !== null ? <Bar value={task.progress} thin /> : null}
         </span>
       </div>
-      {v.training ? null : (
+      {v.away ? null : (
       <div className="row-buttons">
         <button className="btn green" onClick={() => beginAssign(v.id)}>
           <Icon name="target" size={18} /> {v.job ? 'Change job' : 'Choose a job'}
@@ -305,7 +307,7 @@ function VillagerPanel({ v }: { v: Villager }) {
 /** Lessons at the Valley guilds for skills practice can't raise any further. */
 function GuildTraining({ v }: { v: Villager }) {
   const state = useGameState();
-  if (!isValleyUnlocked(state) || v.training) return null;
+  if (!isValleyUnlocked(state) || v.away) return null;
   const cap = practiceCap(state);
   const ready = SKILL_ORDER.filter((k) => v.skills[k].level >= cap && v.skills[k].level < MAX_SKILL_LEVEL);
   return (

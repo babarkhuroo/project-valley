@@ -98,6 +98,16 @@ export function attachNotifications(game: Game): () => void {
           if (v) ui.toast({ kind: 'success', title: `${v.name} joined ${state.player.villageName}!`, body: 'Give them something to do.', icon: 'villager', target: { kind: 'villager', id: v.id } });
           break;
         }
+        case 'shiftStarted': {
+          const v = findVillager(state, e.villagerId);
+          if (v) ui.toast({ kind: 'info', title: `${v.name} set off for a Millrace shift`, body: `Goods for the ${VALLEY_BUILDINGS[e.project].name}.`, icon: 'travel', target: { kind: 'villager', id: v.id } });
+          break;
+        }
+        case 'shiftDone': {
+          const v = findVillager(state, e.villagerId);
+          if (v) ui.toast({ kind: 'success', title: `${v.name} is back from the Millrace`, body: `${e.amount} ${RESOURCES[e.resource].name} on their way to the ${VALLEY_BUILDINGS[e.project].name}.`, icon: 'gift', target: { kind: 'villager', id: v.id } }, 6000);
+          break;
+        }
         case 'trainingStarted': {
           const v = findVillager(state, e.villagerId);
           if (v) ui.toast({ kind: 'info', title: `${v.name} set off for the Valley`, body: `Back with ${SKILLS[e.skill].name} ${e.level} after the lesson.`, icon: 'travel', target: { kind: 'villager', id: v.id } });

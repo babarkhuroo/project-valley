@@ -95,7 +95,7 @@ export function AwayDialog() {
           ))}
           {away.trained.map((t) => (
             <li key={t}>
-              <Icon name="xp" size={20} /> Back from guild training — {t}
+              <Icon name="xp" size={20} /> Back from the Valley — {t}
             </li>
           ))}
           {away.shipInPort ? (

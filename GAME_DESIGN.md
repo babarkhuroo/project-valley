@@ -157,7 +157,8 @@ Researching **The Valley Road** (tier 3) opens a road over the ridge to a shared
 | Saltreach Harbour | The Trading Post and its pier, where merchant ships dock |
 | Lantern Hill | The Great Library — Valley research |
 | Market Green | The Festival Grounds — rotating festivals |
-| Millrace, Goldfurrow Fields | Districts waiting for the cooperative workshop |
+| Millrace | The Millrace Workshop — cooperative crafting shifts |
+| Goldfurrow Fields | Farmland — reserved for farming (later) |
 | Old Wood, Greystep Quarry, Silverrun, The Far Reach | Scenery now; the Far Reach is fenced off for future expansion |
 
 - **Contributing:** pick a project, choose amounts per resource (or *All I can*) and send. Resources leave the village immediately; anything the project no longer needs (a neighbour got there first) comes back. Each delivery earns **reputation** (1 per 10 timber's worth; stone, planks and bricks count more).
@@ -180,6 +181,10 @@ Members **vote** on what to research next — the most-voted available project g
 ## Festivals
 
 The *Festival Charter* Valley research opens the **Festival Grounds** on Market Green. Once restored, the Valley holds a festival every few days — Harvest Festival, Great Construction Project, Expedition Supplies, Lantern Fair — each a 48-hour shared goal (Stew counts here, unlike building projects). Neighbours join in; if the goal is met, every member who delivered anything gets coins and reputation (more with Festival Grounds levels), the first win of some festivals unlocks Festival Lanterns for the village, and the Valley gets Valley Knowledge. Missing the goal costs nothing — there's always another. The sidebar shows the running festival and a "Next steps" tip points to it from the village.
+
+## Cooperative crafting: the Millrace Workshop
+
+*Millrace Works* (Valley research) opens the **Millrace Workshop** on the Silverrun — a waterwheel-driven saw and a shared kiln. A village sends one of its villagers for a 2-hour **shift** with materials from home (100 timber for sawn beams, 60 stone to dress, 120 timber for planks, 100 clay + 20 timber for bricks). The shared machinery makes more than a village could alone, and more again with company: +5% for every neighbour on shift at the time (they take turns through their waking hours, and the panel shows who's there), +5% per level of the villager's Crafting skill, and up to +32% from the workshop's own levels. The goods go straight to the Valley project the player picks; anything it no longer needs comes home. Like lessons, a shift takes the villager away from their job — they walk back to it afterwards.
 
 ## Guild training
 
@@ -207,6 +212,6 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 ## Roadmap
 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
-- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ⏳ cooperative crafting.
+- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ✅ cooperative crafting at the Millrace.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

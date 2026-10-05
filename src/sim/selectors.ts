@@ -1,3 +1,4 @@
+import { MILLRACE } from '../config/millrace';
 import { TRAINING } from '../config/training';
 import { VALLEY_BUILDINGS } from '../config/valley';
 import { guildFor } from './training';
@@ -60,12 +61,13 @@ export function jobTargetName(state: GameState, job: Job): string {
 export function villagerTask(state: GameState, v: Villager): TaskInfo {
   const jt = v.job ? jobTypeOf(state, v.job) : null;
   const warning = v.hungry && jt && JOBS[jt].consumesFood ? 'Hungry — working slowly' : null;
-  if (v.training) {
-    const guild = VALLEY_BUILDINGS[guildFor(v.training.skill)].name;
-    const left = v.training.until !== null ? v.training.until - state.time : null;
-    const lesson = v.training.duration ?? TRAINING.lessons[v.training.toLevel].hours * 3600;
+  if (v.away) {
+    const trip = v.away;
+    const place = trip.kind === 'lesson' ? VALLEY_BUILDINGS[guildFor(trip.skill)].name : VALLEY_BUILDINGS.millraceWorkshop.name;
+    const left = trip.until !== null ? trip.until - state.time : null;
+    const lesson = trip.duration ?? (trip.kind === 'lesson' ? TRAINING.lessons[trip.toLevel].hours : MILLRACE.shiftHours) * 3600;
     return {
-      label: left === null ? `Setting off for the ${guild}` : `Training at the ${guild}`,
+      label: left === null ? `Setting off for the ${place}` : trip.kind === 'lesson' ? `Training at the ${place}` : `On shift at the ${place}`,
       icon: 'travel',
       progress: left === null ? null : Math.max(0, Math.min(1, 1 - left / lesson)),
       warning: null,
@@ -121,7 +123,7 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
 }
 
 export function idleVillagers(state: GameState): Villager[] {
-  return state.villagers.filter((v) => !v.job && !v.training);
+  return state.villagers.filter((v) => !v.job && !v.away);
 }
 
 // ---------------------------------------------------------------------------

@@ -71,6 +71,13 @@ export function claimFestival(state: GameState, festivalId: number, kind: Festiv
   return true;
 }
 
+/** Queues goods made away from the village (Millrace shifts) for a Valley target. Nothing is deducted here. */
+export function queueValleyGift(state: GameState, target: ValleyTarget, resources: ResourceAmounts, opId: string): boolean {
+  if (!state.valley.valleyId) return false;
+  state.valley.outbox.push({ opId, target, resources, at: state.time });
+  return true;
+}
+
 /** Queues Valley Knowledge (earned trading) for the shared research. Nothing leaves the village. */
 export function sendKnowledge(state: GameState, amount: number, opId: string): boolean {
   if (!state.valley.valleyId || amount <= 0) return false;

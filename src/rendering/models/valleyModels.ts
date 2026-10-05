@@ -20,6 +20,7 @@ export const VALLEY_MODEL_SIZE: Record<ValleyBuildingDef['model'], { hx: number;
   post: { hx: 2.7, hz: 2.2, height: 4.2 },
   library: { hx: 3.3, hz: 2.7, height: 6.4 },
   grounds: { hx: 3.6, hz: 3.0, height: 5.2 },
+  mill: { hx: 2.8, hz: 2.2, height: 5.0 },
 };
 
 /** Length of the Trading Post's pier, out from its front wall. */
@@ -448,6 +449,80 @@ function grounds(def: ValleyBuildingDef, level: number): BuildingModel {
 }
 
 // ---------------------------------------------------------------------------
+// Millrace Workshop
+// ---------------------------------------------------------------------------
+
+function mill(def: ValleyBuildingDef, level: number): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const { hx, hz } = VALLEY_MODEL_SIZE.mill;
+  plinth(r, hx, hz, PALETTE.stoneDark);
+  const wood = mat(PALETTE.wood);
+  const beam = mat(PALETTE.woodDark);
+  // Stone ground floor (the wheel pit faces the river at the front), timber loft above.
+  box(r, 4.6, 1.6, 3.4, mat(PALETTE.stone, { flat: true }), 0, 1.2, -0.3);
+  box(r, 4.8, 1.4, 3.6, wood, 0, 2.7, -0.3);
+  for (const x of [-2.3, -1.15, 0, 1.15, 2.3]) box(r, 0.12, 1.4, 0.1, beam, x, 2.7, 1.52);
+  gableRoof(r, 4.2, 1.6, 5.2, mat(PALETTE.slateDark, { flat: true }), 3.4, true, 0, -0.3);
+  windowPane(r, -1.5, 2.7, 1.52, 0.4, 0.4);
+  windowPane(r, 1.5, 2.7, 1.52, 0.4, 0.4);
+  // Big doors on the side facing the road.
+  box(r, 0.06, 1.3, 1.4, beam, hx - 0.55, 1.05, -0.3);
+  // The waterwheel, turning in the race at the front.
+  const wheel = new THREE.Group();
+  wheel.position.set(-0.6, 1.4, hz + 0.45);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.08, 6, 24), beam);
+  wheel.add(rim);
+  const rim2 = rim.clone();
+  rim2.position.z = 0.5;
+  wheel.add(rim2);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const paddle = box(wheel, 0.45, 0.06, 0.55, wood, Math.cos(a) * 1.35, Math.sin(a) * 1.35, 0.25);
+    paddle.rotation.z = a + Math.PI / 2;
+    const spoke = box(wheel, 1.35, 0.06, 0.06, beam, Math.cos(a) * 0.67, Math.sin(a) * 0.67, 0.25);
+    spoke.rotation.z = a;
+  }
+  cyl(wheel, 0.18, 0.18, 0.7, mat(PALETTE.iron), 0, 0, 0.25, 8).rotation.x = Math.PI / 2;
+  r.add(wheel);
+  m.spinners.push({ obj: wheel, axis: 'z', speed: -0.8 });
+  // Mill race channel and a sluice.
+  box(r, 3.6, 0.3, 0.9, mat('#7fb3c8', { emissive: '#2a6f8f', emissiveIntensity: 0.15 }), -0.6, 0.15, hz + 0.75);
+  // Kiln chimney and log piles.
+  cyl(r, 0.45, 0.55, 2.2, mat('#b5654a', { flat: true }), 1.9, 1.5, -1.6, 8);
+  chimney(m, 1.9, 2.6, -1.6, 1.4);
+  for (let i = 0; i < 3; i++) {
+    const log = cyl(r, 0.18, 0.18, 1.6, mat(PALETTE.bark), 2.95, 0.6 + i * 0.32 - (i === 2 ? 0.16 : 0), -1.0 + (i % 2) * 0.36, 8);
+    log.rotation.x = Math.PI / 2;
+  }
+  banner(m, def.color, -2.3, 3.0, 1.6, 1.0);
+  if (level >= 2) {
+    // A second, smaller wheel and a covered drying shed.
+    const wheel2 = new THREE.Group();
+    wheel2.position.set(1.6, 1.0, hz + 0.45);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.06, 6, 18), beam);
+    wheel2.add(ring);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const p = box(wheel2, 0.35, 0.05, 0.4, wood, Math.cos(a) * 0.85, Math.sin(a) * 0.85, 0.2);
+      p.rotation.z = a + Math.PI / 2;
+    }
+    r.add(wheel2);
+    m.spinners.push({ obj: wheel2, axis: 'z', speed: -1.1 });
+    levelPennant(m, level, -hx + 0.3, -hz + 0.3, 4.6);
+  }
+  if (level >= 3) {
+    // The great kiln: a domed brick oven beside the mill.
+    const kiln = new THREE.Mesh(new THREE.SphereGeometry(1.0, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat('#a95a40', { flat: true }));
+    kiln.position.set(hx + 0.6, 0.4, -0.4);
+    r.add(kiln);
+    box(r, 0.4, 0.4, 0.05, mat(PALETTE.glow, { emissive: '#ff7a1a', emissiveIntensity: 0.9 }), hx + 0.6, 0.65, 0.58);
+    m.smoke.push(new THREE.Vector3(hx + 0.6, 1.5, -0.4));
+  }
+  return m;
+}
+
+// ---------------------------------------------------------------------------
 // Ruins and scaffolding
 // ---------------------------------------------------------------------------
 
@@ -563,6 +638,7 @@ export function createValleyModel(def: ValleyBuildingDef, level: number, deckY =
   else if (def.model === 'post') model = tradingPost(def, level, deckY);
   else if (def.model === 'library') model = library(def, level);
   else if (def.model === 'grounds') model = grounds(def, level);
+  else if (def.model === 'mill') model = mill(def, level);
   else model = guild(def, level);
   mergeStatic(model);
   model.root.traverse((o) => {

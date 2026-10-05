@@ -7,6 +7,7 @@ import type { ResourceId } from '../config/resources';
 import type { SkillId } from '../config/skills';
 import type { ValleyBuildingId } from '../config/valley';
 import type { BoostId } from '../config/trade';
+import type { CoopRecipeId } from '../config/millrace';
 import type { Appearance } from '../config/villagers';
 
 /**
@@ -131,20 +132,36 @@ export interface Villager {
   blockedReason: BlockReason | null;
   /** Sim time the villager joined the village. */
   joinedAt: number;
-  /** Guild training in progress (walking out, or away in the Valley). */
-  training: Training | null;
+  /** A trip to the Valley (guild lesson or workshop shift): walking out, or away. */
+  away: AwayTrip | null;
 }
 
-export interface Training {
-  skill: SkillId;
-  toLevel: number;
-  /** Sim time the lesson ends (set when the villager reaches the Valley road). */
+interface AwayCommon {
+  /** Sim time the trip ends (set when the villager reaches the Valley road). */
   until: number | null;
-  /** Lesson length in seconds, fixed when it starts (research can shorten later lessons). */
+  /** Trip length in seconds, fixed when it starts (research can shorten later lessons). */
   duration?: number;
   /** Job to go back to afterwards, if its slot is still free. */
   resumeJob: Job | null;
 }
+
+/** A guild lesson: one skill level higher on return. */
+export interface Lesson extends AwayCommon {
+  kind: 'lesson';
+  skill: SkillId;
+  toLevel: number;
+}
+
+/** A shift at the Valley's cooperative workshop: inputs taken, goods delivered to a project. */
+export interface Shift extends AwayCommon {
+  kind: 'shift';
+  recipe: CoopRecipeId;
+  project: ValleyBuildingId;
+  /** Output multiplier fixed when the shift starts (skill, helpers on site). */
+  yield: number;
+}
+
+export type AwayTrip = Lesson | Shift;
 
 export interface NewcomerCandidate {
   name: string;
@@ -186,6 +203,9 @@ export interface ValleyBonuses {
   tradeGapMult: number;
   trainingTimeMult: number;
   trainingCostMult: number;
+  /** Millrace Workshop level (0 = no shifts yet) and its output multiplier. */
+  workshopLevel: number;
+  workshopYield: number;
 }
 
 export interface MerchantCrate {

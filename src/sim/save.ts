@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -50,11 +50,21 @@ export const MIGRATIONS: Record<number, Migration> = {
   },
   // v8: festival rewards collected.
   7: (d) => ({ ...d, trade: { festivalsClaimed: [], ...((d.trade as object) ?? newTradeState()) } }),
+  // v9: guild lessons and Millrace shifts share one `away` trip; workshop bonuses.
+  8: (d) => {
+    const out = { ...d };
+    if (Array.isArray(d.villagers)) {
+      out.villagers = (d.villagers as Record<string, unknown>[]).map(({ training, ...v }) => ({ ...v, away: training ? { kind: 'lesson', ...(training as object) } : (v.away ?? null) }));
+    }
+    const valley = d.valley as Record<string, unknown> | undefined;
+    if (valley) out.valley = { ...valley, bonuses: { ...newValleyBonuses(), ...(valley.bonuses as object) } };
+    return out;
+  },
 };
 
 /** Bonuses for a village with no Valley (or nothing restored yet). */
 export function newValleyBonuses(): GameState['valley']['bonuses'] {
-  return { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {}, tradePayMult: 1, tradeGapMult: 1, trainingTimeMult: 1, trainingCostMult: 1 };
+  return { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {}, tradePayMult: 1, tradeGapMult: 1, trainingTimeMult: 1, trainingCostMult: 1, workshopLevel: 0, workshopYield: 1 };
 }
 
 export function newTradeState(): GameState['trade'] {

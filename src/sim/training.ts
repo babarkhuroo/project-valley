@@ -2,12 +2,12 @@ import { BALANCE } from '../config/balance';
 import type { SkillId } from '../config/skills';
 import { TRAINING } from '../config/training';
 import { VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, type ValleyBuildingId } from '../config/valley';
-import { jobSlots, workersOn, type CommandResult } from './commands';
-import { addResource } from './economy';
+import type { CommandResult } from './commands';
+import { leaveForValley } from './away';
 import type { EventSink } from './events';
 import { practiceCap } from './modifiers';
-import type { GameState, Villager } from './types';
-import { beginLesson, findVillager, goRest, goToWork, jobTypeOf, valleyRoadSpot, walkTo } from './villagerAI';
+import type { GameState, Lesson, Villager } from './types';
+import { findVillager } from './villagerAI';
 import type { World } from './world';
 
 /**
@@ -31,7 +31,7 @@ export type TrainingOffer =
 export function trainingOffer(state: GameState, v: Villager, skill: SkillId): TrainingOffer {
   const guild = guildFor(skill);
   const name = VALLEY_BUILDINGS[guild].name;
-  if (v.training) return { ok: false, guild, reason: 'Already training' };
+  if (v.away) return { ok: false, guild, reason: 'Already training' };
   const guildLevel = state.valley.bonuses.guildLevels[skill] ?? 0;
   if (guildLevel <= 0) return { ok: false, guild, reason: `Restore the ${name} in the Valley to train` };
   const level = v.skills[skill].level;
@@ -53,49 +53,18 @@ export function startTraining(state: GameState, world: World, villagerId: number
   if (!offer.ok) return { ok: false, error: offer.reason };
   if (state.trade.coins < offer.coins) return { ok: false, error: `Needs ${offer.coins} coins` };
   state.trade.coins -= offer.coins;
-  const resumeJob = v.job;
-  v.job = null;
-  v.workProgress = 0;
-  v.batchWork = 0;
-  v.depositTargetId = null;
-  v.blockedReason = null;
-  if (v.carrying) {
-    addResource(state, v.carrying.resource, v.carrying.amount);
-    v.carrying = null;
-  }
-  v.training = { skill, toLevel: offer.toLevel, until: null, resumeJob };
+  leaveForValley(state, world, v, { kind: 'lesson', skill, toLevel: offer.toLevel });
   sink.push({ type: 'trainingStarted', villagerId: v.id, skill, level: offer.toLevel });
-  if (!walkTo(state, world, v, valleyRoadSpot(world), 'toValley')) {
-    // Can't reach the road (shouldn't happen): set off from where they stand.
-    v.route = null;
-    v.purpose = null;
-    beginLesson(state, v);
-  }
   return { ok: true };
 }
 
-/** Lesson over: one level up, back in at the road, and back to work if possible. */
-export function returnFromTraining(state: GameState, world: World, v: Villager, sink: EventSink): void {
-  const t = v.training!;
-  const s = v.skills[t.skill];
-  s.level = Math.max(s.level, t.toLevel);
+/** Lesson over: one skill level up. */
+export function completeLesson(v: Villager, lesson: Lesson, sink: EventSink): void {
+  const s = v.skills[lesson.skill];
+  s.level = Math.max(s.level, lesson.toLevel);
   const thresholds = BALANCE.skills.practiceThresholds;
   s.xp = Math.max(s.xp, thresholds[Math.min(s.level, thresholds.length - 1)]);
-  v.training = null;
-  v.pos = valleyRoadSpot(world);
-  v.activity = 'idle';
-  sink.push({ type: 'trainingDone', villagerId: v.id, skill: t.skill, level: s.level });
-  sink.push({ type: 'skillUp', villagerId: v.id, skill: t.skill, level: s.level });
-  const job = t.resumeJob;
-  if (job && jobTypeOf(state, job) && workersOn(state, job, v.id).length < jobSlots(state, job)) {
-    v.job = job;
-    goToWork(state, world, v, sink);
-  } else {
-    goRest(state, world, v);
-  }
+  sink.push({ type: 'trainingDone', villagerId: v.id, skill: lesson.skill, level: s.level });
+  sink.push({ type: 'skillUp', villagerId: v.id, skill: lesson.skill, level: s.level });
 }
 
-/** Villagers not available for work because they're off training. */
-export function isTraining(v: Villager): boolean {
-  return v.training !== null;
-}

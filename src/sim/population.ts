@@ -99,6 +99,6 @@ export function createVillager(state: GameState, template: VillagerTemplate, hom
     hungry: false,
     blockedReason: null,
     joinedAt: state.time,
-    training: null,
+    away: null,
   };
 }

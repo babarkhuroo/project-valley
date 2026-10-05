@@ -13,7 +13,7 @@ export function WorkerList() {
   const state = useGameState();
   const selection = useUI((s) => s.selection);
   const open = useUI((s) => s.panel === 'workers');
-  const idle = state.villagers.filter((v) => !v.job && !v.training).length;
+  const idle = state.villagers.filter((v) => !v.job && !v.away).length;
   const beds = housingCapacity(state);
   return (
     <aside className={`worker-list panel ${open ? 'open' : ''}`}>

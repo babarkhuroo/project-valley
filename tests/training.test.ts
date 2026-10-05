@@ -45,7 +45,7 @@ describe('guild training offers', () => {
     const h = ready();
     h.state.trade.coins = 10;
     expect(startTraining(h.state, h.world, villager(h).id, 'woodcutting', h.events).ok).toBe(false);
-    expect(villager(h).training).toBeNull();
+    expect(villager(h).away).toBeNull();
   });
 });
 
@@ -65,7 +65,7 @@ describe('a villager in training', () => {
     expect(v.activity).toBe('away');
     expect(villagerTask(h.state, v).label).toMatch(/Training at the Foresters/);
     h.run(TRAINING.lessons[3].hours * 3600);
-    expect(v.training).toBeNull();
+    expect(v.away).toBeNull();
     expect(v.skills.woodcutting.level).toBe(3);
     expect(v.job?.kind).toBe('gather');
     expect(h.events.some((e) => e.type === 'trainingDone')).toBe(true);
@@ -84,7 +84,7 @@ describe('a villager in training', () => {
     startTraining(h.state, h.world, a.id, 'farming', h.events);
     assignVillager(h.state, h.world, b.id, cook, h.events);
     h.run(TRAINING.lessons[3].hours * 3600 + 300);
-    expect(a.training).toBeNull();
+    expect(a.away).toBeNull();
     expect(a.skills.farming.level).toBe(3);
     expect(a.job).toBeNull();
     expect(b.job).toEqual(cook);
@@ -103,7 +103,7 @@ describe('a villager in training', () => {
   it('migrates version-5 saves', () => {
     const out = migrate({ schemaVersion: 5, villagers: [{ id: 1 }], valley: { bonuses: { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0 } } });
     expect(out.schemaVersion).toBe(SAVE_VERSION);
-    expect((out.villagers as { training: unknown }[])[0].training).toBeNull();
+    expect((out.villagers as { away: unknown }[])[0].away).toBeNull();
     expect((out.valley as { bonuses: { guildLevels: object } }).bonuses.guildLevels).toEqual({});
   });
 });
