@@ -63,7 +63,7 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
   if (v.training) {
     const guild = VALLEY_BUILDINGS[guildFor(v.training.skill)].name;
     const left = v.training.until !== null ? v.training.until - state.time : null;
-    const lesson = TRAINING.lessons[v.training.toLevel].hours * 3600;
+    const lesson = v.training.duration ?? TRAINING.lessons[v.training.toLevel].hours * 3600;
     return {
       label: left === null ? `Setting off for the ${guild}` : `Training at the ${guild}`,
       icon: 'travel',

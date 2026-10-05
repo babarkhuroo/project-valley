@@ -140,6 +140,8 @@ export interface Training {
   toLevel: number;
   /** Sim time the lesson ends (set when the villager reaches the Valley road). */
   until: number | null;
+  /** Lesson length in seconds, fixed when it starts (research can shorten later lessons). */
+  duration?: number;
   /** Job to go back to afterwards, if its slot is still free. */
   resumeJob: Job | null;
 }
@@ -179,6 +181,11 @@ export interface ValleyBonuses {
   tradeLevel: number;
   /** Level of the Valley guild that trains each skill (missing = not restored). */
   guildLevels: Partial<Record<SkillId, number>>;
+  /** Valley research: merchant pay, time between ships, lesson time and lesson cost. */
+  tradePayMult: number;
+  tradeGapMult: number;
+  trainingTimeMult: number;
+  trainingCostMult: number;
 }
 
 export interface MerchantCrate {
@@ -186,6 +193,8 @@ export interface MerchantCrate {
   amount: number;
   coins: number;
   reputation: number;
+  /** Valley Knowledge it brings the shared research (sent when filled). */
+  knowledge: number;
   filled: boolean;
 }
 
@@ -227,11 +236,16 @@ export interface TradeState {
   unlockedDecor: BuildingId[];
 }
 
+/** What a Valley op is for: a building project, or Valley Knowledge for shared research. */
+export type ValleyTarget = { kind: 'building'; id: ValleyBuildingId } | { kind: 'knowledge' };
+
 /** A delivery to the Valley that has left the village but isn't confirmed by the server yet. */
 export interface ValleyOp {
   opId: string;
-  building: ValleyBuildingId;
+  target: ValleyTarget;
   resources: Partial<Record<ResourceId, number>>;
+  /** Valley Knowledge carried (knowledge ops). */
+  knowledge?: number;
   /** Village sim time it was sent. */
   at: number;
 }

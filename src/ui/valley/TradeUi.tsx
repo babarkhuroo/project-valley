@@ -232,6 +232,12 @@ export function MerchantSection() {
                 {c.coins}
                 <Icon name="reputation" size={16} />
                 {c.reputation}
+                {c.knowledge ? (
+                  <>
+                    <Icon name="knowledge" size={16} />
+                    {c.knowledge}
+                  </>
+                ) : null}
               </span>
               {c.filled ? (
                 <Icon name="check" size={20} />
@@ -283,7 +289,7 @@ export function GuildTrainingSection({ skill }: { skill: SkillId }) {
     <Section title={`${SKILLS[skill].name} lessons`} aside={<small className="muted">{state.trade.coins} coins</small>}>
       {here.map((v) => {
         const t = v.training!;
-        const total = TRAINING.lessons[t.toLevel].hours * 3600;
+        const total = t.duration ?? TRAINING.lessons[t.toLevel].hours * 3600;
         return (
           <div key={v.id} className="trainee">
             <Portrait appearance={v.appearance} size={34} />

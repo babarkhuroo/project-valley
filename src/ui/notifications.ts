@@ -3,6 +3,7 @@ import { RESEARCH } from '../config/research';
 import { RESOURCES } from '../config/resources';
 import { SKILLS } from '../config/skills';
 import { VALLEY_BUILDINGS } from '../config/valley';
+import { VALLEY_RESEARCH } from '../config/valleyResearch';
 import { BOOSTS, MERCHANTS } from '../config/trade';
 import { canClaimRoad } from '../sim/trade';
 import type { ValleyClient } from '../game/valleyClient';
@@ -156,6 +157,10 @@ export function attachValleyNotifications(client: ValleyClient): void {
       if (e.kind !== 'finished') continue;
       ui.toast({ kind: 'success', title: describeLog(e, snapshot, null), body: VALLEY_BUILDINGS[e.building].levels[e.level - 1]?.summary, icon: 'valley' }, 6500);
       runtime.audio.play('complete');
+    }
+    for (const e of entries) {
+      if (e.kind !== 'researched') continue;
+      ui.toast({ kind: 'success', title: describeLog(e, snapshot, null), body: VALLEY_RESEARCH[e.research].description, icon: 'knowledge' }, 6500);
     }
     // Several projects often open together (all the guilds at once): one toast for the lot.
     const opened = entries.filter((e) => e.kind === 'opened');

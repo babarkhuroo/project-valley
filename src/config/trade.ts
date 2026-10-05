@@ -88,6 +88,8 @@ export const TRADE_BALANCE = {
   coinsPerValue: 0.6,
   priceSpread: 0.35,
   reputationPerValue: 0.05,
+  /** Valley Knowledge each crate brings the shared research. */
+  knowledgePerValue: 0.08,
   /** Bonus for filling every crate: share of the crates' coins, plus flat reputation. */
   fullShipBonus: { coinShare: 0.25, reputation: 10 },
   /** Tonics on sale per ship, and the haggling range on their price. */

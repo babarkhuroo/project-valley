@@ -6,6 +6,7 @@ import type { CommandResult } from './commands';
 import { bumpStat, capacity } from './economy';
 import type { EventSink } from './events';
 import type { GameState, MerchantCrate, MerchantShip, MerchantWare } from './types';
+import { sendKnowledge } from './valley';
 
 /**
  * Merchant ships, tonics and the Reputation Road — the village side of trading.
@@ -63,8 +64,15 @@ function rollShip(state: GameState): MerchantShip {
     const amount = Math.max(5, Math.min(cap, Math.round(value / good.value / 5) * 5));
     const realValue = amount * good.value;
     // Prices swing: some crates are a bargain, some barely worth the goods.
-    const coins = Math.max(1, Math.round(realValue * B.coinsPerValue * def.premium * post.pay * (1 + (rand(state) * 2 - 1) * B.priceSpread)));
-    crates.push({ resource: good.resource, amount, coins, reputation: Math.max(1, Math.round(realValue * B.reputationPerValue)), filled: false });
+    const coins = Math.max(1, Math.round(realValue * B.coinsPerValue * def.premium * post.pay * state.valley.bonuses.tradePayMult * (1 + (rand(state) * 2 - 1) * B.priceSpread)));
+    crates.push({
+      resource: good.resource,
+      amount,
+      coins,
+      reputation: Math.max(1, Math.round(realValue * B.reputationPerValue)),
+      knowledge: Math.max(1, Math.round(realValue * B.knowledgePerValue)),
+      filled: false,
+    });
   }
   const boosts = Object.keys(BOOSTS) as BoostId[];
   const wares: MerchantWare[] = [];
@@ -112,7 +120,7 @@ export function processTrade(state: GameState, sink: EventSink, eps: number): bo
     sink.push({ type: 'shipLeft', merchant: t.ship.merchant, filled: t.ship.crates.filter((c) => c.filled).length });
     t.ship = null;
     const { min, max } = TRADE_BALANCE.gapHours;
-    t.nextShipAt = state.time + (min + rand(state) * (max - min)) * 3600 * postLevel(state)!.gap;
+    t.nextShipAt = state.time + (min + rand(state) * (max - min)) * 3600 * postLevel(state)!.gap * state.valley.bonuses.tradeGapMult;
     acted = true;
   }
   if (!t.ship && t.nextShipAt === null) {
@@ -146,6 +154,8 @@ export function fillCrate(state: GameState, index: number, sink: EventSink): Com
   state.valley.reputation += crate.reputation;
   bumpStat(state, 'trade.crates');
   bumpStat(state, `traded.${crate.resource}`, crate.amount);
+  // The Valley's research gets the crate's Knowledge (queued like any Valley delivery).
+  sendKnowledge(state, crate.knowledge ?? 0, `k-${ship.id}-${index}`);
   sink.push({ type: 'crateFilled', resource: crate.resource, amount: crate.amount, coins: crate.coins, reputation: crate.reputation });
   if (!ship.bonusPaid && ship.crates.every((c) => c.filled)) {
     ship.bonusPaid = true;

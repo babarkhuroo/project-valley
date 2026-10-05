@@ -1,6 +1,7 @@
 import { VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
 import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
-import { advanceValley, ageValley, contribute, createValley, snapshotOf, upgradeValley, type ContributeOutcome } from '../src/valley/valleySim.ts';
+import { advanceValley, ageValley, contribute, contributeKnowledge, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
+import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
 
 /**
  * Persistence for shared Valleys. A file-backed store ships now; the multiplayer
@@ -115,6 +116,37 @@ export class ValleyService {
       const now = this.clock();
       ageValley(v, ms);
       advanceValley(v, now);
+      await this.store.save(v);
+      return { valley: snapshotOf(v), memberId: playerId, now };
+    });
+  }
+
+  /** Valley Knowledge a member earned (trading). Idempotent per op id. */
+  async knowledge(playerId: string, amount: number, opId: string): Promise<(ContributeOutcome & { view?: ValleyView }) | null> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return null;
+      const now = this.clock();
+      advanceValley(v, now);
+      const out = contributeKnowledge(v, playerId, amount, opId, now);
+      await this.store.save(v);
+      return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
+    });
+  }
+
+  /** A member's vote for the next Valley research project. */
+  async vote(playerId: string, research: string): Promise<ValleyView | null> {
+    if (!(research in VALLEY_RESEARCH)) return null;
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return null;
+      const now = this.clock();
+      advanceValley(v, now);
+      if (!voteResearch(v, playerId, research as ValleyResearchId)) return null;
       await this.store.save(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });

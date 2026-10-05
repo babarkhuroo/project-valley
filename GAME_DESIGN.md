@@ -155,7 +155,8 @@ Researching **The Valley Road** (tier 3) opens a road over the ridge to a shared
 | Hearth Plaza | Hearth Hall — restore it first; it opens everything else |
 | Guild Row | Six guild halls (Foresters, Miners, Cooks, Scholars, Builders, Craftsfolk) |
 | Saltreach Harbour | The Trading Post and its pier, where merchant ships dock |
-| Lantern Hill, Millrace, Market Green, Goldfurrow Fields | Districts waiting for the library, cooperative workshops and festivals (next steps of milestone 3) |
+| Lantern Hill | The Great Library — Valley research |
+| Millrace, Market Green, Goldfurrow Fields | Districts waiting for cooperative workshops and festivals |
 | Old Wood, Greystep Quarry, Silverrun, The Far Reach | Scenery now; the Far Reach is fenced off for future expansion |
 
 - **Contributing:** pick a project, choose amounts per resource (or *All I can*) and send. Resources leave the village immediately; anything the project no longer needs (a neighbour got there first) comes back. Each delivery earns **reputation** (1 per 10 timber's worth; stone, planks and bricks count more).
@@ -168,6 +169,12 @@ Researching **The Valley Road** (tier 3) opens a road over the ridge to a shared
 Restoring the Valley's **Trading Post** (Saltreach Harbour) brings merchant ships to every member's village. A ship docks beside the pier for 4 hours with 3–5 crates to fill (more and better-paid with Trading Post levels) — each asks for one good the village can actually make, sized to its storage, and pays **coins** and reputation. Prices swing per crate and per merchant, so some crates are a bargain and some are better left for building; filling all of them earns a bonus. Ships keep calling while you're away (the summary says if one sailed without trading), and a "Next steps" tip and toast announce each arrival.
 
 **Coins** buy **tonics** from the ship (two on offer, limited stock) and, next, guild training. Tonics are the boost system: Woodworker Tonic, Miner's Meal, Farmer's Tea, Research Brew, Builder's Brew, Crafter's Oil — +50% to their trade for 30 minutes; another dose extends it. They show in the work-rate formula like any other factor.
+
+## Valley research
+
+The Valley has its own research, separate from each village's Academy, run from the **Great Library** on Lantern Hill. **Valley Knowledge** comes from cooperation: every delivery to a Valley project adds some (neighbours' too), and every merchant crate a member fills adds more. Until the Library is restored only a little can wait on its old shelves.
+
+Members **vote** on what to research next — the most-voted available project gets the Knowledge (ties go to whatever is furthest along). Neighbours vote according to their own tastes, so the player's vote can tip a choice, and everyone can see who wants what. Finished projects help every member's village: longer-lasting Stew, more storage, better merchant pay, ships returning sooner, shorter and cheaper guild lessons.
 
 ## Guild training
 
@@ -195,6 +202,6 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 ## Roadmap
 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
-- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ⏳ Valley research, cooperative crafting and events.
+- **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ⏳ cooperative crafting and events.
 - **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

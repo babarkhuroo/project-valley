@@ -1,5 +1,6 @@
 import { RESOURCES } from '../../config/resources';
 import { VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../../config/valley';
+import { VALLEY_RESEARCH } from '../../config/valleyResearch';
 import type { ResourceBag, ValleyLogEntry, ValleySnapshot } from '../../valley/types';
 
 export function memberName(snapshot: ValleySnapshot, id: string, me: string | null): string {
@@ -26,6 +27,10 @@ export function describeLog(e: ValleyLogEntry, snapshot: ValleySnapshot, me: str
       return e.level === 1 ? `The ${VALLEY_BUILDINGS[e.building].name} is restored!` : `The ${VALLEY_BUILDINGS[e.building].name} reached level ${e.level}!`;
     case 'opened':
       return `Work can begin on the ${VALLEY_BUILDINGS[e.building].name}`;
+    case 'knowledge':
+      return `${memberName(snapshot, e.member, me)} brought ${e.amount} Valley Knowledge from trading`;
+    case 'researched':
+      return `The Valley finished researching ${VALLEY_RESEARCH[e.research].name}!`;
   }
 }
 

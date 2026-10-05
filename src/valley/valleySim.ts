@@ -2,7 +2,9 @@ import { IDENTITY } from '../config/identity';
 import type { ResourceId } from '../config/resources';
 import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES, type ValleyBuildingId, type ValleyLevelDef } from '../config/valley';
 import type { ValleyBonuses } from '../sim/types';
-import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyLogEntry, ValleyMember, ValleySnapshot, ValleyState } from './types';
+import { newValleyBonuses } from '../sim/save';
+import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER, type ValleyResearchId } from '../config/valleyResearch';
+import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleyState } from './types';
 
 /**
  * The shared Valley as a deterministic, discrete-event simulation over wall-clock
@@ -11,7 +13,7 @@ import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyLogEnt
  * same Valley advanced in one step or in many ends up identical.
  */
 
-export const VALLEY_SCHEMA = 2;
+export const VALLEY_SCHEMA = 3;
 const HOUR = 3_600_000;
 const MINUTE = 60_000;
 const MAX_EVENTS_PER_ADVANCE = 250_000;
@@ -120,6 +122,104 @@ function finishBuilding(v: ValleyState, b: ValleyBuildingState, at: number): voi
   b.status = levelDef(b.id, b.level) ? 'collecting' : 'complete';
   log(v, { at, kind: 'finished', building: b.id, level: b.level });
   openUnlocked(v, at);
+  // A newly opened Library puts the banked Knowledge to work.
+  if (b.id === 'greatLibrary') spendKnowledge(v, at);
+}
+
+// ---------------------------------------------------------------------------
+// Valley research
+// ---------------------------------------------------------------------------
+
+export function newResearchState(): ValleyResearchState {
+  return { completed: [], progress: {}, votes: {}, banked: 0, raised: 0 };
+}
+
+/** The Great Library must be restored before Knowledge turns into research. */
+export function libraryOpen(v: ValleyState | ValleySnapshot): boolean {
+  return (v.buildings.greatLibrary?.level ?? 0) > 0;
+}
+
+function knowledgeMult(v: ValleyState | ValleySnapshot): number {
+  let mult = 1;
+  const lib = v.buildings.greatLibrary;
+  for (let l = 0; l < (lib?.level ?? 0); l++) {
+    for (const e of VALLEY_BUILDINGS.greatLibrary.levels[l].effects) if (e.type === 'knowledge') mult *= e.mult;
+  }
+  return mult;
+}
+
+export function availableResearch(v: ValleyState | ValleySnapshot): ValleyResearchId[] {
+  const done = v.research.completed;
+  return VALLEY_RESEARCH_ORDER.filter((id) => !done.includes(id) && VALLEY_RESEARCH[id].requires.every((r) => done.includes(r)));
+}
+
+/** Votes per available project. */
+export function voteCounts(v: ValleyState | ValleySnapshot): Partial<Record<ValleyResearchId, string[]>> {
+  const avail = availableResearch(v);
+  const out: Partial<Record<ValleyResearchId, string[]>> = {};
+  for (const [member, id] of Object.entries(v.research.votes)) if (avail.includes(id)) (out[id] ??= []).push(member);
+  return out;
+}
+
+/** The project the Valley is working on: most votes, then most progress, then tree order. */
+export function leadingResearch(v: ValleyState | ValleySnapshot): ValleyResearchId | null {
+  const avail = availableResearch(v);
+  if (avail.length === 0) return null;
+  const votes = voteCounts(v);
+  const score = (id: ValleyResearchId) => (votes[id]?.length ?? 0) * 1e9 + (v.research.progress[id] ?? 0);
+  return [...avail].sort((a, b) => score(b) - score(a) || VALLEY_RESEARCH_ORDER.indexOf(a) - VALLEY_RESEARCH_ORDER.indexOf(b))[0];
+}
+
+/** Neighbours keep a vote on something available; each has their own taste. */
+function settleVotes(v: ValleyState): void {
+  const avail = availableResearch(v);
+  for (const m of v.members) {
+    const vote = v.research.votes[m.id];
+    if (vote && avail.includes(vote)) continue;
+    if (m.kind === 'player' || avail.length === 0) {
+      delete v.research.votes[m.id];
+      continue;
+    }
+    const taste = (id: ValleyResearchId) => (VALLEY_RESEARCH_ORDER.indexOf(id) * 7 + m.neighbour! * 3) % 11;
+    v.research.votes[m.id] = [...avail].sort((a, b) => taste(a) - taste(b))[0];
+  }
+}
+
+/** Pours banked Knowledge into the leading project, finishing projects as it goes. */
+function spendKnowledge(v: ValleyState, at: number): void {
+  const r = v.research;
+  while (libraryOpen(v) && r.banked > 1e-9) {
+    const target = leadingResearch(v);
+    if (!target) break;
+    const cost = VALLEY_RESEARCH[target].cost;
+    const take = Math.min(r.banked, cost - (r.progress[target] ?? 0));
+    r.progress[target] = (r.progress[target] ?? 0) + take;
+    r.banked -= take;
+    if (r.progress[target]! >= cost - 1e-6) {
+      delete r.progress[target];
+      r.completed.push(target);
+      log(v, { at, kind: 'researched', research: target });
+      settleVotes(v);
+    }
+  }
+}
+
+/** Knowledge raised by any member's effort (contributions, trade). */
+export function raiseKnowledge(v: ValleyState, amount: number, at: number): void {
+  if (amount <= 0) return;
+  const gained = amount * knowledgeMult(v);
+  v.research.raised += gained;
+  v.research.banked += gained;
+  // Until the Library opens, only so much can wait on the old shelves.
+  if (!libraryOpen(v)) v.research.banked = Math.min(v.research.banked, VALLEY_BALANCE.knowledgeBankCap);
+  spendKnowledge(v, at);
+}
+
+/** A member's vote for the next project. */
+export function voteResearch(v: ValleyState, memberId: string, id: ValleyResearchId): boolean {
+  if (!v.members.some((m) => m.id === memberId) || !availableResearch(v).includes(id)) return false;
+  v.research.votes[memberId] = id;
+  return true;
 }
 
 function deliver(member: ValleyMember, b: ValleyBuildingState, resources: ResourceBag): { accepted: ResourceBag; returned: ResourceBag; value: number } {
@@ -192,6 +292,7 @@ function neighbourVisit(v: ValleyState, m: ValleyMember, at: number): void {
       const amount = Math.max(1, Math.round(value / (VALLEY_BALANCE.value[resource] ?? 1)));
       const result = deliver(m, target, { [resource]: amount });
       if (result.value > 0) log(v, { at, kind: 'delivery', member: m.id, building: target.id, resources: result.accepted });
+      raiseKnowledge(v, result.value * VALLEY_BALANCE.knowledgePerValue, at);
       checkSupplied(v, target, at);
     }
   }
@@ -226,6 +327,7 @@ export function createValley(id: string, seed: number, now: number, player: Foun
     members: [],
     buildings,
     log: [],
+    research: newResearchState(),
     ops: {},
   };
   NEIGHBOURS.forEach((n, i) => {
@@ -245,6 +347,7 @@ export function createValley(id: string, seed: number, now: number, player: Foun
   }
   for (const m of v.members) scheduleVisit(v, m, now - rand(v) * 30 * MINUTE);
   addPlayer(v, player, now);
+  settleVotes(v);
   return v;
 }
 
@@ -264,6 +367,11 @@ export function addPlayer(v: ValleyState, player: FoundingPlayer, now: number): 
  */
 export function upgradeValley(v: ValleyState, now: number): boolean {
   let changed = false;
+  if (!v.research) {
+    v.research = newResearchState();
+    settleVotes(v);
+    changed = true;
+  }
   for (const id of VALLEY_BUILDING_ORDER) {
     if (v.buildings[id]) continue;
     v.buildings[id] = { id, level: 0, status: 'locked', delivered: {}, shares: {}, doneAt: null };
@@ -328,8 +436,28 @@ export function contribute(v: ValleyState, memberId: string, buildingId: ValleyB
     const d = deliver(member, b, resources);
     result = { accepted: d.accepted, returned: d.returned, value: d.value, reputation: reputationFor(d.value) };
     if (d.value > 0) log(v, { at: now, kind: 'delivery', member: member.id, building: b.id, resources: d.accepted });
+    raiseKnowledge(v, d.value * VALLEY_BALANCE.knowledgePerValue, now);
     checkSupplied(v, b, now);
   }
+  const ops = (v.ops[memberId] ??= {});
+  ops[opId] = result;
+  const keys = Object.keys(ops);
+  for (let i = 0; i < keys.length - OPS_KEPT; i++) delete ops[keys[i]];
+  return { ok: true, result };
+}
+
+/** Valley Knowledge brought by a member (e.g. earned trading). Idempotent per `opId`. */
+export function contributeKnowledge(v: ValleyState, memberId: string, amount: number, opId: string, now: number): ContributeOutcome {
+  const member = v.members.find((m) => m.id === memberId);
+  if (!member) return { ok: false, reason: 'Not a member of this Valley' };
+  const seen = v.ops[memberId]?.[opId];
+  if (seen) return { ok: true, result: seen };
+  const n = Math.max(0, Math.floor(amount));
+  if (n > 0) {
+    log(v, { at: now, kind: 'knowledge', member: memberId, amount: n });
+    raiseKnowledge(v, n, now);
+  }
+  const result: ContributionResult = { accepted: {}, returned: {}, value: 0, reputation: 0, knowledge: n };
   const ops = (v.ops[memberId] ??= {});
   ops[opId] = result;
   const keys = Object.keys(ops);
@@ -346,7 +474,7 @@ export function snapshotOf(v: ValleyState): ValleySnapshot {
 
 /** Village-side bonuses from every finished Valley level. */
 export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
-  const out: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {} };
+  const out: ValleyBonuses = { ...NO_VALLEY_BONUSES, jobRate: {}, guildLevels: {} };
   if (!v) return out;
   for (const id of VALLEY_BUILDING_ORDER) {
     const def = VALLEY_BUILDINGS[id];
@@ -357,14 +485,24 @@ export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
         if (e.type === 'jobRate') for (const j of e.jobs) out.jobRate[j] = (out.jobRate[j] ?? 1) * e.mult;
         else if (e.type === 'storage') out.storageMult *= e.mult;
         else if (e.type === 'mealDuration') out.mealDurationMult *= e.mult;
-        else out.tradeLevel += 1;
+        else if (e.type === 'trade') out.tradeLevel += 1;
       }
+    }
+  }
+  for (const id of v.research?.completed ?? []) {
+    for (const e of VALLEY_RESEARCH[id].effects) {
+      if (e.type === 'mealDuration') out.mealDurationMult *= e.mult;
+      else if (e.type === 'storage') out.storageMult *= e.mult;
+      else if (e.type === 'tradePay') out.tradePayMult *= e.mult;
+      else if (e.type === 'tradeGap') out.tradeGapMult *= e.mult;
+      else if (e.type === 'trainingTime') out.trainingTimeMult *= e.mult;
+      else out.trainingCostMult *= e.mult;
     }
   }
   return out;
 }
 
-export const NO_VALLEY_BONUSES: ValleyBonuses = { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {} };
+export const NO_VALLEY_BONUSES: ValleyBonuses = newValleyBonuses();
 
 /**
  * Development aid: makes the Valley `ms` older, as if that much time had passed with

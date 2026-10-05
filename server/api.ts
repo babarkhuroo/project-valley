@@ -59,7 +59,7 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         sendJson(res, 200, { now: Date.now() });
         return;
       }
-      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|contribute|dev-skip))?$/.exec(url.pathname);
+      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|contribute|vote|dev-skip))?$/.exec(url.pathname);
       if (valleyMatch && valleys) {
         await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false);
         return;
@@ -137,6 +137,12 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     sendJson(res, 200, await valleys.join(playerId, name, villageName));
     return;
   }
+  if (action === 'vote') {
+    const view = typeof body.research === 'string' ? await valleys.vote(playerId, body.research) : null;
+    if (!view) sendJson(res, 422, { error: 'cannot vote for that' });
+    else sendJson(res, 200, view);
+    return;
+  }
   if (action === 'dev-skip' && dev) {
     const hours = typeof body.hours === 'number' ? Math.min(24 * 30, Math.max(0, body.hours)) : 1;
     const view = await valleys.devSkip(playerId, hours * 3_600_000);
@@ -145,8 +151,23 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     return;
   }
   if (action === 'contribute') {
-    const { opId, building, resources } = body;
-    if (typeof opId !== 'string' || opId.length > 80 || typeof building !== 'string' || !resources || typeof resources !== 'object') {
+    const { opId, resources } = body;
+    // Older clients send `building`; newer ones a typed `target`.
+    const target = (body.target ?? (typeof body.building === 'string' ? { kind: 'building', id: body.building } : null)) as { kind?: unknown; id?: unknown } | null;
+    if (typeof opId !== 'string' || opId.length > 80 || !target || typeof target.kind !== 'string') {
+      sendJson(res, 400, { error: 'malformed contribution' });
+      return;
+    }
+    if (target.kind === 'knowledge') {
+      const amount = typeof body.knowledge === 'number' && Number.isFinite(body.knowledge) ? Math.min(10_000, Math.max(0, body.knowledge)) : 0;
+      const out = await valleys.knowledge(playerId, amount, opId);
+      if (!out) sendJson(res, 404, { error: 'not in a valley' });
+      else if (!out.ok) sendJson(res, 422, { error: out.reason });
+      else sendJson(res, 200, { result: out.result, ...out.view });
+      return;
+    }
+    const building = target.id;
+    if (target.kind !== 'building' || typeof building !== 'string' || !resources || typeof resources !== 'object') {
       sendJson(res, 400, { error: 'malformed contribution' });
       return;
     }

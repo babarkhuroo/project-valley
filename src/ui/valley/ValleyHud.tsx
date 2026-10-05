@@ -12,6 +12,7 @@ import { formatDuration, formatNumber, useGameState, useValley } from '../hooks'
 import { useUI } from '../store';
 import { agoText, describeLog } from './format';
 import { GuildTrainingSection, MerchantSection, roadProgress } from './TradeUi';
+import { ValleyResearchSection, ValleyResearchSummary } from './ResearchUi';
 import { ui as uiStore } from '../store';
 
 function statusText(b: ValleyBuildingState, serverNow: number): string {
@@ -78,6 +79,7 @@ export function ValleySidebar() {
         <small className="muted">{road.next !== null ? `Next Reputation Road reward at ${road.next}` : 'Reputation Road complete'}</small>
         {road.next !== null ? <Bar value={(state.valley.reputation - road.prev) / (road.next - road.prev)} tone="red" thin /> : null}
       </button>
+      <ValleyResearchSummary snapshot={snapshot} />
       <Section title="Projects">
         <ul className="vs-projects">
           {VALLEY_BUILDING_ORDER.map((id) => {
@@ -161,7 +163,7 @@ function ContributeForm({ id, b }: { id: ValleyBuildingId; b: ValleyBuildingStat
     if (n > 0) chosen[r] = n;
   }
   const value = valueOf(chosen);
-  const pending = state.valley.outbox.filter((o) => o.building === id).length;
+  const pending = state.valley.outbox.filter((o) => o.target.kind === 'building' && o.target.id === id).length;
   const set = (r: ResourceId, n: number) => setAmounts((a) => ({ ...a, [r]: clamp(r, n) }));
   return (
     <>
@@ -254,6 +256,7 @@ export function ValleyProjectPanel() {
       </div>
       {id === 'tradingPost' && b.level > 0 ? <MerchantSection /> : null}
       {def.trains && b.level > 0 ? <GuildTrainingSection skill={def.trains} /> : null}
+      {id === 'greatLibrary' ? <ValleyResearchSection snapshot={snapshot} /> : null}
       {b.status === 'locked' ? (
         <p className="vp-note">
           <Icon name="lock" size={18} /> {statusText(b, serverNow)}.

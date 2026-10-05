@@ -1,4 +1,5 @@
 import type { ValleyBuildingId } from '../config/valley';
+import type { ValleyResearchId } from '../config/valleyResearch';
 import { isValleyUnlocked } from '../sim/modifiers';
 import { joinValley, returnValleyOp, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
 import type { ContributionResult, ValleyLogEntry, ValleySnapshot } from '../valley/types';
@@ -139,6 +140,23 @@ export class ValleyClient {
     return null;
   }
 
+  /** Votes for the Valley's next research project. Returns a refusal reason, or null. */
+  async vote(research: ValleyResearchId): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/valley/${playerId()}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ research }),
+      });
+      if (!res.ok) return 'That project can’t be chosen right now';
+      this.apply((await res.json()) as ServerView);
+      return null;
+    } catch {
+      this.set({ connection: 'offline' });
+      return 'The Valley is out of reach right now';
+    }
+  }
+
   /** Delivers queued ops one at a time, oldest first. Network errors leave them queued. */
   async flush(): Promise<void> {
     if (this.flushing) return;
@@ -148,7 +166,7 @@ export class ValleyClient {
         const res = await fetch(`/api/valley/${playerId()}/contribute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ opId: op.opId, building: op.building, resources: op.resources }),
+          body: JSON.stringify({ opId: op.opId, target: op.target, resources: op.resources, knowledge: op.knowledge }),
         });
         if (res.status === 422) {
           this.game.mutate((state) => returnValleyOp(state, op.opId));

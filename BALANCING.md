@@ -185,6 +185,9 @@ Shared projects restored by every member. Costs are Valley-wide totals. Reputati
 | Trading Post | 1 | 2000 Timber, 1000 Clay | 2h | Merchant ships call on every member: 3 crates a ship | Hearth Hall 1 |
 |  | 2 | 4000 Timber, 1500 Stone, 800 Planks | 6h | 4 crates a ship, pay +10%, ships return sooner |  |
 |  | 3 | 8000 Timber, 3000 Stone, 1500 Planks, 1500 Bricks | 12h | 5 crates a ship, pay +20%, ships return sooner still |  |
+| Great Library | 1 | 3000 Timber, 1200 Clay, 800 Stone | 3h | Opens Valley research; Study +5% for every member | Hearth Hall 1 |
+|  | 2 | 6000 Timber, 2500 Stone, 1200 Planks | 6h | Valley Knowledge gathers 25% faster |  |
+|  | 3 | 10000 Timber, 4000 Stone, 2000 Planks, 2000 Bricks | 12h | Knowledge +25% more; Study +5% more |  |
 | Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
 |  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting ×1.10 in all; trains up to level 5 |  |
 |  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting ×1.16 in all; trains up to level 6 |  |
@@ -211,29 +214,45 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | Valley time | Finished |
 | --- | --- |
 | 0.2 days | Hearth Hall → level 1 |
-| 1.3 days | Trading Post → level 1 |
-| 1.4 days | Builders' Guild → level 1 |
-| 1.5 days | Scholars' Guild → level 1 |
-| 1.6 days | Cooks' Guild → level 1 |
+| 1.4 days | Trading Post → level 1 |
+| 1.6 days | Builders' Guild → level 1 |
+| 1.9 days | Scholars' Guild → level 1 |
+| 2.0 days | Cooks' Guild → level 1 |
 | 2.2 days | Miners' Guild → level 1 |
 | 2.3 days | Foresters' Lodge → level 1 |
-| 2.3 days | Craftsfolk's Guild → level 1 |
-| 5.2 days | Trading Post → level 2 |
-| 5.4 days | Scholars' Guild → level 2 |
-| 5.5 days | Cooks' Guild → level 2 |
-| 6.1 days | Builders' Guild → level 2 |
-| 6.2 days | Hearth Hall → level 2 |
-| 6.7 days | Foresters' Lodge → level 2 |
-| 6.7 days | Miners' Guild → level 2 |
-| 7.2 days | Craftsfolk's Guild → level 2 |
-| 11.5 days | Trading Post → level 3 |
-| 11.9 days | Cooks' Guild → level 3 |
-| 13.5 days | Miners' Guild → level 3 |
-| 13.8 days | Scholars' Guild → level 3 |
-| 13.8 days | Builders' Guild → level 3 |
-| 14.6 days | Foresters' Lodge → level 3 |
-| 14.8 days | Craftsfolk's Guild → level 3 |
-| 15.4 days | Hearth Hall → level 3 |
+| 2.4 days | Craftsfolk's Guild → level 1 |
+| 3.2 days | Great Library → level 1 |
+| 6.2 days | Miners' Guild → level 2 |
+| 6.2 days | Scholars' Guild → level 2 |
+| 6.4 days | Trading Post → level 2 |
+| 6.4 days | Hearth Hall → level 2 |
+| 6.5 days | Builders' Guild → level 2 |
+| 7.1 days | Foresters' Lodge → level 2 |
+| 7.3 days | Cooks' Guild → level 2 |
+| 7.4 days | Craftsfolk's Guild → level 2 |
+| 8.5 days | Great Library → level 2 |
+| 12.9 days | Foresters' Lodge → level 3 |
+| 13.3 days | Trading Post → level 3 |
+| 14.5 days | Builders' Guild → level 3 |
+| 14.6 days | Miners' Guild → level 3 |
+| 15.6 days | Cooks' Guild → level 3 |
+| 15.8 days | Scholars' Guild → level 3 |
+| 16.3 days | Craftsfolk's Guild → level 3 |
+| 16.8 days | Great Library → level 3 |
+| 16.8 days | Hearth Hall → level 3 |
+
+## Valley research
+
+Valley Knowledge: 0.04 per point of contributed value (every member, neighbours included) plus 0.08 per point of each filled merchant crate; ×1.25 per Great Library level above 1. Before the Library is restored at most 400 can wait. Knowledge flows into the available project with the most votes (ties: most progress, then order).
+
+| Project | Tier | Knowledge | After | Effect |
+| --- | --- | --- | --- | --- |
+| Shared Larders | 1 | 600 | — | Every village learns the others’ preserving tricks: a bowl of Stew lasts 10% longer. |
+| Merchant Charts | 1 | 600 | — | Better maps bring richer traders: merchants pay 15% more for every crate. |
+| Guild Tutors | 1 | 600 | — | Dedicated tutors at every guild: lessons take 25% less time. |
+| Deep Storehouses | 2 | 1200 | Shared Larders | Cellars dug under every village store: +10% storage. |
+| Trade Winds | 2 | 1200 | Merchant Charts | Word spreads along the coast: merchant ships return 20% sooner. |
+| Master Teachers | 2 | 1200 | Guild Tutors | The guilds share their best teachers: lessons cost 25% fewer coins. |
 
 ## Guild training
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VALLEY_BALANCE, VALLEY_BUILDINGS } from '../src/config/valley';
 import { capacity } from '../src/sim/economy';
 import { mealDuration } from '../src/sim/modifiers';
-import { migrate, SAVE_VERSION } from '../src/sim/save';
+import { migrate, newValleyBonuses, SAVE_VERSION } from '../src/sim/save';
 import { inTransit, joinValley, sendToValley, setValleyBonuses, settleValleyOp } from '../src/sim/valley';
 import { workRateBreakdown } from '../src/sim/villagerAI';
 import { advanceValley, ageValley, contribute, createValley, upgradeValley, deliveredFraction, remainingFor, snapshotOf, valleyBonuses } from '../src/valley/valleySim';
@@ -149,7 +149,7 @@ describe('village side of the valley', () => {
     const baseRate = workRateBreakdown(h.state, v, 'chop').rate;
     const baseCap = capacity(h.state, 'timber');
     const baseMeal = mealDuration(h.state);
-    setValleyBonuses(h.state, { jobRate: { chop: 1.1 }, storageMult: 1.1, mealDurationMult: 1.1, tradeLevel: 0, guildLevels: {} });
+    setValleyBonuses(h.state, { ...newValleyBonuses(), jobRate: { chop: 1.1 }, storageMult: 1.1, mealDurationMult: 1.1 });
     const after = workRateBreakdown(h.state, v, 'chop');
     expect(after.rate).toBeCloseTo(baseRate * 1.1);
     expect(after.factors.some((f) => f.label === 'Valley guild')).toBe(true);

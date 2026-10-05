@@ -7,6 +7,7 @@ import type { BoostId } from '../config/trade';
 import { buyWare, claimRoadReward, fillCrate, useBoost } from '../sim/trade';
 import { startTraining } from '../sim/training';
 import type { SkillId } from '../config/skills';
+import type { ValleyResearchId } from '../config/valleyResearch';
 import { RESEARCH, type ResearchId } from '../config/research';
 import type { RecipeId } from '../config/recipes';
 import { runtime, game } from '../game/runtime';
@@ -317,4 +318,11 @@ export function claimRoad(): void {
 export function trainVillager(villagerId: number, skill: SkillId): void {
   const res = game().run((s, w, sink) => startTraining(s, w, villagerId, skill, sink));
   feedback(res, () => runtime.audio.play('newcomer'));
+}
+
+export function voteValleyResearch(id: ValleyResearchId): void {
+  void runtime.valley?.vote(id).then((error) => {
+    if (error) ui.toast({ kind: 'warning', title: error, icon: 'info' }, 3000);
+    else runtime.audio.play('click');
+  });
 }

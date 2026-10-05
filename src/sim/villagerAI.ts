@@ -230,7 +230,8 @@ function stopWalking(v: Villager, at: Vec2): void {
 export function beginLesson(state: GameState, v: Villager): void {
   const t = v.training!;
   v.activity = 'away';
-  t.until = state.time + TRAINING.lessons[t.toLevel].hours * 3600;
+  t.duration = TRAINING.lessons[t.toLevel].hours * state.valley.bonuses.trainingTimeMult * 3600;
+  t.until = state.time + t.duration;
 }
 
 /** Where villagers leave for (and return from) the Valley: the village's road in. */

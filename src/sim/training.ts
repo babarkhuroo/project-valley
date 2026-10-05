@@ -42,7 +42,8 @@ export function trainingOffer(state: GameState, v: Villager, skill: SkillId): Tr
   const max = TRAINING.maxLevelByGuild[Math.min(guildLevel, TRAINING.maxLevelByGuild.length - 1)];
   if (toLevel > max) return { ok: false, guild, reason: `The ${name} must reach level ${guildLevel + 1} to teach level ${toLevel}` };
   const lesson = TRAINING.lessons[toLevel];
-  return { ok: true, guild, toLevel, coins: lesson.coins, hours: lesson.hours };
+  const b = state.valley.bonuses;
+  return { ok: true, guild, toLevel, coins: Math.round(lesson.coins * b.trainingCostMult), hours: lesson.hours * b.trainingTimeMult };
 }
 
 export function startTraining(state: GameState, world: World, villagerId: number, skill: SkillId, sink: EventSink): CommandResult {

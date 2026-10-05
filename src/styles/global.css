@@ -3450,3 +3450,103 @@ h4 {
 .trainee .bar {
   margin: 4px 0 0;
 }
+
+/* ---------- Valley research ---------- */
+
+.vs-research {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border-radius: 12px;
+  background: #eef2ff;
+  border: 2px solid #c7d3f7;
+  cursor: pointer;
+}
+
+.vs-research:hover {
+  background: #e3e9ff;
+}
+
+.vs-research-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.vs-research strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.vs-research small {
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.vs-research .bar {
+  margin: 3px 0 0;
+}
+
+.vr-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.vr-list li {
+  padding: 7px 9px;
+  margin-bottom: 5px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--paper-3);
+}
+
+.vr-list li.leading {
+  border-color: var(--knowledge);
+  background: #f3f6ff;
+}
+
+.vr-list li.done {
+  background: #eef8e8;
+  border-color: #b9dda6;
+}
+
+.vr-list li.locked {
+  opacity: 0.6;
+}
+
+.vr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.vr-head strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.vr-desc {
+  display: block;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.vr-votes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}

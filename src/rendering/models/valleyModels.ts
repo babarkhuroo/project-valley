@@ -18,6 +18,7 @@ export const VALLEY_MODEL_SIZE: Record<ValleyBuildingDef['model'], { hx: number;
   hall: { hx: 4.1, hz: 3.1, height: 6.2 },
   guild: { hx: 2.6, hz: 2.1, height: 4.4 },
   post: { hx: 2.7, hz: 2.2, height: 4.2 },
+  library: { hx: 3.3, hz: 2.7, height: 6.4 },
 };
 
 /** Length of the Trading Post's pier, out from its front wall. */
@@ -281,6 +282,74 @@ function tradingPost(def: ValleyBuildingDef, level: number, deckY: number): Buil
 }
 
 // ---------------------------------------------------------------------------
+// Great Library
+// ---------------------------------------------------------------------------
+
+function library(def: ValleyBuildingDef, level: number): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const { hx, hz } = VALLEY_MODEL_SIZE.library;
+  plinth(r, hx, hz, PALETTE.stone);
+  const stone = mat('#ece3d0', { flat: true });
+  const trim = mat('#d8ccb4', { flat: true });
+  // Reading hall.
+  box(r, 5.4, 2.8, 3.8, stone, 0, 1.8, -0.4);
+  box(r, 5.6, 0.2, 4.0, trim, 0, 3.25, -0.4);
+  for (const x of [-2.0, -1.0, 1.0, 2.0]) {
+    windowPane(r, x, 1.9, 1.51, 0.42, 0.9);
+    windowPane(r, x * 1.0, 1.9, -2.31, 0.42, 0.9, Math.PI);
+  }
+  // Columned portico with a pediment.
+  box(r, 3.2, 0.2, 1.3, trim, 0, 0.5, 2.1);
+  for (const x of [-1.35, -0.45, 0.45, 1.35]) cyl(r, 0.16, 0.18, 2.5, stone, x, 1.85, 2.4, 10);
+  box(r, 3.4, 0.24, 1.4, trim, 0, 3.2, 2.05);
+  gableRoof(r, 3.4, 0.7, 1.4, mat('#d8ccb4', { flat: true }), 3.32, false, 0, 2.05);
+  door(r, 0, 1.51, 0.9, 1.6, 0.4);
+  // Drum, dome and lantern.
+  cyl(r, 1.6, 1.7, 1.1, stone, 0, 3.9, -0.4, 16);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    windowPane(r, Math.sin(a) * 1.62, 3.95, -0.4 + Math.cos(a) * 1.62, 0.22, 0.4, a);
+  }
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.75, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(level >= 3 ? PALETTE.gold : '#5d7fb8', { flat: true }));
+  dome.position.set(0, 4.45, -0.4);
+  r.add(dome);
+  cyl(r, 0.32, 0.36, 0.55, mat('#ece3d0'), 0, 6.45, -0.4, 10);
+  const glow = cyl(r, 0.24, 0.24, 0.35, mat(PALETTE.glow, { emissive: '#ffb347', emissiveIntensity: 1 }), 0, 6.45, -0.4, 10);
+  m.flames.push(glow);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.5, 10), mat(level >= 3 ? PALETTE.gold : '#476699', { flat: true }));
+  cap.position.set(0, 6.95, -0.4);
+  r.add(cap);
+  banner(m, def.color, -1.85, 3.0, 1.55, 1.2);
+  banner(m, def.color, 1.85, 3.0, 1.55, 1.2);
+  // Lanterns lining the steps, as the hill's name promises.
+  for (const x of [-1.9, 1.9]) {
+    cyl(r, 0.05, 0.06, 1.4, mat(PALETTE.iron), x, 1.1, 2.9, 6);
+    m.flames.push(box(r, 0.24, 0.3, 0.24, mat(PALETTE.glow, { emissive: '#ffb347', emissiveIntensity: 0.9 }), x, 1.95, 2.9));
+  }
+  if (level >= 2) {
+    // Reading-room wings.
+    for (const side of [-1, 1]) {
+      box(r, 1.6, 2.0, 3.0, stone, side * 3.6, 1.4, -0.6);
+      gableRoof(r, 3.2, 0.9, 1.8, mat('#5d7fb8', { flat: true }), 2.4, false, side * 3.6, -0.6);
+      windowPane(r, side * 3.6, 1.4, 0.91, 0.5, 0.7);
+    }
+    levelPennant(m, level, 2.9, -2.6, 5.0);
+  }
+  if (level >= 3) {
+    // A brass telescope on the roof terrace.
+    const scope = new THREE.Group();
+    scope.position.set(-2.0, 3.35, -1.6);
+    const tube = cyl(scope, 0.08, 0.12, 1.0, mat('#c9a14a'), 0, 0.3, 0.2, 10);
+    tube.rotation.x = Math.PI / 2 - 0.6;
+    cyl(scope, 0.04, 0.04, 0.4, mat(PALETTE.iron), 0, 0.1, 0, 6);
+    r.add(scope);
+    m.spinners.push({ obj: scope, axis: 'y', speed: 0.1 });
+  }
+  return m;
+}
+
+// ---------------------------------------------------------------------------
 // Ruins and scaffolding
 // ---------------------------------------------------------------------------
 
@@ -394,6 +463,7 @@ export function createValleyModel(def: ValleyBuildingDef, level: number, deckY =
     if (def.model === 'post') pier(model.root, VALLEY_MODEL_SIZE.post.hz, deckY, true);
   } else if (def.model === 'hall') model = hall(def, level);
   else if (def.model === 'post') model = tradingPost(def, level, deckY);
+  else if (def.model === 'library') model = library(def, level);
   else model = guild(def, level);
   mergeStatic(model);
   model.root.traverse((o) => {

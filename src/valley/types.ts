@@ -1,5 +1,6 @@
 import type { ResourceId } from '../config/resources';
 import type { ValleyBuildingId } from '../config/valley';
+import type { ValleyResearchId } from '../config/valleyResearch';
 
 /**
  * Shared Valley state. Owned by the server and advanced by the server clock (wall-clock
@@ -43,10 +44,14 @@ export type ValleyLogEntry =
   | { id: number; at: number; kind: 'delivery'; member: string; building: ValleyBuildingId; resources: ResourceBag }
   | { id: number; at: number; kind: 'started'; building: ValleyBuildingId; level: number }
   | { id: number; at: number; kind: 'finished'; building: ValleyBuildingId; level: number }
-  | { id: number; at: number; kind: 'opened'; building: ValleyBuildingId };
+  | { id: number; at: number; kind: 'opened'; building: ValleyBuildingId }
+  | { id: number; at: number; kind: 'knowledge'; member: string; amount: number }
+  | { id: number; at: number; kind: 'researched'; research: ValleyResearchId };
 
 export interface ContributionResult {
   accepted: ResourceBag;
+  /** Valley Knowledge accepted (knowledge deliveries). */
+  knowledge?: number;
   /** Resources that weren't needed any more (another member got there first). */
   returned: ResourceBag;
   value: number;
@@ -66,8 +71,21 @@ export interface ValleyState {
   members: ValleyMember[];
   buildings: Record<ValleyBuildingId, ValleyBuildingState>;
   log: ValleyLogEntry[];
+  /** Shared Valley research and the Knowledge waiting for it (banked until the Library opens). */
+  research: ValleyResearchState;
   /** Recent contribution op ids per member → result, so retried requests are idempotent. */
   ops: Record<string, Record<string, ContributionResult>>;
+}
+
+export interface ValleyResearchState {
+  completed: ValleyResearchId[];
+  progress: Partial<Record<ValleyResearchId, number>>;
+  /** Each member's chosen next project. The most-voted available project gets the Knowledge. */
+  votes: Record<string, ValleyResearchId>;
+  /** Knowledge waiting: the Library isn't open yet, or nothing is left to research. */
+  banked: number;
+  /** Lifetime Knowledge raised. */
+  raised: number;
 }
 
 /** What clients receive: the state without server bookkeeping. */

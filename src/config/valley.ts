@@ -52,7 +52,11 @@ export type ValleyEffect =
   | { type: 'storage'; mult: number }
   | { type: 'mealDuration'; mult: number }
   /** One Trading Post level: merchants call (more crates and better pay with each level). */
-  | { type: 'trade' };
+  | { type: 'trade' }
+  /** The Great Library is open: Valley Knowledge goes into Valley research. */
+  | { type: 'research' }
+  /** Valley Knowledge from every source is multiplied by this (server side). */
+  | { type: 'knowledge'; mult: number };
 
 export interface ValleyLevelDef {
   /** Total resources the whole Valley must bring. */
@@ -64,9 +68,9 @@ export interface ValleyLevelDef {
   summary: string;
 }
 
-export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
+export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
 
-export type ValleyModel = 'hall' | 'guild' | 'post';
+export type ValleyModel = 'hall' | 'guild' | 'post' | 'library';
 
 export interface ValleyBuildingDef {
   id: ValleyBuildingId;
@@ -168,6 +172,34 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
       { cost: { timber: 8000, stone: 3000, planks: 1500, bricks: 1500 }, buildHours: 12, effects: [{ type: 'trade' }], summary: '5 crates a ship, pay +20%, ships return sooner still' },
     ],
   },
+  greatLibrary: {
+    id: 'greatLibrary',
+    name: 'Great Library',
+    district: 'library',
+    description: 'A domed library on Lantern Hill. Restored, it turns the Valley’s shared Knowledge into research that helps every village.',
+    model: 'library',
+    color: '#6f8fe0',
+    x: 51,
+    z: 35,
+    radius: 3.4,
+    facing: 0,
+    requires: { building: 'hearthHall', level: 1 },
+    levels: [
+      {
+        cost: { timber: 3000, clay: 1200, stone: 800 },
+        buildHours: 3,
+        effects: [{ type: 'research' }, { type: 'jobRate', jobs: ['study'], mult: 1.05 }],
+        summary: 'Opens Valley research; Study +5% for every member',
+      },
+      { cost: { timber: 6000, stone: 2500, planks: 1200 }, buildHours: 6, effects: [{ type: 'knowledge', mult: 1.25 }], summary: 'Valley Knowledge gathers 25% faster' },
+      {
+        cost: { timber: 10000, stone: 4000, planks: 2000, bricks: 2000 },
+        buildHours: 12,
+        effects: [{ type: 'knowledge', mult: 1.25 }, { type: 'jobRate', jobs: ['study'], mult: 1.05 }],
+        summary: 'Knowledge +25% more; Study +5% more',
+      },
+    ],
+  },
   forestersLodge: {
     id: 'forestersLodge',
     name: "Foresters' Lodge",
@@ -260,7 +292,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
   },
 };
 
-export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
+export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
 
 /** Resources the Valley accepts, in display order. */
 export const VALLEY_RESOURCES: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks'];
@@ -351,6 +383,10 @@ export const VALLEY_BALANCE = {
     /** Each finished Valley level makes neighbours' villages (and parcels) this much bigger. */
     growthPerLevel: 0.04,
   },
+  /** Valley Knowledge from every point of contributed value (before Great Library bonuses). */
+  knowledgePerValue: 0.04,
+  /** Knowledge that can wait for the Library before it is restored (the rest is lost). */
+  knowledgeBankCap: 400,
   /** Share of Hearth Hall level 1 already delivered when a new Valley is founded. */
   foundingProgress: 0.55,
   /** Log entries kept on the server. */

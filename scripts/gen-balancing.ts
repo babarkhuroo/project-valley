@@ -17,6 +17,7 @@ import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../src/config/valley.ts';
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
 import { TRAINING } from '../src/config/training.ts';
+import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER } from '../src/config/valleyResearch.ts';
 import { BOOSTS, BOOST_ORDER, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS } from '../src/config/trade.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -231,6 +232,15 @@ out();
   out();
   table(['Valley time', 'Finished'], finished);
 }
+
+out('## Valley research');
+out();
+out(`Valley Knowledge: ${VALLEY_BALANCE.knowledgePerValue} per point of contributed value (every member, neighbours included) plus ${TRADE_BALANCE.knowledgePerValue} per point of each filled merchant crate; ×1.25 per Great Library level above 1. Before the Library is restored at most ${VALLEY_BALANCE.knowledgeBankCap} can wait. Knowledge flows into the available project with the most votes (ties: most progress, then order).`);
+out();
+table(['Project', 'Tier', 'Knowledge', 'After', 'Effect'], VALLEY_RESEARCH_ORDER.map((id) => {
+  const r = VALLEY_RESEARCH[id];
+  return [r.name, r.tier, r.cost, r.requires.map((q) => VALLEY_RESEARCH[q].name).join(', ') || '—', r.description];
+}));
 
 out('## Guild training');
 out();

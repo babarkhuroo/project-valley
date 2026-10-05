@@ -39,9 +39,16 @@ export function sendToValley(state: GameState, building: ValleyBuildingId, resou
     const n = sent[r] ?? 0;
     if (n > 0) state.resources[r] -= n;
   }
-  state.valley.outbox.push({ opId, building, resources: sent, at: state.time });
+  state.valley.outbox.push({ opId, target: { kind: 'building', id: building }, resources: sent, at: state.time });
   sink.push({ type: 'valleySent', building, resources: sent });
   return { ok: true };
+}
+
+/** Queues Valley Knowledge (earned trading) for the shared research. Nothing leaves the village. */
+export function sendKnowledge(state: GameState, amount: number, opId: string): boolean {
+  if (!state.valley.valleyId || amount <= 0) return false;
+  state.valley.outbox.push({ opId, target: { kind: 'knowledge' }, resources: {}, knowledge: Math.floor(amount), at: state.time });
+  return true;
 }
 
 /** Applies the server's answer to a delivery. Safe to call twice: unknown ops are ignored. */
@@ -61,7 +68,8 @@ export function settleValleyOp(state: GameState, opId: string, accepted: Resourc
     }
   }
   state.valley.reputation += reputation;
-  sink.push({ type: 'valleyAccepted', building: op.building, accepted, returned, reputation });
+  if (op.target.kind === 'building') sink.push({ type: 'valleyAccepted', building: op.target.id, accepted, returned, reputation });
+  else bumpStat(state, 'valley.knowledge', op.knowledge ?? 0);
   return true;
 }
 
