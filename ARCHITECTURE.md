@@ -167,6 +167,16 @@ Personal villages remain single documents (their state is highly interlinked and
 - Villager transforms are **not** streamed: routes are deterministic functions of time, so clients can render other players' villagers from job assignments alone.
 - Because the personal sim is deterministic and dependency-free, the server can re-run it to validate a client's claimed state (anti-cheat) before accepting contributions.
 
+## Performance budget (measured 2026-10-08, Node, M-series Mac)
+
+| What | Time |
+| --- | --- |
+| Village: a week of offline catch-up for a 10-villager mid-game village (25 merchant ships, tonics) | ≈ 11 ms |
+| Valley: 30 days of neighbours, builds, research, festivals and chat | ≈ 20 ms |
+| Economy simulator: 4 hours of autoplay with decisions every 15 s | ≈ 0.5 s |
+
+Both simulations are event-driven, so cost scales with events, not elapsed time. Rendering cost is bounded by culling/LOD (above) and, on slow devices, by the automatic quality governor.
+
 ## Testing
 
 `npm test` covers production, storage caps and resumption, food/hunger, skill and research bonuses, construction (costs, builders, cancel, move), research (flow, switching, banking, gating), offline determinism and long catch-ups, pathfinding (obstacles, water, bridges, re-planning), XP/levels, population, save round-trip/migrations, upgrades, crafting, tiers 4–5, culling, the Valley (founding, determinism, neighbour pacing, idempotent contributions, build phases, bonuses in the village, outbox settle-once, the server service's locking), and simulated pacing (`tests/pacing.test.ts`: e.g. Academy < 5 min, level 2 < 12 min, Quarry not before 2 h).
