@@ -19,7 +19,8 @@ export type SoundId =
   | 'newcomer'
   | 'skillUp'
   | 'error'
-  | 'notify';
+  | 'notify'
+  | 'step';
 
 interface Vec3Like {
   x: number;
@@ -46,15 +47,34 @@ function loadSettings(): AudioSettings {
   return { music: 0.5, sfx: 0.8, ambience: 0.6, muted: false };
 }
 
-/** C major pentatonic-ish scale degrees for the melody (semitones from C). */
-const MELODY = [0, 2, 4, 7, 9, 12, 14, 16];
-/** I – vi – IV – V in C, as root semitones and chord tones. */
-const CHORDS = [
-  [0, 4, 7],
-  [-3, 0, 4],
-  [-7, -3, 0],
-  [-5, -1, 2],
-];
+export type MusicMood = 'day' | 'evening' | 'night' | 'valley';
+
+interface MoodDef {
+  /** Seconds per bar. */
+  bar: number;
+  /** Chord progression (root-relative semitones). */
+  chords: number[][];
+  /** Melody scale degrees (semitones from the root). */
+  scale: number[];
+  /** Chance a melody beat is a rest. */
+  rest: number;
+  root: number;
+  /** Melody voice. */
+  voice: 'pluck' | 'bell';
+  padVol: number;
+}
+
+/**
+ * Four moods for the generative music. Day is the warm I–vi–IV–V; evening drifts into
+ * a softer Lydian colour; night is a slow, sparse music-box; the Valley is brighter
+ * and busier, a market-day tune.
+ */
+const MOODS: Record<MusicMood, MoodDef> = {
+  day: { bar: 3.2, chords: [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]], scale: [0, 2, 4, 7, 9, 12, 14, 16], rest: 0.45, root: 261.63, voice: 'pluck', padVol: 0.05 },
+  evening: { bar: 3.8, chords: [[0, 4, 7, 11], [2, 6, 9], [-3, 0, 4, 7], [-5, -1, 2, 6]], scale: [0, 2, 4, 6, 7, 11, 12, 14], rest: 0.55, root: 246.94, voice: 'pluck', padVol: 0.05 },
+  night: { bar: 4.6, chords: [[0, 3, 7], [-4, 0, 3], [-7, -4, 0], [-2, 2, 5]], scale: [0, 3, 5, 7, 10, 12, 15], rest: 0.7, root: 220, voice: 'bell', padVol: 0.035 },
+  valley: { bar: 2.8, chords: [[0, 4, 7], [5, 9, 12], [-3, 0, 4], [7, 11, 14]], scale: [0, 2, 4, 5, 7, 9, 12, 14, 16], rest: 0.35, root: 293.66, voice: 'pluck', padVol: 0.045 },
+};
 
 /**
  * Entirely synthesised audio: no sample files, so every sound is original. Effects are
@@ -75,6 +95,12 @@ export class AudioEngine {
   private nextBar = 0;
   private bar = 0;
   private lastPlayed = new Map<SoundId, number>();
+  private mood: MusicMood = 'day';
+  private night = 0;
+  private waterBed: GainNode | null = null;
+  private windBed: GainNode | null = null;
+  private cricketTimer = 0;
+  private scene = { night: -1, water: -1 };
 
   /** Must be called from a user gesture (browsers block audio until then). */
   unlock(): void {
@@ -106,6 +132,7 @@ export class AudioEngine {
     this.nextBar = ctx.currentTime + 0.5;
     this.musicTimer = window.setInterval(() => this.scheduleMusic(), 200);
     this.birdTimer = window.setInterval(() => this.maybeBird(), 1500);
+    this.cricketTimer = window.setInterval(() => this.maybeCrickets(), 700);
   }
 
   get unlocked(): boolean {
@@ -226,6 +253,10 @@ export class AudioEngine {
         this.tone(out, now, 'triangle', 300, 280, 0.1, 0.2);
         this.tone(out, now + 0.1, 'triangle', 220, 210, 0.14, 0.2);
         break;
+      case 'step':
+        // A soft scuff of a boot on earth.
+        this.noiseBurst(out, now, 0.07, 700 + Math.random() * 300, 'lowpass', 0.11, 0.7);
+        break;
       case 'notify':
         this.bell(out, now, 880, 0.12);
         break;
@@ -323,7 +354,7 @@ export class AudioEngine {
 
   private startAmbience(): void {
     const ctx = this.ctx!;
-    const makeBed = (freq: number, type: BiquadFilterType, vol: number, lfoRate: number) => {
+    const makeBed = (freq: number, type: BiquadFilterType, vol: number, lfoRate: number): GainNode => {
       const src = ctx.createBufferSource();
       src.buffer = this.noise;
       src.loop = true;
@@ -337,17 +368,56 @@ export class AudioEngine {
       lfo.frequency.value = lfoRate;
       lfoGain.gain.value = vol * 0.6;
       lfo.connect(lfoGain).connect(g.gain);
-      src.connect(f).connect(g).connect(this.ambienceBus);
+      // A separate level node, so scene changes (water nearby, night) can fade the bed.
+      const level = ctx.createGain();
+      level.gain.value = 1;
+      src.connect(f).connect(g).connect(level).connect(this.ambienceBus);
       src.start();
       lfo.start();
+      return level;
     };
-    makeBed(420, 'lowpass', 0.22, 0.07); // wind through leaves
-    makeBed(1600, 'bandpass', 0.05, 0.23); // distant creek
+    this.windBed = makeBed(420, 'lowpass', 0.22, 0.07); // wind through leaves
+    this.waterBed = makeBed(1600, 'bandpass', 0.05, 0.23); // running water, louder near the creek
+  }
+
+  /**
+   * What the camera is near and when: water nearby (0–1) swells the creek, night (0–1)
+   * hushes the birds, brings out crickets and calms the wind; `valley` switches the
+   * music to the Valley theme. Cheap to call every frame — it only acts on change.
+   */
+  setScene(night: number, water: number, valley: boolean): void {
+    this.night = night;
+    const mood: MusicMood = valley ? 'valley' : night > 0.8 ? 'night' : night > 0.3 ? 'evening' : 'day';
+    this.mood = mood;
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (Math.abs(water - this.scene.water) > 0.03 && this.waterBed) {
+      this.scene.water = water;
+      this.waterBed.gain.setTargetAtTime(0.4 + water * 3, ctx.currentTime, 0.6);
+    }
+    if (Math.abs(night - this.scene.night) > 0.03 && this.windBed) {
+      this.scene.night = night;
+      this.windBed.gain.setTargetAtTime(1 - night * 0.4, ctx.currentTime, 1.5);
+    }
+  }
+
+  private maybeCrickets(): void {
+    const ctx = this.ctx;
+    if (!ctx || this.night < 0.5 || Math.random() > this.night * 0.8) return;
+    const out = ctx.createGain();
+    out.gain.value = 0.05 + Math.random() * 0.05;
+    out.connect(this.ambienceBus);
+    const t = ctx.currentTime + Math.random() * 0.3;
+    const f = 4200 + Math.random() * 900;
+    // A cricket's trill: a few fast, identical chirps.
+    const chirps = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < chirps; i++) this.tone(out, t + i * 0.055, 'sine', f, f * 0.98, 0.035, 0.3);
   }
 
   private maybeBird(): void {
     const ctx = this.ctx;
-    if (!ctx || Math.random() > 0.45) return;
+    // Birds sing by day; at night only the odd sleepy chirp.
+    if (!ctx || Math.random() > 0.45 * (1 - this.night * 0.9)) return;
     const out = ctx.createGain();
     out.gain.value = 0.18 + Math.random() * 0.15;
     out.connect(this.ambienceBus);
@@ -366,19 +436,23 @@ export class AudioEngine {
       if (ctx) this.nextBar = Math.max(this.nextBar, ctx.currentTime + 0.2);
       return;
     }
-    const barLen = 3.2; // 4 beats at 75 bpm
     while (this.nextBar < ctx.currentTime + 1.2) {
-      const chord = CHORDS[this.bar % CHORDS.length];
-      const root = 261.63;
-      for (const s of chord) this.pad(this.musicBus, this.nextBar, (root / 2) * 2 ** (s / 12), barLen * 1.05, 0.05);
+      // The mood is read per bar, so changes land on a bar line.
+      const m = MOODS[this.mood];
+      const barLen = m.bar;
+      const chord = m.chords[this.bar % m.chords.length];
+      const root = m.root;
+      for (const s of chord) this.pad(this.musicBus, this.nextBar, (root / 2) * 2 ** (s / 12), barLen * 1.05, m.padVol);
       this.tone(this.musicBus, this.nextBar, 'sine', (root / 4) * 2 ** (chord[0] / 12), (root / 4) * 2 ** (chord[0] / 12), barLen * 0.9, 0.08);
       // A sparse, wandering melody — rests are part of the charm.
-      let degree = Math.floor(Math.random() * MELODY.length);
+      let degree = Math.floor(Math.random() * m.scale.length);
       for (let beat = 0; beat < 8; beat++) {
-        if (Math.random() < 0.45) continue;
-        degree = Math.max(0, Math.min(MELODY.length - 1, degree + Math.round((Math.random() - 0.5) * 3)));
-        const f = root * 2 ** (MELODY[degree] / 12);
-        this.pluck(this.musicBus, this.nextBar + beat * (barLen / 8), f, 0.9, 0.07);
+        if (Math.random() < m.rest) continue;
+        degree = Math.max(0, Math.min(m.scale.length - 1, degree + Math.round((Math.random() - 0.5) * 3)));
+        const f = root * 2 ** (m.scale[degree] / 12);
+        const at = this.nextBar + beat * (barLen / 8);
+        if (m.voice === 'bell') this.bell(this.musicBus, at, f * 2, 0.04);
+        else this.pluck(this.musicBus, at, f, 0.9, 0.07);
       }
       this.nextBar += barLen;
       this.bar++;
@@ -388,6 +462,7 @@ export class AudioEngine {
   dispose(): void {
     window.clearInterval(this.musicTimer);
     window.clearInterval(this.birdTimer);
+    window.clearInterval(this.cricketTimer);
     void this.ctx?.close();
     this.ctx = null;
   }

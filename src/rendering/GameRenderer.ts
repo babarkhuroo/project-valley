@@ -18,6 +18,7 @@ import { ChunkGrid, type CullingSettings } from './culling/ChunkGrid';
 import { OcclusionQueries } from './culling/OcclusionQueries';
 import { CameraController } from './CameraController';
 import { DayCycle } from './DayCycle';
+import { waterNearby } from './waterNearby';
 import { QualityGovernor } from './Quality';
 import { Fireflies } from './Fireflies';
 import { InputController, type InteractionHandler, type PickResult, type PickTarget } from './InputController';
@@ -176,6 +177,10 @@ export class GameRenderer {
         this.particles.emit('dust', e.position.clone().setY(e.position.y + 0.3), 1, 0.3);
         this.audio.playAt('hammer', e.position);
       }
+    };
+    this.villagers.onStep = (p) => {
+      // Footsteps only when zoomed in close enough to hear them.
+      if (this.cameraCtl.distance < 20 && Math.hypot(p.x - this.cameraCtl.target.x, p.z - this.cameraCtl.target.z) < 9) this.audio.playAt('step', p);
     };
     this.scene.add(this.villagers.group);
     this.scene.add(this.particles.group);
@@ -501,6 +506,7 @@ export class GameRenderer {
     this.sun.target.updateMatrixWorld();
 
     this.audio.setListener(target, this.cameraCtl.distance);
+    this.audio.setScene(this.dayCycle.night, waterNearby(this.game.world.terrain, target, this.cameraCtl.distance), false);
     this.renderer.render(this.scene, this.camera);
     this.lastInfo.calls = this.renderer.info.render.calls;
     this.lastInfo.triangles = this.renderer.info.render.triangles;

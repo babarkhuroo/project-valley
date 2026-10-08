@@ -11,6 +11,7 @@ import { createBridges } from '../BridgeView';
 import { CameraController } from '../CameraController';
 import { ChunkGrid } from '../culling/ChunkGrid';
 import { DayCycle } from '../DayCycle';
+import { waterNearby } from '../waterNearby';
 import { QualityGovernor } from '../Quality';
 import { Fireflies } from '../Fireflies';
 import { InputController, type PickResult } from '../InputController';
@@ -303,6 +304,7 @@ export class ValleyRenderer {
     this.sun.target.updateMatrixWorld();
 
     this.audio.setListener(target, this.cameraCtl.distance);
+    this.audio.setScene(this.dayCycle.night, waterNearby(this.valley.world.terrain, target, this.cameraCtl.distance), true);
     this.renderer.render(this.scene, this.camera);
     this.onFrame?.(this.realTime);
   }

@@ -28,6 +28,8 @@ interface Visual {
   lastPhase: number;
   seed: number;
   celebrateUntil: number;
+  /** Which foot is down, for footstep sounds. */
+  foot: boolean;
 }
 
 /** Cycle length (seconds) and impact moment (0..1) for each work animation. */
@@ -61,6 +63,8 @@ export class VillagersView {
   readonly group = new THREE.Group();
   private readonly visuals = new Map<number, Visual>();
   onImpact: ((e: ImpactEvent) => void) | null = null;
+  /** A walking villager's foot touches down (cosmetic, for footstep sounds). */
+  onStep: ((position: THREE.Vector3) => void) | null = null;
 
   constructor(private readonly terrain: Terrain) {}
 
@@ -91,7 +95,7 @@ export class VillagersView {
       const far = createVillagerFarMesh(v.appearance);
       rig.root.add(far);
       this.group.add(rig.root);
-      vis = { rig, far, isFar: false, heading: 0, phase: Math.random(), lastPhase: 0, seed: (v.id * 0.618) % 1, celebrateUntil: 0 };
+      vis = { rig, far, isFar: false, heading: 0, phase: Math.random(), lastPhase: 0, seed: (v.id * 0.618) % 1, celebrateUntil: 0, foot: false };
       this.visuals.set(v.id, vis);
     }
     return vis;
@@ -171,6 +175,11 @@ export class VillagersView {
       case 'walk':
       case 'carry': {
         const ph = t * 9 * Math.min(3, speed);
+        const foot = Math.sin(ph) >= 0;
+        if (foot !== vis.foot) {
+          vis.foot = foot;
+          this.onStep?.(rig.root.position);
+        }
         rig.legL.rotation.x = Math.sin(ph) * 0.65;
         rig.legR.rotation.x = -Math.sin(ph) * 0.65;
         rig.body.position.y = Math.abs(Math.sin(ph)) * 0.035;
