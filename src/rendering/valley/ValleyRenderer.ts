@@ -11,6 +11,7 @@ import { createBridges } from '../BridgeView';
 import { CameraController } from '../CameraController';
 import { ChunkGrid } from '../culling/ChunkGrid';
 import { DayCycle } from '../DayCycle';
+import { QualityGovernor } from '../Quality';
 import { Fireflies } from '../Fireflies';
 import { InputController, type PickResult } from '../InputController';
 import { NatureView } from '../NatureView';
@@ -49,6 +50,8 @@ export class ValleyRenderer {
   readonly cameraCtl: CameraController;
   selected: ValleyBuildingId | null = null;
   readonly dayCycle: DayCycle;
+  /** Resolution/shadow quality (fixed preset or automatic). */
+  readonly quality: QualityGovernor;
   hovered: ValleyBuildingId | null = null;
   onFrame: ((realTime: number) => void) | null = null;
 
@@ -58,7 +61,7 @@ export class ValleyRenderer {
   private readonly buildings: ValleyBuildingsView;
   private readonly folk: ValleyFolk;
   private readonly folkView: VillagersView;
-  private readonly particles = new Particles();
+  readonly particles = new Particles();
   private readonly ship = new ShipView();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
@@ -85,7 +88,6 @@ export class ValleyRenderer {
   ) {
     const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, coarse ? 1.5 : 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -125,6 +127,7 @@ export class ValleyRenderer {
     this.sun.shadow.radius = 3;
     this.scene.add(this.sun, this.sun.target, fill);
     this.dayCycle = new DayCycle(this.scene, this.renderer, this.sun, hemi, fill);
+    this.quality = new QualityGovernor(this.renderer, this.sun, () => this.resize());
 
     const terrainView = new TerrainView(world.terrain, world.grid);
     this.scene.add(terrainView.mesh, createWater(world.terrain));
@@ -247,6 +250,7 @@ export class ValleyRenderer {
     // The village keeps living while its people visit.
     this.game.tick(realDt);
     sharedUniforms.uTime.value = this.realTime;
+    this.quality.update(realDt);
     this.input.update(dt);
     this.cameraCtl.update(dt);
 

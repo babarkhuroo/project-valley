@@ -40,10 +40,16 @@ export type SceneId = 'village' | 'valley';
 export interface Prefs {
   /** Follow the local clock for day and night, or keep it always day. */
   timeOfDay: 'clock' | 'day';
+  /** Interface size multiplier (0.8–1.4). */
+  uiScale: number;
+  /** Calm the interface: follow the system setting, or force on/off. */
+  reduceMotion: 'system' | 'on' | 'off';
+  highContrast: boolean;
+  quality: 'auto' | 'high' | 'balanced' | 'low';
 }
 
 const PREFS_KEY = 'project-valley:prefs';
-const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock' };
+const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock', uiScale: 1, reduceMotion: 'system', highContrast: false, quality: 'auto' };
 
 function loadPrefs(): Prefs {
   try {
@@ -127,6 +133,7 @@ export const ui = {
   setPrefs(patch: Partial<Prefs>): void {
     const prefs = { ...useUI.getState().prefs, ...patch };
     useUI.setState({ prefs });
+    applyPrefs(prefs);
     try {
       localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
     } catch {
@@ -158,4 +165,18 @@ export const ui = {
 
 export function sameTarget(a: PickTarget | null, b: PickTarget | null): boolean {
   return !!a && !!b && a.kind === b.kind && a.id === b.id;
+}
+
+/** Whether calm motion is in effect (explicit choice, or the system setting). */
+export function reducedMotion(prefs: Prefs): boolean {
+  if (prefs.reduceMotion !== 'system') return prefs.reduceMotion === 'on';
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+/** Puts display preferences into effect on the page (scale, motion, contrast). */
+export function applyPrefs(prefs: Prefs): void {
+  const root = document.documentElement;
+  root.style.setProperty('--ui-scale', String(Math.min(1.4, Math.max(0.8, prefs.uiScale))));
+  root.classList.toggle('reduce-motion', reducedMotion(prefs));
+  root.classList.toggle('high-contrast', prefs.highContrast);
 }

@@ -43,6 +43,8 @@ export function App() {
   return (
     <div className={`app scene-${scene}`}>
       {village ? <GameView /> : <ValleyView />}
+      {/* Everything but the world lives in one layer that the interface-size setting scales. */}
+      <div className="ui-layer">
       <div className="hud">
         <TopBar />
         {village ? (
@@ -81,6 +83,7 @@ export function App() {
       <LevelUpBanner />
       <TravelVeil />
       <ValleyChooser />
+      </div>
     </div>
   );
 }

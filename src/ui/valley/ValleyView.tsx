@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { game, runtime } from '../../game/runtime';
 import { ValleyRenderer } from '../../rendering/valley/ValleyRenderer';
-import { ui } from '../store';
+import { reducedMotion, ui } from '../store';
 import { playerId } from '../../game/persistence';
 
 /** Mounts the Valley scene. Lives only while the player is visiting. */
@@ -30,6 +30,8 @@ export function ValleyView() {
       const s = ui.get();
       r.selected = s.valleySelection;
       r.dayCycle.mode = s.prefs.timeOfDay;
+      r.quality.preset = s.prefs.quality;
+      r.particles.amount = reducedMotion(s.prefs) ? 0.3 : 1;
       r.hovered = s.valleyHover;
       if (s.travelling) ui.set({ travelling: false });
       if (t - lastTick > 0.15) {

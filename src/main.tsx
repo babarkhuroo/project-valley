@@ -8,7 +8,9 @@ import { runtime } from './game/runtime';
 import { ValleyClient } from './game/valleyClient';
 import { App } from './ui/App';
 import { attachNotifications, attachValleyNotifications } from './ui/notifications';
-import { ui } from './ui/store';
+import { applyPrefs, ui } from './ui/store';
+
+applyPrefs(ui.get().prefs);
 import './styles/global.css';
 
 document.title = IDENTITY.gameTitle;

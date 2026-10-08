@@ -18,6 +18,7 @@ import { ChunkGrid, type CullingSettings } from './culling/ChunkGrid';
 import { OcclusionQueries } from './culling/OcclusionQueries';
 import { CameraController } from './CameraController';
 import { DayCycle } from './DayCycle';
+import { QualityGovernor } from './Quality';
 import { Fireflies } from './Fireflies';
 import { InputController, type InteractionHandler, type PickResult, type PickTarget } from './InputController';
 import { NatureView } from './NatureView';
@@ -72,6 +73,8 @@ export class GameRenderer {
 
   /** Time-of-day look (sky, light, lamps). Purely visual. */
   readonly dayCycle: DayCycle;
+  /** Resolution/shadow quality (fixed preset or automatic). */
+  readonly quality: QualityGovernor;
   /** Spatial partition driving frustum culling, LOD and occlusion for instanced layers. */
   readonly chunks: ChunkGrid;
   private readonly occlusion: OcclusionQueries;
@@ -80,7 +83,7 @@ export class GameRenderer {
   private readonly nature: NatureView;
   private readonly buildings: BuildingsView;
   private readonly villagers: VillagersView;
-  private readonly particles = new Particles();
+  readonly particles = new Particles();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
   private readonly fireflies: Fireflies;
@@ -105,7 +108,6 @@ export class GameRenderer {
   ) {
     const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, coarse ? 1.5 : 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.localClippingEnabled = true;
@@ -137,6 +139,7 @@ export class GameRenderer {
     this.sun.shadow.radius = 3;
     this.scene.add(this.sun, this.sun.target, fill);
     this.dayCycle = new DayCycle(this.scene, this.renderer, this.sun, hemi, fill);
+    this.quality = new QualityGovernor(this.renderer, this.sun, () => this.resize());
 
     this.terrainView = new TerrainView(world.terrain, world.grid);
     this.scene.add(this.terrainView.mesh, this.terrainView.gridOverlay);
@@ -436,6 +439,7 @@ export class GameRenderer {
     const state = this.game.state;
     sharedUniforms.uTime.value = this.realTime;
 
+    this.quality.update(realDt);
     this.input.update(dt);
     this.cameraCtl.update(dt);
 

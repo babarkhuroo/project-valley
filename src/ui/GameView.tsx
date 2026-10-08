@@ -4,7 +4,7 @@ import { summarizeAway, summaryIsInteresting } from '../game/offline';
 import { GameRenderer } from '../rendering/GameRenderer';
 import type { ResourceId } from '../config/resources';
 import { interaction } from './interaction';
-import { ui } from './store';
+import { reducedMotion, ui } from './store';
 
 /** Mounts the 3D world and keeps renderer view state in step with the UI store. */
 export function GameView() {
@@ -21,6 +21,8 @@ export function GameView() {
       r.view.hover = s.mode.kind === 'place' || s.mode.kind === 'move' ? null : s.hover;
       r.view.showNames = s.showNames;
       r.dayCycle.mode = s.prefs.timeOfDay;
+      r.quality.preset = s.prefs.quality;
+      r.particles.amount = reducedMotion(s.prefs) ? 0.3 : 1;
       const placing = s.mode.kind === 'place' || s.mode.kind === 'move';
       r.view.ghost =
         placing && s.placement && (s.mode.kind === 'place' || s.mode.kind === 'move')

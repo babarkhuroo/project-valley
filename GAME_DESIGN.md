@@ -206,6 +206,8 @@ Reputation (from Valley deliveries and trade) unlocks a road of twelve rewards c
 ## Polish
 
 - **Day and night.** The world follows the player's local clock: warm sunrise, bright day, golden dusk, a soft blue night where windows and lanterns glow, stars come out, chimney smoke and water dim, and fireflies replace the birds and butterflies. The sun crosses the sky so shadows move through the day. It is only a look — nothing in the simulation depends on it — and *Settings → Display* can keep it always day.
+- **Accessibility.** *Settings → Accessibility*: interface size (80–140%, scales every panel and button), calm motion (follows the device's reduced-motion setting by default; stops UI animations and thins particle effects), high contrast. Every control is keyboard-reachable with a visible focus ring, Esc backs out of anything, and notifications are announced to screen readers.
+- **Quality.** *Settings → Graphics*: Automatic (default) watches frame times and lowers resolution — and then shadows — when frames run slow, raising them again when there's headroom; or fixed High / Balanced / Low. This is what keeps phones smooth.
 
 ## Pacing targets
 
@@ -225,4 +227,4 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
 - **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ✅ cooperative crafting at the Millrace.
 - **Milestone 4:** ✅ Accounts and authorised API · ✅ found / join (code or open list) / leave Valleys, real players replacing neighbours · ✅ live updates over WebSockets, presence, chat · next: a database-backed store and multi-process hosting.
-- **Polish:** ✅ day/night ambience · next: accessibility and quality settings, sound, feature introductions, balancing.
+- **Polish:** ✅ day/night ambience · ✅ accessibility and quality settings · next: sound, feature introductions, balancing.

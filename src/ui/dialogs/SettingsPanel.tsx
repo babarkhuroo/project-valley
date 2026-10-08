@@ -80,6 +80,37 @@ export function SettingsPanel() {
         </label>
       </section>
       <section>
+        <h4>Accessibility</h4>
+        <label className="slider">
+          <span>Interface {Math.round(prefs.uiScale * 100)}%</span>
+          <input type="range" min={0.8} max={1.4} step={0.05} value={prefs.uiScale} onChange={(e) => ui.setPrefs({ uiScale: Number(e.target.value) })} aria-label="Interface size" />
+        </label>
+        <label className="select-row">
+          <span>Calm motion</span>
+          <select value={prefs.reduceMotion} onChange={(e) => ui.setPrefs({ reduceMotion: e.target.value as typeof prefs.reduceMotion })}>
+            <option value="system">Follow my device</option>
+            <option value="on">On — fewer animations and particles</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={prefs.highContrast} onChange={(e) => ui.setPrefs({ highContrast: e.target.checked })} /> High contrast
+        </label>
+      </section>
+      <section>
+        <h4>Graphics</h4>
+        <label className="select-row">
+          <span>Quality</span>
+          <select value={prefs.quality} onChange={(e) => ui.setPrefs({ quality: e.target.value as typeof prefs.quality })}>
+            <option value="auto">Automatic — stays smooth</option>
+            <option value="high">High</option>
+            <option value="balanced">Balanced</option>
+            <option value="low">Low — for older devices</option>
+          </select>
+        </label>
+        <p className="small muted">Automatic lowers the resolution when frames run slow and raises it again when there’s room.</p>
+      </section>
+      <section>
         <h4>Tutorial</h4>
         <div className="row-buttons">
           <button className="btn small ghost" onClick={tutorialRestart}>

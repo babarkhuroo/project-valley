@@ -80,7 +80,11 @@ export class Particles {
     return { mesh, items, cursor: 0 };
   }
 
-  emit(kind: ParticleKind, at: THREE.Vector3, count = 1, spread = 0.15): void {
+  /** Share of requested particles actually spawned (reduced motion lowers it). */
+  amount = 1;
+
+  emit(kind: ParticleKind, at: THREE.Vector3, requested = 1, spread = 0.15): void {
+    const count = requested <= 2 ? requested : Math.max(1, Math.round(requested * this.amount));
     const pool = PUFF_KINDS.has(kind) ? this.puffs : this.bits;
     const palette = COLORS[kind];
     for (let n = 0; n < count; n++) {
