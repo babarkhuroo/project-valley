@@ -7,6 +7,7 @@ import { festivalRemaining, remainingFor, valleyBonuses } from '../valley/valley
 import { now } from './clock';
 import type { Game } from './Game';
 import { playerId } from './persistence';
+import { apiFetch } from './session';
 
 export type ValleyConnection = 'idle' | 'loading' | 'ready' | 'offline';
 
@@ -93,7 +94,7 @@ export class ValleyClient {
     if (!state.valley.valleyId && !this.visiting) return;
     if (!this.view.snapshot) this.set({ connection: 'loading' });
     try {
-      const res = await fetch(`/api/valley/${playerId()}`, { cache: 'no-store' });
+      const res = await apiFetch(`/api/valley/${playerId()}`, { cache: 'no-store' });
       if (res.status === 404) {
         // The village belongs to a Valley the server no longer knows (e.g. a wiped dev
         // server): found a new one rather than stranding the outbox.
@@ -114,7 +115,7 @@ export class ValleyClient {
     if (!isValleyUnlocked(state)) return false;
     this.set({ connection: this.view.snapshot ? this.view.connection : 'loading' });
     try {
-      const res = await fetch(`/api/valley/${playerId()}/join`, {
+      const res = await apiFetch(`/api/valley/${playerId()}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: state.player.name, villageName: state.player.villageName }),
@@ -154,10 +155,26 @@ export class ValleyClient {
     return null;
   }
 
+  /** Tells the Valley the player's current name and village name. */
+  async syncProfile(): Promise<void> {
+    const state = this.game.state;
+    if (!state.valley.valleyId) return;
+    try {
+      const res = await apiFetch(`/api/valley/${playerId()}/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: state.player.name, villageName: state.player.villageName }),
+      });
+      if (res.ok) this.apply((await res.json()) as ServerView);
+    } catch {
+      // The next join/refresh carries the names anyway.
+    }
+  }
+
   /** Votes for the Valley's next research project. Returns a refusal reason, or null. */
   async vote(research: ValleyResearchId): Promise<string | null> {
     try {
-      const res = await fetch(`/api/valley/${playerId()}/vote`, {
+      const res = await apiFetch(`/api/valley/${playerId()}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ research }),
@@ -177,7 +194,7 @@ export class ValleyClient {
     this.flushing = true;
     try {
       for (const op of [...this.game.state.valley.outbox]) {
-        const res = await fetch(`/api/valley/${playerId()}/contribute`, {
+        const res = await apiFetch(`/api/valley/${playerId()}/contribute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ opId: op.opId, target: op.target, resources: op.resources, knowledge: op.knowledge }),

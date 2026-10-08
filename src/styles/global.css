@@ -3637,3 +3637,33 @@ h4 {
   font: inherit;
   color: var(--ink);
 }
+
+/* ---------- Account ---------- */
+
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.account-form {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.account-form input {
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--edge);
+  background: #fff;
+  font: inherit;
+  color: var(--ink);
+}
+
+.warn-text {
+  color: var(--berry-dark);
+  font-weight: 700;
+}

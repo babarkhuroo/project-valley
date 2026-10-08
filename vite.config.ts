@@ -6,13 +6,15 @@ import { fileURLToPath } from 'node:url';
 import { createApiMiddleware } from './server/api.ts';
 import { FileSaveStore, FileValleyStore } from './server/saveStore.ts';
 import { ValleyService } from './server/valleyService.ts';
+import { AuthService, FileAuthStore } from './server/auth.ts';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 function createApi(dev: boolean) {
   const saves = new FileSaveStore(path.resolve(projectRoot, 'server/data/saves'));
   const valleys = new ValleyService(new FileValleyStore(path.resolve(projectRoot, 'server/data')));
-  return createApiMiddleware(saves, valleys, { dev });
+  const auth = new AuthService(new FileAuthStore(path.resolve(projectRoot, 'server/data/auth.json')));
+  return createApiMiddleware(saves, valleys, { dev, auth });
 }
 
 /** Mounts the persistence API into the Vite dev server so `npm run dev` is all you need. */

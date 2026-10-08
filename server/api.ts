@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { SaveStore } from './saveStore.ts';
 import type { ResourceBag } from '../src/valley/types.ts';
 import type { ValleyService } from './valleyService.ts';
+import type { AuthResult, AuthService } from './auth.ts';
 
 const PLAYER_ID = /^[a-z0-9-]{8,64}$/;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -44,10 +45,34 @@ function readBody(req: IncomingMessage): Promise<string> {
  *   POST   /api/valley/:playerId/join         <- { name, villageName }
  *   POST   /api/valley/:playerId/contribute   <- { opId, building, resources } -> { result, valley, … }
  *
+ *   POST   /api/session                       <- { playerId? } -> { playerId, token, account }
+ *   GET    /api/me
+ *   POST   /api/account/register              <- { username, password, displayName }
+ *   POST   /api/account/login                 <- { username, password }
+ *   POST   /api/account/logout
+ *
+ * With an AuthService, every /api/save and /api/valley call must carry a session token
+ * (Authorization: Bearer …, or `token` in the body for sendBeacon) for that player id.
  * The server clock is authoritative for offline progression: the client never
  * supplies the timestamp used to compute elapsed time.
  */
-export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, options: { dev?: boolean } = {}) {
+export interface ApiOptions {
+  dev?: boolean;
+  auth?: AuthService;
+}
+
+function bearer(req: IncomingMessage): string | null {
+  const h = req.headers.authorization;
+  return h?.startsWith('Bearer ') ? h.slice(7).trim() : null;
+}
+
+function sendAuth(res: ServerResponse, out: AuthResult): void {
+  if (out.ok) sendJson(res, 200, { playerId: out.playerId, token: out.token, account: out.account });
+  else sendJson(res, out.status, { error: out.error });
+}
+
+export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, options: ApiOptions = {}) {
+  const auth = options.auth;
   return async (req: IncomingMessage, res: ServerResponse, next: Next): Promise<void> => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (!url.pathname.startsWith('/api/')) {
@@ -59,9 +84,26 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         sendJson(res, 200, { now: Date.now() });
         return;
       }
-      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|contribute|vote|dev-skip))?$/.exec(url.pathname);
+      const raw = req.method === 'POST' || req.method === 'PUT' ? await readBody(req) : '';
+      const json = (): Record<string, unknown> => (raw ? (JSON.parse(raw) as Record<string, unknown>) : {});
+      const token = bearer(req);
+      if (auth && (url.pathname === '/api/session' || url.pathname === '/api/me' || url.pathname.startsWith('/api/account/'))) {
+        await handleAuth(req, res, auth, url.pathname, token, json());
+        return;
+      }
+      // Every per-player route must be called by that player.
+      const owner = /^\/api\/(?:save|valley)\/([^/]+)/.exec(url.pathname)?.[1];
+      if (auth && owner) {
+        const body = raw && url.pathname.startsWith('/api/save/') ? json() : {};
+        const me = await auth.authenticate(token ?? (typeof body.token === 'string' ? body.token : null));
+        if (!me || me.playerId !== owner) {
+          sendJson(res, 401, { error: 'not signed in as this player' });
+          return;
+        }
+      }
+      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|contribute|vote|profile|dev-skip))?$/.exec(url.pathname);
       if (valleyMatch && valleys) {
-        await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false);
+        await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false, json());
         return;
       }
       const match = /^\/api\/save\/([^/]+)$/.exec(url.pathname);
@@ -86,7 +128,7 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         }
         case 'PUT':
         case 'POST': {
-          const body = JSON.parse(await readBody(req)) as { revision?: unknown; payload?: unknown };
+          const body = json() as { revision?: unknown; payload?: unknown };
           if (typeof body.revision !== 'number' || body.payload === undefined) {
             sendJson(res, 400, { error: 'malformed save' });
             return;
@@ -115,7 +157,7 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
   };
 }
 
-async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: ValleyService, playerId: string, action: string | null, dev: boolean): Promise<void> {
+async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: ValleyService, playerId: string, action: string | null, dev: boolean, body: Record<string, unknown>): Promise<void> {
   if (!PLAYER_ID.test(playerId)) {
     sendJson(res, 400, { error: 'invalid player id' });
     return;
@@ -130,11 +172,16 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     sendJson(res, 405, { error: 'method not allowed' });
     return;
   }
-  const body = JSON.parse((await readBody(req)) || '{}') as Record<string, unknown>;
   if (action === 'join') {
     const name = typeof body.name === 'string' ? body.name.slice(0, 40) : 'Founder';
     const villageName = typeof body.villageName === 'string' ? body.villageName.slice(0, 40) : 'A village';
     sendJson(res, 200, await valleys.join(playerId, name, villageName));
+    return;
+  }
+  if (action === 'profile') {
+    const view = await valleys.profile(playerId, typeof body.name === 'string' ? body.name : '', typeof body.villageName === 'string' ? body.villageName : '');
+    if (!view) sendJson(res, 404, { error: 'not in a valley' });
+    else sendJson(res, 200, view);
     return;
   }
   if (action === 'vote') {
@@ -198,4 +245,26 @@ function cleanBag(resources: unknown): ResourceBag {
     if (typeof n === 'number' && Number.isFinite(n) && n > 0) clean[r as keyof ResourceBag] = Math.floor(n);
   }
   return clean;
+}
+
+async function handleAuth(req: IncomingMessage, res: ServerResponse, auth: AuthService, path: string, token: string | null, body: Record<string, unknown>): Promise<void> {
+  const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : '');
+  if (path === '/api/session' && req.method === 'POST') {
+    sendAuth(res, await auth.session(typeof body.playerId === 'string' ? body.playerId : undefined));
+    return;
+  }
+  if (path === '/api/account/login' && req.method === 'POST') {
+    sendAuth(res, await auth.login(str('username'), str('password')));
+    return;
+  }
+  if (!token) {
+    sendJson(res, 401, { error: 'Not signed in' });
+    return;
+  }
+  if (path === '/api/me' && req.method === 'GET') sendAuth(res, await auth.me(token));
+  else if (path === '/api/account/register' && req.method === 'POST') sendAuth(res, await auth.register(token, str('username'), str('password'), str('displayName')));
+  else if (path === '/api/account/logout' && req.method === 'POST') {
+    await auth.logout(token);
+    sendJson(res, 200, { ok: true });
+  } else sendJson(res, 404, { error: 'not found' });
 }

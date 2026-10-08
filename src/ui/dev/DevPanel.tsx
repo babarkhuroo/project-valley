@@ -2,6 +2,7 @@ import { game, runtime } from '../../game/runtime';
 import { summarizeAway } from '../../game/offline';
 import { devCommands } from '../../sim/dev';
 import { playerId } from '../../game/persistence';
+import { apiFetch } from '../../game/session';
 import { Icon } from '../common/Icon';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
@@ -137,7 +138,7 @@ function RenderingSection() {
 
 /** Asks the dev server to age the Valley by `hours`, then re-syncs. */
 async function skipValley(hours: number): Promise<void> {
-  await fetch(`/api/valley/${playerId()}/dev-skip`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hours }) });
+  await apiFetch(`/api/valley/${playerId()}/dev-skip`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hours }) });
   await runtime.valley?.refresh();
 }
 

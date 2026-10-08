@@ -5,12 +5,15 @@ import { fileURLToPath } from 'node:url';
 import { createApiMiddleware } from './api.ts';
 import { FileSaveStore, FileValleyStore } from './saveStore.ts';
 import { ValleyService } from './valleyService.ts';
+import { AuthService, FileAuthStore } from './auth.ts';
 
 /** Production server: serves the built client from /dist plus the persistence API. */
 const root = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(root, '../dist');
 const port = Number(process.env.PORT ?? 8080);
-const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')), new ValleyService(new FileValleyStore(path.resolve(root, 'data'))));
+const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')), new ValleyService(new FileValleyStore(path.resolve(root, 'data'))), {
+  auth: new AuthService(new FileAuthStore(path.resolve(root, 'data/auth.json'))),
+});
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

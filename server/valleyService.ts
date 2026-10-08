@@ -151,6 +151,24 @@ export class ValleyService {
     });
   }
 
+  /** Keeps a member's name and village name current. */
+  async profile(playerId: string, name: string, villageName: string): Promise<ValleyView | null> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return null;
+      const m = v.members.find((x) => x.id === playerId);
+      if (!m) return null;
+      m.name = name.slice(0, 24) || m.name;
+      m.villageName = villageName.slice(0, 28) || m.villageName;
+      const now = this.clock();
+      advanceValley(v, now);
+      await this.store.save(v);
+      return { valley: snapshotOf(v), memberId: playerId, now };
+    });
+  }
+
   /** A member's vote for the next Valley research project. */
   async vote(playerId: string, research: string): Promise<ValleyView | null> {
     if (!(research in VALLEY_RESEARCH)) return null;

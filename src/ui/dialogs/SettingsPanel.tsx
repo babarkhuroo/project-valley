@@ -4,6 +4,7 @@ import { runtime } from '../../game/runtime';
 import { deleteSave } from '../../game/persistence';
 import { rename, tutorialRestart, tutorialSkip } from '../actions';
 import { Icon } from '../common/Icon';
+import { AccountSection } from './AccountSection';
 import { useGameState } from '../hooks';
 import { ui, useUI } from '../store';
 
@@ -41,6 +42,7 @@ export function SettingsPanel() {
           <Icon name="close" size={18} />
         </button>
       </header>
+      <AccountSection />
       <section>
         <h4>Village</h4>
         <form

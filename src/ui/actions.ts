@@ -25,6 +25,7 @@ import {
   moveCraftOrder,
   moveBuilding,
   placeBuilding,
+  renamePlayer,
   renameVillage,
   setActiveResearch,
   unassignVillager,
@@ -223,7 +224,11 @@ export function welcomeNewcomer(index: number): void {
 }
 
 export function rename(name: string): void {
-  feedback(game().run((s) => renameVillage(s, name)));
+  feedback(game().run((s) => renameVillage(s, name)), () => void runtime.valley?.syncProfile());
+}
+
+export function renameMe(name: string): void {
+  feedback(game().run((s) => renamePlayer(s, name)), () => void runtime.valley?.syncProfile());
 }
 
 export function tutorialNext(): void {

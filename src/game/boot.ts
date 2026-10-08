@@ -5,6 +5,7 @@ import { now } from './clock';
 import { Game } from './Game';
 import { clampOffline, summarizeAway, type AwaySummary } from './offline';
 import { loadGame, type SaveSource } from './persistence';
+import { ensureSession } from './session';
 import { updateTutorial } from './tutorial';
 
 export interface BootResult {
@@ -20,6 +21,7 @@ export interface BootResult {
  */
 export async function bootGame(): Promise<BootResult> {
   const world = createWorld();
+  await ensureSession();
   const loaded = await loadGame();
   const state = loaded.state ?? createInitialState(world, now());
   ensureMapNodes(state, world);

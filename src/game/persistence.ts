@@ -2,6 +2,7 @@ import { IDENTITY } from '../config/identity';
 import { deserialize, serialize } from '../sim/save';
 import type { GameState } from '../sim/types';
 import { applyServerTime, now } from './clock';
+import { apiFetch, isSwitchingIdentity, sessionToken } from './session';
 
 const KEY_PLAYER = `${IDENTITY.storageKeyPrefix}:player-id`;
 const KEY_CACHE = `${IDENTITY.storageKeyPrefix}:save-cache`;
@@ -57,7 +58,7 @@ export async function loadGame(): Promise<LoadResult> {
   const cached = readCache();
   try {
     const start = Date.now();
-    const res = await fetch(`/api/save/${playerId()}`, { cache: 'no-store' });
+    const res = await apiFetch(`/api/save/${playerId()}`);
     const end = Date.now();
     const body = (await res.json()) as { now: number; revision?: number; serverSavedAt?: number; payload?: unknown };
     applyServerTime(body.now, start, end);
@@ -91,13 +92,14 @@ let inFlight: Promise<SaveOutcome> | null = null;
 /** Writes the cache immediately and the server copy in the background. */
 export async function saveGame(state: GameState): Promise<SaveOutcome> {
   if (inFlight) await inFlight.catch(() => undefined);
+  if (isSwitchingIdentity()) return 'local-only';
   state.revision += 1;
   state.lastProcessedAt = now();
   const json = serialize(state);
   writeCache(json);
   inFlight = (async (): Promise<SaveOutcome> => {
     try {
-      const res = await fetch(`/api/save/${playerId()}`, {
+      const res = await apiFetch(`/api/save/${playerId()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: `{"revision":${state.revision},"payload":${json}}`,
@@ -114,12 +116,13 @@ export async function saveGame(state: GameState): Promise<SaveOutcome> {
 
 /** Best-effort save while the page is being hidden or closed. */
 export function saveOnExit(state: GameState): void {
+  if (isSwitchingIdentity()) return;
   state.revision += 1;
   state.lastProcessedAt = now();
   const json = serialize(state);
   writeCache(json);
   try {
-    const blob = new Blob([`{"revision":${state.revision},"payload":${json}}`], { type: 'application/json' });
+    const blob = new Blob([`{"revision":${state.revision},"token":${JSON.stringify(sessionToken())},"payload":${json}}`], { type: 'application/json' });
     navigator.sendBeacon?.(`/api/save/${playerId()}`, blob);
   } catch {
     // The local cache above is the fallback.
@@ -129,7 +132,7 @@ export function saveOnExit(state: GameState): void {
 export async function deleteSave(): Promise<void> {
   safeLocal(() => localStorage.removeItem(KEY_CACHE), undefined);
   try {
-    await fetch(`/api/save/${playerId()}`, { method: 'DELETE' });
+    await apiFetch(`/api/save/${playerId()}`, { method: 'DELETE' });
   } catch {
     // Nothing else to do offline.
   }

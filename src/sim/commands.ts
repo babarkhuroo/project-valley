@@ -301,6 +301,14 @@ export function acceptNewcomer(state: GameState, world: World, index: number, si
   return { ok: true, value: v };
 }
 
+/** The player's own name, as the Valley sees it. */
+export function renamePlayer(state: GameState, name: string): CommandResult {
+  const trimmed = name.trim().slice(0, 24);
+  if (!trimmed) return fail('Name cannot be empty');
+  state.player.name = trimmed;
+  return { ok: true };
+}
+
 export function renameVillage(state: GameState, name: string): CommandResult {
   const trimmed = name.trim().slice(0, 28);
   if (!trimmed) return fail('Name cannot be empty');

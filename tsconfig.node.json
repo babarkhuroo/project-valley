@@ -14,5 +14,5 @@
     "allowImportingTsExtensions": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "server", "scripts"]
+  "include": ["vite.config.ts", "server", "scripts", "tests/server"]
 }
