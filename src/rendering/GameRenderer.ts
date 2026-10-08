@@ -17,6 +17,8 @@ import { createBridges } from './BridgeView';
 import { ChunkGrid, type CullingSettings } from './culling/ChunkGrid';
 import { OcclusionQueries } from './culling/OcclusionQueries';
 import { CameraController } from './CameraController';
+import { DayCycle } from './DayCycle';
+import { Fireflies } from './Fireflies';
 import { InputController, type InteractionHandler, type PickResult, type PickTarget } from './InputController';
 import { NatureView } from './NatureView';
 import { Particles } from './Particles';
@@ -68,6 +70,8 @@ export class GameRenderer {
   private lastResources: Record<string, number> = {};
   private lastRealDt = 0;
 
+  /** Time-of-day look (sky, light, lamps). Purely visual. */
+  readonly dayCycle: DayCycle;
   /** Spatial partition driving frustum culling, LOD and occlusion for instanced layers. */
   readonly chunks: ChunkGrid;
   private readonly occlusion: OcclusionQueries;
@@ -79,6 +83,7 @@ export class GameRenderer {
   private readonly particles = new Particles();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
+  private readonly fireflies: Fireflies;
   private readonly selection: SelectionView;
   private readonly overlay: WorldOverlay;
   private readonly input: InputController;
@@ -123,14 +128,15 @@ export class GameRenderer {
 
     const hemi = new THREE.HemisphereLight('#fff7e6', '#6e8a5a', 1.35);
     this.scene.add(hemi);
+    const fill = new THREE.AmbientLight('#ffe9cf', 0.25);
     this.sun = new THREE.DirectionalLight('#fff0d8', 2.2);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.sun.shadow.radius = 3;
-    this.scene.add(this.sun, this.sun.target);
-    this.scene.add(new THREE.AmbientLight('#ffe9cf', 0.25));
+    this.scene.add(this.sun, this.sun.target, fill);
+    this.dayCycle = new DayCycle(this.scene, this.renderer, this.sun, hemi, fill);
 
     this.terrainView = new TerrainView(world.terrain, world.grid);
     this.scene.add(this.terrainView.mesh, this.terrainView.gridOverlay);
@@ -172,6 +178,8 @@ export class GameRenderer {
     this.scene.add(this.particles.group);
     this.ambient = new AmbientLife(world.terrain, map);
     this.scene.add(this.ambient.group);
+    this.fireflies = new Fireflies(world.terrain, map);
+    this.scene.add(this.fireflies.mesh);
     this.selection = new SelectionView(world.terrain);
     this.scene.add(this.selection.group);
 
@@ -453,7 +461,8 @@ export class GameRenderer {
     this.nature.update(state, this.realTime);
     this.nature.sync();
     this.villagers.update(state, dt, this.realTime, this.game.speed, eye, lod);
-    this.ambient.update(this.realTime);
+    this.ambient.update(this.realTime, this.dayCycle.night);
+    this.fireflies.update(this.realTime, this.dayCycle.night);
     this.particles.update(dt);
 
     // Selection, hover and placement ghost.
@@ -481,7 +490,9 @@ export class GameRenderer {
     const texel = (span * 2) / this.sun.shadow.mapSize.x;
     const sx = Math.round(target.x / texel) * texel;
     const sz = Math.round(target.z / texel) * texel;
-    this.sun.position.set(sx - 22, 38, sz + 16);
+    this.dayCycle.update(target);
+    const light = this.dayCycle.lightOffset();
+    this.sun.position.set(sx + light.x, light.y, sz + light.z);
     this.sun.target.position.set(sx, 0, sz);
     this.sun.target.updateMatrixWorld();
 

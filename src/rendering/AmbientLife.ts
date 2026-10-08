@@ -336,9 +336,13 @@ export class AmbientLife {
     this.update(0);
   }
 
-  update(time: number): void {
+  /** `night` (0–1, from DayCycle): birds, butterflies and dragonflies are day creatures. */
+  update(time: number, night = 0): void {
     const dt = Number.isNaN(this.lastTime) ? 0 : Math.min(0.1, Math.max(0, time - this.lastTime));
     this.lastTime = time;
+    const awake = night < 0.6;
+    this.group.visible = awake;
+    if (!awake) return;
     for (let i = 0; i < this.birds.length; i++) this.updateBird(i, time);
     for (let i = 0; i < this.butterflies.length; i++) this.updateButterfly(i, time, dt);
     for (let i = 0; i < this.dragonflies.length; i++) this.updateDragonfly(i, time, dt);

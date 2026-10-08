@@ -3,6 +3,8 @@ import * as THREE from 'three';
 /** Global uniforms shared by every animated shader (updated once per frame). */
 export const sharedUniforms = {
   uTime: { value: 0 },
+  /** Light tint for unlit shaders (water, smoke) — white by day, blue at night (DayCycle). */
+  uDayTint: { value: new THREE.Color('#ffffff') },
 };
 
 /**

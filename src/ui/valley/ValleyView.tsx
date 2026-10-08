@@ -29,6 +29,7 @@ export function ValleyView() {
     r.onFrame = (t) => {
       const s = ui.get();
       r.selected = s.valleySelection;
+      r.dayCycle.mode = s.prefs.timeOfDay;
       r.hovered = s.valleyHover;
       if (s.travelling) ui.set({ travelling: false });
       if (t - lastTick > 0.15) {

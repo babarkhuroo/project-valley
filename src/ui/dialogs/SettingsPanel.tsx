@@ -23,6 +23,7 @@ export function SettingsPanel() {
   const saveStatus = useUI((s) => s.saveStatus);
   const saveSource = useUI((s) => s.saveSource);
   const showNames = useUI((s) => s.showNames);
+  const prefs = useUI((s) => s.prefs);
   const confirmReset = useUI((s) => s.confirmReset);
   const [, force] = useState(0);
   const [name, setName] = useState(state.player.villageName);
@@ -73,6 +74,9 @@ export function SettingsPanel() {
         <h4>Display</h4>
         <label className="toggle">
           <input type="checkbox" checked={showNames} onChange={(e) => ui.set({ showNames: e.target.checked })} /> Always show villager names
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={prefs.timeOfDay === 'clock'} onChange={(e) => ui.setPrefs({ timeOfDay: e.target.checked ? 'clock' : 'day' })} /> Day and night follow my clock
         </label>
       </section>
       <section>

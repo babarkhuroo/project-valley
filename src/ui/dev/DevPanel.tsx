@@ -132,6 +132,7 @@ function RenderingSection() {
       {toggle('frustum')}
       {toggle('lod')}
       {toggle('occlusion')}
+      <TimeOfDay />
     </section>
   );
 }
@@ -157,5 +158,25 @@ function ValleySection() {
       </div>
       <p className="small muted">Ages the server-side Valley; your village clock is untouched.</p>
     </section>
+  );
+}
+
+/** Scrub the day/night cycle (dev only); "Live" returns to the clock. */
+function TimeOfDay() {
+  useGameState();
+  const cycles = [runtime.renderer?.dayCycle, runtime.valleyRenderer?.dayCycle].filter((c) => !!c);
+  const current = cycles[0];
+  if (!current) return null;
+  const set = (h: number | null) => {
+    for (const c of cycles) c.override = h;
+  };
+  return (
+    <label className="slider">
+      <span>Hour {current.hour().toFixed(1)}</span>
+      <input type="range" min={0} max={24} step={0.25} value={current.hour()} onChange={(e) => set(Number(e.target.value))} />
+      <button className="btn small ghost" onClick={() => set(null)}>
+        Live
+      </button>
+    </label>
   );
 }

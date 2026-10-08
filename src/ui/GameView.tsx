@@ -20,6 +20,7 @@ export function GameView() {
       r.view.selection = s.selection;
       r.view.hover = s.mode.kind === 'place' || s.mode.kind === 'move' ? null : s.hover;
       r.view.showNames = s.showNames;
+      r.dayCycle.mode = s.prefs.timeOfDay;
       const placing = s.mode.kind === 'place' || s.mode.kind === 'move';
       r.view.ghost =
         placing && s.placement && (s.mode.kind === 'place' || s.mode.kind === 'move')

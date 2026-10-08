@@ -36,8 +36,26 @@ export interface Toast {
 
 export type SceneId = 'village' | 'valley';
 
+/** Player display preferences, kept on this device. */
+export interface Prefs {
+  /** Follow the local clock for day and night, or keep it always day. */
+  timeOfDay: 'clock' | 'day';
+}
+
+const PREFS_KEY = 'project-valley:prefs';
+const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock' };
+
+function loadPrefs(): Prefs {
+  try {
+    return { ...DEFAULT_PREFS, ...(JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Partial<Prefs>) };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
 export interface UIState {
   booted: boolean;
+  prefs: Prefs;
   /** Which world is on screen. The village keeps simulating either way. */
   scene: SceneId;
   /** True for the moment between choosing to travel and the new world's first frame. */
@@ -74,6 +92,7 @@ let toastId = 1;
 
 export const useUI = create<UIState>(() => ({
   booted: false,
+  prefs: loadPrefs(),
   scene: 'village',
   travelling: false,
   valleySelection: null,
@@ -104,6 +123,16 @@ export const useUI = create<UIState>(() => ({
 export const ui = {
   get: useUI.getState,
   set: useUI.setState,
+  /** Updates and remembers display preferences. */
+  setPrefs(patch: Partial<Prefs>): void {
+    const prefs = { ...useUI.getState().prefs, ...patch };
+    useUI.setState({ prefs });
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    } catch {
+      // Preferences just won't persist.
+    }
+  },
   select(selection: PickTarget | null): void {
     useUI.setState({ selection });
   },

@@ -42,6 +42,7 @@ export function createWater(terrain: Terrain): THREE.Mesh {
         uShallow: { value: new THREE.Color('#7fd6d0') },
         uDeep: { value: new THREE.Color('#3f8fc4') },
         uFoam: { value: new THREE.Color('#f4fbf6') },
+        uDayTint: { value: new THREE.Color('#ffffff') },
       },
     ]),
     vertexShader: `
@@ -63,6 +64,7 @@ export function createWater(terrain: Terrain): THREE.Mesh {
       uniform vec3 uShallow;
       uniform vec3 uDeep;
       uniform vec3 uFoam;
+      uniform vec3 uDayTint;
       varying vec2 vUv;
       varying vec3 vWorld;
       void main() {
@@ -77,12 +79,13 @@ export function createWater(terrain: Terrain): THREE.Mesh {
         float foam = 1.0 - smoothstep(edge, edge + 0.07, depth);
         col = mix(col, uFoam, foam * 0.9);
         float alpha = max(mix(0.62, 0.9, t), foam * 0.95);
-        gl_FragColor = vec4(col, alpha);
+        gl_FragColor = vec4(col * uDayTint, alpha);
         #include <colorspace_fragment>
         #include <fog_fragment>
       }`,
   });
   material.uniforms.uTime = sharedUniforms.uTime;
+  material.uniforms.uDayTint = sharedUniforms.uDayTint;
   const mesh = new THREE.Mesh(geo, material);
   mesh.renderOrder = 1;
   mesh.name = 'water';

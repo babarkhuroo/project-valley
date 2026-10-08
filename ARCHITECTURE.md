@@ -100,6 +100,10 @@ Rendering: `rendering/valley/ValleyRenderer` is a second scene built from the sa
 
 Models are procedural placeholders built behind stable interfaces (`createBuildingModel`, `createVillagerRig`), so authored glTF assets can replace them without touching gameplay. Building models merge static parts per material at build time. Thumbnails (portraits, build-menu icons) are rendered from the same models by an offscreen renderer.
 
+### Day and night (`rendering/DayCycle.ts`)
+
+One `DayCycle` per renderer blends keyframes (sky/fog colour, sun colour and intensity, hemisphere and ambient fill, exposure, lamp glow) on the local clock, moves the sun east → west (a dimmer moon at night), fades a star dome in, scales every emissive material's glow (`setNightGlow`, materials are shared so it's one pass), and sets `sharedUniforms.uDayTint` for unlit shaders (water, smoke). `AmbientLife` hides day creatures at night and `Fireflies` (one additive instanced mesh) fades in. It only runs on frames where the hour moved, and never touches simulation state.
+
 ### Culling and LOD (`rendering/culling/`)
 
 - **`ChunkGrid`** partitions the world (including the scenic margin) into 12-tile chunks. Each frame it tests every chunk's bounds — grown by a shadow margin so off-screen casters still shadow the view — against the camera frustum, records the closest camera distance, and drops chunks beyond the fog.

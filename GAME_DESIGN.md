@@ -203,6 +203,10 @@ Reputation (from Valley deliveries and trade) unlocks a road of twelve rewards c
 - **Live.** While you're connected, everything other members do arrives as it happens — deliveries filling bars, builds finishing, votes, festival goals, chat. A dot shows who is here now (players while connected, neighbours while awake).
 - **Chat.** One friendly thread per Valley, reachable from the top bar anywhere; other players' messages pop up while it's closed. Neighbours chime in too — welcoming newcomers, cheering finished buildings and festivals.
 
+## Polish
+
+- **Day and night.** The world follows the player's local clock: warm sunrise, bright day, golden dusk, a soft blue night where windows and lanterns glow, stars come out, chimney smoke and water dim, and fireflies replace the birds and butterflies. The sun crosses the sky so shadows move through the day. It is only a look — nothing in the simulation depends on it — and *Settings → Display* can keep it always day.
+
 ## Pacing targets
 
 Measured by the autoplayer (`npm run simulate`, see BALANCING.md); it plays faster than most people, so real play is slower.
@@ -221,4 +225,4 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
 - **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ✅ cooperative crafting at the Millrace.
 - **Milestone 4:** ✅ Accounts and authorised API · ✅ found / join (code or open list) / leave Valleys, real players replacing neighbours · ✅ live updates over WebSockets, presence, chat · next: a database-backed store and multi-process hosting.
-- **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.
+- **Polish:** ✅ day/night ambience · next: accessibility and quality settings, sound, feature introductions, balancing.

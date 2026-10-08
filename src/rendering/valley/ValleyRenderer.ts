@@ -10,6 +10,8 @@ import { AmbientLife } from '../AmbientLife';
 import { createBridges } from '../BridgeView';
 import { CameraController } from '../CameraController';
 import { ChunkGrid } from '../culling/ChunkGrid';
+import { DayCycle } from '../DayCycle';
+import { Fireflies } from '../Fireflies';
 import { InputController, type PickResult } from '../InputController';
 import { NatureView } from '../NatureView';
 import { Particles } from '../Particles';
@@ -46,6 +48,7 @@ export class ValleyRenderer {
   readonly camera: THREE.PerspectiveCamera;
   readonly cameraCtl: CameraController;
   selected: ValleyBuildingId | null = null;
+  readonly dayCycle: DayCycle;
   hovered: ValleyBuildingId | null = null;
   onFrame: ((realTime: number) => void) | null = null;
 
@@ -59,6 +62,7 @@ export class ValleyRenderer {
   private readonly ship = new ShipView();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
+  private readonly fireflies: Fireflies;
   private readonly selection: SelectionView;
   private readonly overlay: WorldOverlay;
   private readonly input: InputController;
@@ -110,14 +114,17 @@ export class ValleyRenderer {
     this.cameraCtl.focusOn(new THREE.Vector3(plaza.x, 0, plaza.z - 4), 46);
     this.cameraCtl.distance = 46;
 
-    this.scene.add(new THREE.HemisphereLight('#fff7e6', '#6e8a5a', 1.35));
+    const hemi = new THREE.HemisphereLight('#fff7e6', '#6e8a5a', 1.35);
+    const fill = new THREE.AmbientLight('#ffe9cf', 0.25);
+    this.scene.add(hemi);
     this.sun = new THREE.DirectionalLight('#fff0d8', 2.2);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.sun.shadow.radius = 3;
-    this.scene.add(this.sun, this.sun.target, new THREE.AmbientLight('#ffe9cf', 0.25));
+    this.scene.add(this.sun, this.sun.target, fill);
+    this.dayCycle = new DayCycle(this.scene, this.renderer, this.sun, hemi, fill);
 
     const terrainView = new TerrainView(world.terrain, world.grid);
     this.scene.add(terrainView.mesh, createWater(world.terrain));
@@ -144,6 +151,8 @@ export class ValleyRenderer {
     this.scene.add(this.folkView.group, this.particles.group);
     this.ambient = new AmbientLife(world.terrain, map);
     this.scene.add(this.ambient.group);
+    this.fireflies = new Fireflies(world.terrain, map);
+    this.scene.add(this.fireflies.mesh);
     this.selection = new SelectionView(world.terrain);
     this.scene.add(this.selection.group);
 
@@ -256,7 +265,8 @@ export class ValleyRenderer {
     this.folk.update(this.realTime, ValleyFolk.openProjects((id) => snap?.buildings[id]?.status));
     this.folk.syncTrainees(this.game.state.villagers, this.game.state.player.villageName);
     this.folkView.update(this.valley.scenery, dt, this.realTime, 1, eye, lod);
-    this.ambient.update(this.realTime);
+    this.ambient.update(this.realTime, this.dayCycle.night);
+    this.fireflies.update(this.realTime, this.dayCycle.night);
     this.particles.update(dt);
 
     const sel = this.selected;
@@ -282,7 +292,9 @@ export class ValleyRenderer {
     const texel = (span * 2) / this.sun.shadow.mapSize.x;
     const sx = Math.round(target.x / texel) * texel;
     const sz = Math.round(target.z / texel) * texel;
-    this.sun.position.set(sx - 26, 46, sz + 20);
+    this.dayCycle.update(target);
+    const light = this.dayCycle.lightOffset();
+    this.sun.position.set(sx + light.x, light.y + 6, sz + light.z + 4);
     this.sun.target.position.set(sx, 0, sz);
     this.sun.target.updateMatrixWorld();
 

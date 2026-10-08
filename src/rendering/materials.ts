@@ -75,6 +75,19 @@ export function mat(color: string, opts: MatOptions = {}): THREE.MeshLambertMate
 }
 
 /** Glowing window/lantern material. */
+/**
+ * Night lamps: every emissive material (windows, lanterns, embers) glows at a third of
+ * its strength by day and fully after dark. Called by DayCycle; materials are shared,
+ * so one pass updates the whole world.
+ */
+export function setNightGlow(k: number): void {
+  for (const m of cache.values()) {
+    if (m.emissive.r + m.emissive.g + m.emissive.b === 0) continue;
+    const base = (m.userData.baseEmissive as number | undefined) ?? (m.userData.baseEmissive = m.emissiveIntensity);
+    m.emissiveIntensity = base * (0.35 + 0.85 * k);
+  }
+}
+
 export function glowMat(): THREE.MeshLambertMaterial {
   return mat(PALETTE.glow, { emissive: '#ffc15a', emissiveIntensity: 0.9 });
 }

@@ -105,6 +105,7 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uSmokeShade;
   uniform vec3 uSteamLit;
   uniform vec3 uSteamShade;
+  uniform vec3 uDayTint;
   varying vec2 vCorner;
   varying vec2 vNoiseUv;
   varying float vAlpha;
@@ -146,7 +147,7 @@ const FRAGMENT = /* glsl */ `
     vec3 col = mix(mix(uSmokeShade, uSteamShade, vSteam), mix(uSmokeLit, uSteamLit, vSteam), light);
     // Fresh chimney smoke is a touch greyer and pales as it thins.
     col *= mix(mix(0.9, 1.0, smoothstep(0.0, 0.5, vAge)), 1.0, vSteam);
-    gl_FragColor = vec4(col, alpha);
+    gl_FragColor = vec4(col * uDayTint, alpha);
     #include <colorspace_fragment>
     #include <fog_fragment>
   }
@@ -183,12 +184,14 @@ export class SmokeSystem {
           uSmokeShade: { value: new THREE.Color('#aeb4c4') },
           uSteamLit: { value: new THREE.Color('#ffffff') },
           uSteamShade: { value: new THREE.Color('#d9e3ec') },
+          uDayTint: { value: new THREE.Color('#ffffff') },
         },
       ]),
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
     });
     material.uniforms.uTime = sharedUniforms.uTime;
+    material.uniforms.uDayTint = sharedUniforms.uDayTint;
     this.mesh = new THREE.Mesh(new THREE.InstancedBufferGeometry(), material);
     this.mesh.name = 'smoke';
     // Instances are positioned in the shader, so bounds are meaningless.
