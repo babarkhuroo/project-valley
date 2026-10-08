@@ -23,6 +23,8 @@ export interface ValleyMember {
   nextVisitAt: number | null;
   /** Value contributed over the member's lifetime in this Valley. */
   lifetimeValue: number;
+  /** When a player left, or a neighbour moved on to make room. Null while active. */
+  leftAt: number | null;
 }
 
 export type ValleyBuildingStatus = 'locked' | 'collecting' | 'building' | 'complete';
@@ -47,6 +49,9 @@ export type ValleyLogEntry =
   | { id: number; at: number; kind: 'finished'; building: ValleyBuildingId; level: number }
   | { id: number; at: number; kind: 'opened'; building: ValleyBuildingId }
   | { id: number; at: number; kind: 'knowledge'; member: string; amount: number }
+  | { id: number; at: number; kind: 'left'; member: string }
+  | { id: number; at: number; kind: 'movedOn'; member: string }
+  | { id: number; at: number; kind: 'returned'; member: string }
   | { id: number; at: number; kind: 'researched'; research: ValleyResearchId }
   | { id: number; at: number; kind: 'festivalStarted'; festival: FestivalId }
   | { id: number; at: number; kind: 'festivalGift'; member: string; festival: FestivalId; resources: ResourceBag }
@@ -67,6 +72,10 @@ export interface ValleyState {
   schemaVersion: number;
   id: string;
   name: string;
+  /** Invite code members share with friends. */
+  code: string;
+  /** Listed for anyone to join. */
+  open: boolean;
   seed: number;
   createdAt: number;
   /** Server time the state was last advanced to. */

@@ -14,7 +14,11 @@ import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestiv
  * same Valley advanced in one step or in many ends up identical.
  */
 
-export const VALLEY_SCHEMA = 4;
+export const VALLEY_SCHEMA = 5;
+/** Real players a Valley can hold. */
+export const MAX_PLAYERS = 10;
+/** Neighbours keep the Valley at least this busy until enough players arrive. */
+export const TARGET_MEMBERS = 8;
 const HOUR = 3_600_000;
 const MINUTE = 60_000;
 const MAX_EVENTS_PER_ADVANCE = 250_000;
@@ -269,6 +273,10 @@ export function leadingResearch(v: ValleyState | ValleySnapshot): ValleyResearch
 function settleVotes(v: ValleyState): void {
   const avail = availableResearch(v);
   for (const m of v.members) {
+    if (m.leftAt !== null) {
+      delete v.research.votes[m.id];
+      continue;
+    }
     const vote = v.research.votes[m.id];
     if (vote && avail.includes(vote)) continue;
     if (m.kind === 'player' || avail.length === 0) {
@@ -313,7 +321,7 @@ export function raiseKnowledge(v: ValleyState, amount: number, at: number): void
 
 /** A member's vote for the next project. */
 export function voteResearch(v: ValleyState, memberId: string, id: ValleyResearchId): boolean {
-  if (!v.members.some((m) => m.id === memberId) || !availableResearch(v).includes(id)) return false;
+  if (!v.members.some((m) => m.id === memberId && m.leftAt === null) || !availableResearch(v).includes(id)) return false;
   v.research.votes[memberId] = id;
   return true;
 }
@@ -419,7 +427,60 @@ export interface FoundingPlayer {
 }
 
 /** A fresh Valley with simulated neighbours who have already started on Hearth Hall. */
-export function createValley(id: string, seed: number, now: number, player: FoundingPlayer): ValleyState {
+export interface ValleyOptions {
+  name?: string;
+  open?: boolean;
+  code?: string;
+}
+
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/** A short, unambiguous invite code derived from the seed. */
+export function inviteCode(seed: number): string {
+  let x = seed >>> 0 || 1;
+  let out = '';
+  for (let i = 0; i < 6; i++) {
+    x = (Math.imul(x ^ (x >>> 15), 2246822519) + 0x9e3779b9) >>> 0;
+    out += CODE_ALPHABET[x % CODE_ALPHABET.length];
+  }
+  return out;
+}
+
+export function activeMembers(v: ValleyState | ValleySnapshot): ValleyMember[] {
+  return v.members.filter((m) => m.leftAt === null);
+}
+
+export function activePlayers(v: ValleyState | ValleySnapshot): ValleyMember[] {
+  return v.members.filter((m) => m.leftAt === null && m.kind === 'player');
+}
+
+/**
+ * Neighbours make room as players arrive (the least involved moves on first) and come
+ * back when players leave, keeping the Valley lively at any size.
+ */
+function rebalanceNeighbours(v: ValleyState, now: number): void {
+  const want = Math.max(0, TARGET_MEMBERS - activePlayers(v).length);
+  let sims = v.members.filter((m) => m.kind === 'simulated' && m.leftAt === null);
+  while (sims.length > want) {
+    const out = [...sims].sort((a, b) => a.lifetimeValue - b.lifetimeValue || b.neighbour! - a.neighbour!)[0];
+    out.leftAt = now;
+    out.nextVisitAt = null;
+    delete v.research.votes[out.id];
+    log(v, { at: now, kind: 'movedOn', member: out.id });
+    sims = sims.filter((m) => m !== out);
+  }
+  const resting = v.members.filter((m) => m.kind === 'simulated' && m.leftAt !== null).sort((a, b) => b.leftAt! - a.leftAt!);
+  while (sims.length < want && resting.length > 0) {
+    const back = resting.shift()!;
+    back.leftAt = null;
+    scheduleVisit(v, back, now);
+    log(v, { at: now, kind: 'returned', member: back.id });
+    sims.push(back);
+  }
+  settleVotes(v);
+}
+
+export function createValley(id: string, seed: number, now: number, player: FoundingPlayer, options: ValleyOptions = {}): ValleyState {
   const buildings = {} as Record<ValleyBuildingId, ValleyBuildingState>;
   for (const bid of VALLEY_BUILDING_ORDER) {
     buildings[bid] = { id: bid, level: 0, status: VALLEY_BUILDINGS[bid].requires ? 'locked' : 'collecting', delivered: {}, shares: {}, doneAt: null };
@@ -427,7 +488,9 @@ export function createValley(id: string, seed: number, now: number, player: Foun
   const v: ValleyState = {
     schemaVersion: VALLEY_SCHEMA,
     id,
-    name: IDENTITY.valleyName,
+    name: options.name?.trim().slice(0, 30) || IDENTITY.valleyName,
+    code: options.code ?? inviteCode(seed),
+    open: options.open ?? true,
     seed,
     createdAt: now,
     time: now,
@@ -442,7 +505,7 @@ export function createValley(id: string, seed: number, now: number, player: Foun
     ops: {},
   };
   NEIGHBOURS.forEach((n, i) => {
-    v.members.push({ id: `sim-${i + 1}`, name: n.name, villageName: n.villageName, kind: 'simulated', joinedAt: now, neighbour: i, nextVisitAt: null, lifetimeValue: 0 });
+    v.members.push({ id: `sim-${i + 1}`, name: n.name, villageName: n.villageName, kind: 'simulated', joinedAt: now, neighbour: i, nextVisitAt: null, lifetimeValue: 0, leftAt: null });
   });
   // The neighbours got here first: part of the hall is already supplied.
   const hall = buildings.hearthHall;
@@ -462,13 +525,34 @@ export function createValley(id: string, seed: number, now: number, player: Foun
   return v;
 }
 
-export function addPlayer(v: ValleyState, player: FoundingPlayer, now: number): ValleyMember {
+/** Adds (or welcomes back) a player. Null when the Valley is full. */
+export function addPlayer(v: ValleyState, player: FoundingPlayer, now: number): ValleyMember | null {
   const existing = v.members.find((m) => m.id === player.id);
-  if (existing) return existing;
-  const m: ValleyMember = { id: player.id, name: player.name, villageName: player.villageName, kind: 'player', joinedAt: now, neighbour: null, nextVisitAt: null, lifetimeValue: 0 };
-  v.members.push(m);
+  if (existing && existing.leftAt === null) return existing;
+  if (activePlayers(v).length >= MAX_PLAYERS) return null;
+  let m = existing;
+  if (m) {
+    m.leftAt = null;
+    m.name = player.name;
+    m.villageName = player.villageName;
+  } else {
+    m = { id: player.id, name: player.name, villageName: player.villageName, kind: 'player', joinedAt: now, neighbour: null, nextVisitAt: null, lifetimeValue: 0, leftAt: null };
+    v.members.push(m);
+  }
   log(v, { at: now, kind: 'joined', member: m.id });
+  rebalanceNeighbours(v, now);
   return m;
+}
+
+/** A player leaves. Their past help stays on the record; a neighbour may come back. */
+export function removePlayer(v: ValleyState, playerId: string, now: number): boolean {
+  const m = v.members.find((x) => x.id === playerId && x.kind === 'player' && x.leftAt === null);
+  if (!m) return false;
+  m.leftAt = now;
+  delete v.research.votes[m.id];
+  log(v, { at: now, kind: 'left', member: m.id });
+  rebalanceNeighbours(v, now);
+  return true;
 }
 
 /**
@@ -486,6 +570,12 @@ export function upgradeValley(v: ValleyState, now: number): boolean {
   if (v.festival === undefined) {
     v.festival = null;
     v.nextFestivalAt = null;
+    changed = true;
+  }
+  if (v.code === undefined) {
+    v.code = inviteCode(v.seed);
+    v.open = false;
+    for (const m of v.members) m.leftAt ??= null;
     changed = true;
   }
   for (const id of VALLEY_BUILDING_ORDER) {
@@ -509,7 +599,7 @@ export function millraceCrew(v: ValleyState | ValleySnapshot, now: number): stri
   if ((v.buildings.millraceWorkshop?.level ?? 0) <= 0) return [];
   const hour = Math.floor(now / HOUR);
   return v.members
-    .filter((m) => m.kind === 'simulated' && hoursIntoNight(m, now) < 0 && (hour + m.neighbour! * 5) % 7 < 3)
+    .filter((m) => m.kind === 'simulated' && m.leftAt === null && hoursIntoNight(m, now) < 0 && (hour + m.neighbour! * 5) % 7 < 3)
     .map((m) => m.name);
 }
 
@@ -559,7 +649,7 @@ export type ContributeOutcome = { ok: true; result: ContributionResult } | { ok:
  * result. Anything no longer needed is returned rather than lost.
  */
 export function contribute(v: ValleyState, memberId: string, buildingId: ValleyBuildingId, resources: ResourceBag, opId: string, now: number): ContributeOutcome {
-  const member = v.members.find((m) => m.id === memberId);
+  const member = v.members.find((m) => m.id === memberId && m.leftAt === null);
   if (!member) return { ok: false, reason: 'Not a member of this Valley' };
   const seen = v.ops[memberId]?.[opId];
   if (seen) return { ok: true, result: seen };

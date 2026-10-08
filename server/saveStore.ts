@@ -81,6 +81,18 @@ export class FileValleyStore implements ValleyStore {
     await this.writeJson(path.join(this.dir, 'members', `${playerId}.json`), { valleyId });
   }
 
+  async clearMembership(playerId: string): Promise<void> {
+    await fs.rm(path.join(this.dir, 'members', `${playerId}.json`), { force: true });
+  }
+
+  async list(): Promise<string[]> {
+    try {
+      return (await fs.readdir(path.join(this.dir, 'valleys'))).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5));
+    } catch {
+      return [];
+    }
+  }
+
   async load(valleyId: string): Promise<ValleyState | null> {
     return this.readJson<ValleyState>(path.join(this.dir, 'valleys', `${valleyId}.json`));
   }

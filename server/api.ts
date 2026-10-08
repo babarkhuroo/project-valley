@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { SaveStore } from './saveStore.ts';
 import type { ResourceBag } from '../src/valley/types.ts';
-import type { ValleyService } from './valleyService.ts';
+import type { JoinOutcome, ValleyService } from './valleyService.ts';
 import type { AuthResult, AuthService } from './auth.ts';
 
 const PLAYER_ID = /^[a-z0-9-]{8,64}$/;
@@ -91,6 +91,14 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         await handleAuth(req, res, auth, url.pathname, token, json());
         return;
       }
+      if (url.pathname === '/api/valleys' && req.method === 'GET' && valleys) {
+        if (auth && !(await auth.authenticate(token))) {
+          sendJson(res, 401, { error: 'Not signed in' });
+          return;
+        }
+        sendJson(res, 200, { valleys: await valleys.listOpen() });
+        return;
+      }
       // Every per-player route must be called by that player.
       const owner = /^\/api\/(?:save|valley)\/([^/]+)/.exec(url.pathname)?.[1];
       if (auth && owner) {
@@ -101,7 +109,7 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
           return;
         }
       }
-      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|contribute|vote|profile|dev-skip))?$/.exec(url.pathname);
+      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|create|leave|settings|contribute|vote|profile|dev-skip))?$/.exec(url.pathname);
       if (valleyMatch && valleys) {
         await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false, json());
         return;
@@ -172,10 +180,29 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     sendJson(res, 405, { error: 'method not allowed' });
     return;
   }
+  const names = {
+    name: typeof body.name === 'string' ? body.name.slice(0, 24) : 'Founder',
+    villageName: typeof body.villageName === 'string' ? body.villageName.slice(0, 28) : 'A village',
+  };
+  const joined = (out: JoinOutcome) => (out.ok ? sendJson(res, 200, out.view) : sendJson(res, out.status, { error: out.error }));
   if (action === 'join') {
-    const name = typeof body.name === 'string' ? body.name.slice(0, 40) : 'Founder';
-    const villageName = typeof body.villageName === 'string' ? body.villageName.slice(0, 40) : 'A village';
-    sendJson(res, 200, await valleys.join(playerId, name, villageName));
+    if (typeof body.code === 'string' || typeof body.valleyId === 'string') {
+      joined(await valleys.joinExisting(playerId, names, { code: typeof body.code === 'string' ? body.code : undefined, valleyId: typeof body.valleyId === 'string' ? body.valleyId : undefined }));
+    } else sendJson(res, 200, await valleys.join(playerId, names.name, names.villageName));
+    return;
+  }
+  if (action === 'create') {
+    joined(await valleys.create(playerId, names, { name: typeof body.valleyName === 'string' ? body.valleyName : undefined, open: body.open !== false }));
+    return;
+  }
+  if (action === 'leave') {
+    sendJson(res, (await valleys.leave(playerId)) ? 200 : 404, { ok: true });
+    return;
+  }
+  if (action === 'settings') {
+    const view = await valleys.setOpen(playerId, body.open === true);
+    if (!view) sendJson(res, 404, { error: 'not in a valley' });
+    else sendJson(res, 200, view);
     return;
   }
   if (action === 'profile') {

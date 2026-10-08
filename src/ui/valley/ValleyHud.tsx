@@ -7,7 +7,7 @@ import { deliveredFraction, levelDef } from '../../valley/valleySim';
 import { contributeToValley, returnToVillage, selectValleyBuilding } from '../actions';
 import { Bar, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
-import { formatDuration, formatNumber, useGameState, useValley } from '../hooks';
+import { formatDuration, formatNumber, useGameState, useOnline, useValley } from '../hooks';
 import { useUI } from '../store';
 import { agoText, describeLog } from './format';
 import { GuildTrainingSection, MerchantSection, roadProgress } from './TradeUi';
@@ -15,6 +15,7 @@ import { ValleyResearchSection, ValleyResearchSummary } from './ResearchUi';
 import { FestivalCard, FestivalSection } from './FestivalUi';
 import { DeliveryForm, MemberShares } from './Delivery';
 import { MillraceSection } from './MillraceUi';
+import { MembersSection } from './MembersUi';
 import { ui as uiStore } from '../store';
 
 function statusText(b: ValleyBuildingState, serverNow: number): string {
@@ -61,6 +62,7 @@ export function ValleySidebar() {
   }
   const me = playerId();
   const news = [...snapshot.log].reverse().slice(0, 7);
+  const online = useOnline();
   const road = roadProgress(state);
   return (
     <aside className={`valley-side panel pop-in ${selected ? 'has-selection' : ''}`}>
@@ -106,6 +108,7 @@ export function ValleySidebar() {
           })}
         </ul>
       </Section>
+      <MembersSection snapshot={snapshot} online={online} />
       <Section title="Valley news">
         <ul className="vs-news">
           {news.map((e) => (

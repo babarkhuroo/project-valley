@@ -16,6 +16,7 @@ import { TutorialCoach } from './tutorial/TutorialCoach';
 import { TravelVeil, ValleyActionBar, ValleyProjectPanel, ValleySidebar } from './valley/ValleyHud';
 import { ValleyView } from './valley/ValleyView';
 import { RoadPanel, SatchelPanel } from './valley/TradeUi';
+import { ValleyChooser } from './valley/ValleyChooser';
 
 // Compiled out of production builds entirely.
 const DevPanel = import.meta.env.DEV ? lazy(() => import('./dev/DevPanel').then((m) => ({ default: m.DevPanel }))) : null;
@@ -77,6 +78,7 @@ export function App() {
       <AwayDialog />
       <LevelUpBanner />
       <TravelVeil />
+      <ValleyChooser />
     </div>
   );
 }

@@ -66,6 +66,8 @@ export class ValleyRenderer {
   private readonly raycaster = new THREE.Raycaster();
   private readonly resizeObserver: ResizeObserver;
   private snapshot: ValleySnapshot | null = null;
+  /** The local player's member id (their own figure isn't drawn — their villagers are). */
+  me = '';
   private frameHandle = 0;
   private lastFrame = 0;
   private realTime = 0;
@@ -170,6 +172,7 @@ export class ValleyRenderer {
     if (snapshot === this.snapshot) return;
     this.snapshot = snapshot;
     this.buildings.sync(snapshot);
+    this.folk.syncMembers(snapshot?.members ?? [], this.me);
   }
 
   start(): void {

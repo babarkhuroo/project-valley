@@ -1,13 +1,21 @@
 import type { ValleyBuildingId } from '../config/valley';
 import type { ValleyResearchId } from '../config/valleyResearch';
 import { isValleyUnlocked } from '../sim/modifiers';
-import { claimFestival, joinValley, returnValleyOp, sendToFestival, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
+import { claimFestival, joinValley, leaveValley, returnValleyOp, sendToFestival, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
 import type { ContributionResult, ValleyLogEntry, ValleySnapshot } from '../valley/types';
 import { festivalRemaining, remainingFor, valleyBonuses } from '../valley/valleySim';
 import { now } from './clock';
 import type { Game } from './Game';
 import { playerId } from './persistence';
 import { apiFetch } from './session';
+
+export interface ValleyListing {
+  id: string;
+  name: string;
+  players: number;
+  neighbours: number;
+  levels: number;
+}
 
 export type ValleyConnection = 'idle' | 'loading' | 'ready' | 'offline';
 
@@ -40,6 +48,8 @@ export class ValleyClient {
   private timer = 0;
   private flushing = false;
   private lastLogId: number | null = null;
+  /** Members connected right now (live presence). Replaced, never mutated, so React can compare. */
+  online: ReadonlySet<string> = new Set();
   /** Set while the Valley scene is open, for faster polling. */
   visiting = false;
   /** New Valley log entries since the last poll (deliveries by others, finished builds…). */
@@ -96,14 +106,85 @@ export class ValleyClient {
     try {
       const res = await apiFetch(`/api/valley/${playerId()}`, { cache: 'no-store' });
       if (res.status === 404) {
-        // The village belongs to a Valley the server no longer knows (e.g. a wiped dev
-        // server): found a new one rather than stranding the outbox.
-        await this.join();
+        // Not (or no longer) in a Valley — left from another device, or the Valley is
+        // gone. Parcels on the road come home; the player can pick a Valley again.
+        if (state.valley.valleyId) this.game.mutate((s) => leaveValley(s));
+        this.set({ snapshot: null, connection: 'idle' });
         return;
       }
       if (!res.ok) throw new Error(`valley ${res.status}`);
       this.apply((await res.json()) as ServerView);
       await this.flush();
+    } catch {
+      this.set({ connection: 'offline' });
+    }
+  }
+
+  private names() {
+    const s = this.game.state;
+    return { name: s.player.name, villageName: s.player.villageName };
+  }
+
+  private async post(path: string, body: unknown): Promise<Response> {
+    return apiFetch(`/api/valley/${playerId()}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+
+  /** Runs a join-style request; on success the village belongs to that Valley. Returns an error or null. */
+  private async enter(path: string, body: unknown): Promise<string | null> {
+    try {
+      const res = await this.post(path, { ...this.names(), ...(body as object) });
+      const reply = (await res.json()) as ServerView & { error?: string };
+      if (!res.ok) return reply.error ?? 'That didn’t work';
+      this.apply(reply);
+      await this.flush();
+      return null;
+    } catch {
+      this.set({ connection: 'offline' });
+      return 'The Valley is out of reach right now';
+    }
+  }
+
+  /** Founds a new Valley with simulated neighbours. */
+  found(valleyName: string, open: boolean): Promise<string | null> {
+    return this.enter('create', { valleyName, open });
+  }
+
+  joinByCode(code: string): Promise<string | null> {
+    return this.enter('join', { code });
+  }
+
+  joinOpen(valleyId: string): Promise<string | null> {
+    return this.enter('join', { valleyId });
+  }
+
+  /** Open Valleys with room. */
+  async listOpen(): Promise<ValleyListing[] | null> {
+    try {
+      const res = await apiFetch('/api/valleys');
+      if (!res.ok) return null;
+      return ((await res.json()) as { valleys: ValleyListing[] }).valleys;
+    } catch {
+      return null;
+    }
+  }
+
+  async leave(): Promise<boolean> {
+    try {
+      const res = await this.post('leave', {});
+      if (!res.ok && res.status !== 404) return false;
+    } catch {
+      return false;
+    }
+    this.game.mutate((s) => leaveValley(s));
+    this.lastLogId = null;
+    this.set({ snapshot: null, connection: 'idle' });
+    return true;
+  }
+
+  async setOpen(open: boolean): Promise<void> {
+    try {
+      const res = await this.post('settings', { open });
+      if (res.ok) this.apply((await res.json()) as ServerView);
     } catch {
       this.set({ connection: 'offline' });
     }

@@ -19,6 +19,14 @@ export function useValley(): ValleyView {
   return useSyncExternalStore(client ? (l) => client.subscribe(l) : noop, () => client?.current ?? NO_VALLEY);
 }
 
+const NO_ONE: ReadonlySet<string> = new Set();
+
+/** Members currently connected to the Valley (live presence; empty without a live link). */
+export function useOnline(): ReadonlySet<string> {
+  const client = runtime.valley;
+  return useSyncExternalStore(client ? (l) => client.subscribe(l) : noop, () => client?.online ?? NO_ONE);
+}
+
 export function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds)) return '—';
   const s = Math.max(0, Math.round(seconds));

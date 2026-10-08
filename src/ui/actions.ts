@@ -258,10 +258,14 @@ export function travelToValley(): void {
     return;
   }
   const client = runtime.valley;
+  if (!state.valley.valleyId) {
+    // First, the village has to find (or found) a Valley.
+    ui.set({ valleyChooser: true, panel: null });
+    return;
+  }
   if (client) {
     client.visiting = true;
-    if (!state.valley.valleyId) void client.join();
-    else void client.refresh();
+    void client.refresh();
   }
   runtime.audio.play('click');
   ui.set({ scene: 'valley', travelling: true, selection: null, hover: null, mode: { kind: 'normal' }, panel: null, valleySelection: null, valleyHover: null });
@@ -353,4 +357,15 @@ export function contributeToFestival(resources: Partial<Record<ResourceId, numbe
 export function sendOnShift(villagerId: number, recipe: CoopRecipeId, project: ValleyBuildingId, helpers: number): void {
   const res = game().run((s, w, sink) => startShift(s, w, villagerId, recipe, project, helpers, sink));
   feedback(res, () => runtime.audio.play('newcomer'));
+}
+
+/** Leaves the current Valley: parcels on the road come home, bonuses lapse. */
+export async function leaveCurrentValley(): Promise<void> {
+  const ok = (await runtime.valley?.leave()) ?? false;
+  if (!ok) {
+    ui.toast({ kind: 'warning', title: 'Couldn’t leave right now', body: 'The Valley is out of reach — try again in a moment.', icon: 'info' }, 3500);
+    return;
+  }
+  ui.toast({ kind: 'info', title: 'You left the Valley', body: 'Your village is on its own until it joins another.', icon: 'valley' });
+  returnToVillage();
 }

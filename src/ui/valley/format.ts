@@ -28,6 +28,12 @@ export function describeLog(e: ValleyLogEntry, snapshot: ValleySnapshot, me: str
       return e.level === 1 ? `The ${VALLEY_BUILDINGS[e.building].name} is restored!` : `The ${VALLEY_BUILDINGS[e.building].name} reached level ${e.level}!`;
     case 'opened':
       return `Work can begin on the ${VALLEY_BUILDINGS[e.building].name}`;
+    case 'left':
+      return `${memberName(snapshot, e.member, me)} ${e.member === me ? 'left' : 'has left'} the Valley`;
+    case 'movedOn':
+      return `${memberName(snapshot, e.member, me)}’s family moved on, making room for new neighbours`;
+    case 'returned':
+      return `${memberName(snapshot, e.member, me)} is back in the Valley`;
     case 'knowledge':
       return `${memberName(snapshot, e.member, me)} brought ${e.amount} Valley Knowledge from trading`;
     case 'researched':

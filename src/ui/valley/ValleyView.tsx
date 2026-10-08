@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { game, runtime } from '../../game/runtime';
 import { ValleyRenderer } from '../../rendering/valley/ValleyRenderer';
 import { ui } from '../store';
+import { playerId } from '../../game/persistence';
 
 /** Mounts the Valley scene. Lives only while the player is visiting. */
 export function ValleyView() {
@@ -20,6 +21,7 @@ export function ValleyView() {
       },
     });
     runtime.valleyRenderer = r;
+    r.me = playerId();
     const client = runtime.valley;
     r.setSnapshot(client?.current.snapshot ?? null);
     const unsubscribe = client?.subscribe(() => r.setSnapshot(client.current.snapshot));

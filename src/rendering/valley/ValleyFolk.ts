@@ -4,12 +4,16 @@ import type { ResourceId } from '../../config/resources';
 import { buildRoute, findPath, routeEnd } from '../../sim/pathfinding';
 import { createVillager } from '../../sim/population';
 import type { GameState, Vec2, Villager } from '../../sim/types';
+import type { ValleyMember } from '../../valley/types';
+import { APPEARANCE_PALETTE, type Appearance } from '../../config/villagers';
 import type { World } from '../../sim/world';
 import { createRng } from '../../world/noise';
 
 type Errand = 'toProject' | 'building' | 'stroll' | 'pause';
 
 interface Walker {
+  /** Valley member this walker belongs to. */
+  member: string;
   villager: Villager;
   village: string;
   errand: Errand;
@@ -19,6 +23,22 @@ interface Walker {
 
 const HELPER_NAMES = ['Ash', 'Bryn', 'Cora', 'Dell', 'Eda', 'Finch', 'Gale', 'Hob', 'Ivy', 'Jory'];
 const PARCELS: ResourceId[] = ['timber', 'clay'];
+
+/** A stable look for another player, derived from their id. */
+function appearanceFor(id: string): Appearance {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  const pick = <T>(list: readonly T[], salt: number) => list[((h >>> salt) ^ (h >>> (salt + 7))) % list.length];
+  return {
+    skin: pick(APPEARANCE_PALETTE.skin, 1),
+    hair: pick(APPEARANCE_PALETTE.hair, 3),
+    hairStyle: (((h >>> 5) & 3) as Appearance['hairStyle']),
+    shirt: pick(APPEARANCE_PALETTE.shirt, 9),
+    trousers: pick(APPEARANCE_PALETTE.trousers, 11),
+    hat: ((h >>> 13) % 3) as Appearance['hat'],
+    hatColor: pick(APPEARANCE_PALETTE.hatColor, 15),
+  };
+}
 
 /**
  * Neighbours and their helpers going about the Valley: carrying parcels to whatever
@@ -35,19 +55,38 @@ export class ValleyFolk {
   constructor(
     private readonly world: World,
     readonly scenery: GameState,
-  ) {
-    NEIGHBOURS.forEach((n, i) => {
-      const people = [
-        { name: n.name, appearance: n.appearance },
-        { name: HELPER_NAMES[i % HELPER_NAMES.length], appearance: { ...n.appearance, shirt: NEIGHBOURS[(i + 3) % NEIGHBOURS.length].appearance.shirt, hat: 0 as const } },
-      ];
-      for (const p of people) {
-        const start = this.randomSpot();
-        const v = createVillager(scenery, { name: p.name, appearance: p.appearance }, null, start);
-        scenery.villagers.push(v);
-        this.walkers.push({ villager: v, village: n.villageName, errand: 'pause', until: this.rng() * 4, project: null });
+  ) {}
+
+  private addWalker(member: string, name: string, village: string, appearance: Appearance): void {
+    const v = createVillager(this.scenery, { name, appearance }, null, this.randomSpot());
+    this.scenery.villagers.push(v);
+    this.walkers.push({ member, villager: v, village, errand: 'pause', until: this.rng() * 4, project: null });
+  }
+
+  /**
+   * Matches the walkers to the Valley's active members: each neighbour and a helper,
+   * one figure per other player. Neighbours who moved on (and players who left) go.
+   */
+  syncMembers(members: readonly ValleyMember[], me: string): void {
+    const active = new Set(members.filter((m) => m.leftAt === null && m.id !== me).map((m) => m.id));
+    for (let i = this.walkers.length - 1; i >= 0; i--) {
+      const w = this.walkers[i];
+      if (active.has(w.member)) continue;
+      this.scenery.villagers.splice(this.scenery.villagers.indexOf(w.villager), 1);
+      this.walkers.splice(i, 1);
+    }
+    const present = new Set(this.walkers.map((w) => w.member));
+    for (const m of members) {
+      if (!active.has(m.id) || present.has(m.id)) continue;
+      if (m.kind === 'simulated' && m.neighbour !== null) {
+        const n = NEIGHBOURS[m.neighbour];
+        const i = m.neighbour;
+        this.addWalker(m.id, n.name, n.villageName, n.appearance);
+        this.addWalker(m.id, HELPER_NAMES[i % HELPER_NAMES.length], n.villageName, { ...n.appearance, shirt: NEIGHBOURS[(i + 3) % NEIGHBOURS.length].appearance.shirt, hat: 0 });
+      } else {
+        this.addWalker(m.id, m.name, m.villageName, appearanceFor(m.id));
       }
-    });
+    }
   }
 
   /** Name tag for a walker ("Rowan of Brackenford"). */

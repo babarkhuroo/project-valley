@@ -4,6 +4,7 @@ import type { CommandResult } from './commands';
 import { bumpStat } from './economy';
 import type { EventSink } from './events';
 import { isValleyUnlocked } from './modifiers';
+import { newValleyBonuses } from './save';
 import type { GameState, ValleyBonuses, ValleyTarget } from './types';
 import { FESTIVALS, type FestivalId } from '../config/festivals';
 import type { BuildingId } from '../config/buildings';
@@ -20,6 +21,16 @@ const fail = (error: string): { ok: false; error: string } => ({ ok: false, erro
 
 export function joinValley(state: GameState, valleyId: string): void {
   state.valley.valleyId = valleyId;
+}
+
+/**
+ * The village is no longer in a Valley (it left, or the Valley is gone). Parcels still
+ * on the road come home; Knowledge in transit is simply not delivered; bonuses lapse.
+ */
+export function leaveValley(state: GameState): void {
+  for (const op of [...state.valley.outbox]) returnValleyOp(state, op.opId);
+  state.valley.valleyId = null;
+  state.valley.bonuses = newValleyBonuses();
 }
 
 /** Sends resources towards a Valley project. `limit` is what the project still needs, as last seen. */

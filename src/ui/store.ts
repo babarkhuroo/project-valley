@@ -44,6 +44,8 @@ export interface UIState {
   travelling: boolean;
   valleySelection: ValleyBuildingId | null;
   valleyHover: ValleyBuildingId | null;
+  /** The "find your Valley" dialog (first visit, or after leaving). */
+  valleyChooser: boolean;
   bootError: string | null;
   saveSource: SaveSource | null;
   saveStatus: SaveStatus;
@@ -74,6 +76,7 @@ export const useUI = create<UIState>(() => ({
   travelling: false,
   valleySelection: null,
   valleyHover: null,
+  valleyChooser: false,
   bootError: null,
   saveSource: null,
   saveStatus: { lastSavedAt: null, outcome: null },

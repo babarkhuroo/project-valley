@@ -1,6 +1,6 @@
 import { VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
 import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
-import { advanceValley, ageValley, contribute, contributeFestival, contributeKnowledge, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
+import { activeMembers, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
 import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
 
 /**
@@ -10,8 +10,11 @@ import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyRese
 export interface ValleyStore {
   valleyFor(playerId: string): Promise<string | null>;
   setMembership(playerId: string, valleyId: string): Promise<void>;
+  clearMembership(playerId: string): Promise<void>;
   load(valleyId: string): Promise<ValleyState | null>;
   save(valley: ValleyState): Promise<void>;
+  /** Every Valley id (for browsing open Valleys and finding invite codes). */
+  list(): Promise<string[]>;
 }
 
 export class MemoryValleyStore implements ValleyStore {
@@ -23,6 +26,12 @@ export class MemoryValleyStore implements ValleyStore {
   async setMembership(playerId: string, valleyId: string): Promise<void> {
     this.members.set(playerId, valleyId);
   }
+  async clearMembership(playerId: string): Promise<void> {
+    this.members.delete(playerId);
+  }
+  async list(): Promise<string[]> {
+    return [...this.valleys.keys()];
+  }
   async load(valleyId: string): Promise<ValleyState | null> {
     const raw = this.valleys.get(valleyId);
     return raw ? (JSON.parse(raw) as ValleyState) : null;
@@ -30,6 +39,22 @@ export class MemoryValleyStore implements ValleyStore {
   async save(valley: ValleyState): Promise<void> {
     this.valleys.set(valley.id, JSON.stringify(valley));
   }
+}
+
+export interface ValleyListing {
+  id: string;
+  name: string;
+  players: number;
+  neighbours: number;
+  /** Building levels restored so far — a feel for how established it is. */
+  levels: number;
+}
+
+export type JoinOutcome = { ok: true; view: ValleyView } | { ok: false; status: number; error: string };
+
+export interface PlayerNames {
+  name: string;
+  villageName: string;
 }
 
 export interface ValleyView {
@@ -93,15 +118,96 @@ export class ValleyService {
    * Joins the player to a Valley. Until matchmaking exists (milestone 4) every player
    * founds their own Valley, shared with simulated neighbours.
    */
+  /** The player's Valley, or a newly founded one if they have none (single-player default). */
   async join(playerId: string, name: string, villageName: string): Promise<ValleyView> {
     const existing = await this.get(playerId);
     if (existing) return existing;
+    const out = await this.create(playerId, { name, villageName }, {});
+    if (!out.ok) throw new Error(out.error);
+    return out.view;
+  }
+
+  /** Founds a new Valley (with neighbours) and makes the player its first member. */
+  async create(playerId: string, names: PlayerNames, options: { name?: string; open?: boolean }): Promise<JoinOutcome> {
+    if (await this.store.valleyFor(playerId)) return { ok: false, status: 409, error: 'Leave your Valley first' };
     const now = this.clock();
-    const valleyId = `v-${hashString(`${playerId}:${now}`).toString(16)}`;
+    const valleyId = `v-${hashString(`${playerId}:${now}:${Math.random()}`).toString(16)}`;
     return this.locked(valleyId, async () => {
-      const v = createValley(valleyId, hashString(valleyId), now, { id: playerId, name, villageName });
+      const v = createValley(valleyId, hashString(valleyId), now, { id: playerId, ...names }, options);
       await this.store.save(v);
       await this.store.setMembership(playerId, valleyId);
+      return { ok: true as const, view: { valley: snapshotOf(v), memberId: playerId, now } };
+    });
+  }
+
+  /** Open Valleys with room, busiest first. */
+  async listOpen(): Promise<ValleyListing[]> {
+    const out: ValleyListing[] = [];
+    for (const id of await this.store.list()) {
+      const v = await this.load(id);
+      if (!v || !v.open) continue;
+      const players = activePlayers(v).length;
+      if (players >= MAX_PLAYERS) continue;
+      out.push({ id: v.id, name: v.name, players, neighbours: activeMembers(v).length - players, levels: Object.values(v.buildings).reduce((n, b) => n + b.level, 0) });
+    }
+    return out.sort((a, b) => b.players - a.players || b.levels - a.levels).slice(0, 30);
+  }
+
+  private async findByCode(code: string): Promise<string | null> {
+    const want = code.trim().toUpperCase();
+    for (const id of await this.store.list()) {
+      const v = await this.load(id);
+      if (v?.code === want) return id;
+    }
+    return null;
+  }
+
+  /** Joins a Valley by invite code, or (if it is open) by id. */
+  async joinExisting(playerId: string, names: PlayerNames, by: { code?: string; valleyId?: string }): Promise<JoinOutcome> {
+    if (await this.store.valleyFor(playerId)) return { ok: false, status: 409, error: 'Leave your Valley first' };
+    const valleyId = by.code ? await this.findByCode(by.code) : (by.valleyId ?? null);
+    if (!valleyId) return { ok: false, status: 404, error: 'No Valley has that code' };
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return { ok: false as const, status: 404, error: 'That Valley no longer exists' };
+      if (!by.code && !v.open) return { ok: false as const, status: 403, error: 'That Valley is invite-only' };
+      const now = this.clock();
+      advanceValley(v, now);
+      if (!addPlayer(v, { id: playerId, ...names }, now)) return { ok: false as const, status: 409, error: 'That Valley is full' };
+      await this.store.save(v);
+      await this.store.setMembership(playerId, valleyId);
+      return { ok: true as const, view: { valley: snapshotOf(v), memberId: playerId, now } };
+    });
+  }
+
+  /** Leaves the player's Valley. Their past contributions stay on its record. */
+  async leave(playerId: string): Promise<boolean> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return false;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (v) {
+        const now = this.clock();
+        advanceValley(v, now);
+        removePlayer(v, playerId, now);
+        await this.store.save(v);
+      }
+      await this.store.clearMembership(playerId);
+      return true;
+    });
+  }
+
+  /** Owner-ish settings: anyone in the Valley may open it up or close it. */
+  async setOpen(playerId: string, open: boolean): Promise<ValleyView | null> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return null;
+      v.open = open;
+      const now = this.clock();
+      advanceValley(v, now);
+      await this.store.save(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });
   }
