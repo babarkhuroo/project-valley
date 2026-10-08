@@ -6,6 +6,7 @@ import { capacity } from '../../sim/economy';
 import { productionSummary } from '../../sim/selectors';
 import { Icon } from '../common/Icon';
 import { CoinsChip, TradeButtons } from '../valley/TradeUi';
+import { ChatButton } from '../valley/ChatUi';
 import { formatNumber, useGameState } from '../hooks';
 import { ui, useUI } from '../store';
 
@@ -85,6 +86,7 @@ export function TopBar() {
         <CoinsChip />
       </div>
       <div className="top-buttons">
+        <ChatButton />
         <TradeButtons />
         <button className="round-btn" onClick={() => ui.openPanel('notifications')} title="Notifications">
           <Icon name="bell" size={24} />

@@ -22,7 +22,7 @@ export interface Placement {
   reason: string | null;
 }
 
-export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | null;
+export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | 'chat' | null;
 
 export interface Toast {
   id: number;
@@ -46,6 +46,8 @@ export interface UIState {
   valleyHover: ValleyBuildingId | null;
   /** The "find your Valley" dialog (first visit, or after leaving). */
   valleyChooser: boolean;
+  /** Last Valley chat message id the player has seen. */
+  chatSeen: number;
   bootError: string | null;
   saveSource: SaveSource | null;
   saveStatus: SaveStatus;
@@ -77,6 +79,7 @@ export const useUI = create<UIState>(() => ({
   valleySelection: null,
   valleyHover: null,
   valleyChooser: false,
+  chatSeen: 0,
   bootError: null,
   saveSource: null,
   saveStatus: { lastSavedAt: null, outcome: null },

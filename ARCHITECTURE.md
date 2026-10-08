@@ -150,6 +150,13 @@ Event(id, kind, startsAt, endsAt, goal) / EventContribution(eventId, playerId, a
 
 Personal villages remain single documents (their state is highly interlinked and simulated as a whole); shared Valley state is relational because many players write to it concurrently.
 
+## Multiplayer (milestone 4)
+
+- **Membership** (`valleySim.ts` + `server/valleyService.ts`): Valleys carry a name, an invite `code` and an `open` flag; members have `leftAt` (players who left, neighbours who moved on). `addPlayer` / `removePlayer` call `rebalanceNeighbours`, which keeps active members at `TARGET_MEMBERS` (8) by retiring or recalling simulated neighbours; at most `MAX_PLAYERS` (10) players. Routes: `GET /api/valleys` (open Valleys with room), `POST /api/valley/:id/{create,join,leave,settings,profile,chat}`; joining takes `{ code }` or an open `{ valleyId }`.
+- **Live link** (`server/ws.ts`, `server/live.ts`, client in `game/valleyClient.ts`): a dependency-free RFC 6455 endpoint at `/api/live?token=…` (Vite's dev server and the production server both route upgrades to it). `ValleyService` notifies listeners after every committed change; the `LiveHub` pushes a snapshot to every connected member (serialised once per change) and the list of connected players on every arrival/departure, and advances connected Valleys every 10 s so neighbours' activity streams in. All writes stay on the HTTP API (validated, idempotent); the socket is server → client only, so a dropped connection loses nothing — the client reconnects with backoff and keeps a slow poll as a safety net.
+- **Chat** lives in `ValleyState.chat` (last 80, tidied, 200 chars, rate-limited per member); simulated neighbours add seeded lines on welcomes, finished buildings and festivals, so replays stay deterministic.
+- **Scaling path:** a single process holds the per-Valley locks and the hub. Running several processes means moving the stores to Postgres (model below) and the hub's fan-out to a pub/sub channel per Valley; nothing above the store and hub interfaces changes.
+
 ## Multiplayer direction
 
 - The Valley server is authoritative for shared resources, contributions, Valley research, trades, events and timers; clients send intents, the server validates and broadcasts deltas over WebSockets. Milestone 3 already works this way over polling (12 s while visiting, 45 s otherwise); WebSockets replace the poll in milestone 4, and real players replace simulated neighbours one membership at a time.

@@ -85,6 +85,8 @@ export interface ValleyState {
   members: ValleyMember[];
   buildings: Record<ValleyBuildingId, ValleyBuildingState>;
   log: ValleyLogEntry[];
+  /** Valley chat (newest last, capped). */
+  chat: ChatMessage[];
   /** The current festival, or the last one until the next begins. */
   festival: ValleyFestival | null;
   /** When the next festival starts (null until the Festival Grounds open, or while one runs). */
@@ -93,6 +95,13 @@ export interface ValleyState {
   research: ValleyResearchState;
   /** Recent contribution op ids per member → result, so retried requests are idempotent. */
   ops: Record<string, Record<string, ContributionResult>>;
+}
+
+export interface ChatMessage {
+  id: number;
+  at: number;
+  member: string;
+  text: string;
 }
 
 export interface ValleyFestival {

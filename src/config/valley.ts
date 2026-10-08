@@ -433,3 +433,19 @@ export const VALLEY_BALANCE = {
   /** Log entries kept on the server. */
   logSize: 60,
 };
+
+/** Things neighbours say in the Valley chat. `{player}`, `{village}`, `{building}`, `{festival}` are filled in. */
+export const NEIGHBOUR_LINES = {
+  welcome: ['Welcome to the Valley, {player}!', 'Good to have {village} with us, {player}.', 'Another village! Make yourself at home, {player}.', 'Hello {player} — the Hearth Hall could use your timber 😉'],
+  finished: ['The {building} looks wonderful!', 'Look at the {building}! Worth every log.', 'Well done, everyone — the {building} is done.', 'Three cheers for the {building}!'],
+  festival: ['The {festival} is on! Bring what you can spare.', 'Who’s coming to the {festival}?', 'I’ve saved a whole pot for the {festival}.'],
+  won: ['What a {festival}! Thank you all.', 'We did it — best {festival} yet!', 'My feet hurt from dancing. Great {festival}, everyone.'],
+};
+
+export const CHAT_BALANCE = {
+  /** Messages kept on the server. */
+  keep: 80,
+  maxLength: 200,
+  /** Minimum gap between one member's messages. */
+  minGapMs: 1500,
+};

@@ -8,6 +8,7 @@ import { FESTIVALS } from '../config/festivals';
 import { BOOSTS, MERCHANTS } from '../config/trade';
 import { canClaimRoad } from '../sim/trade';
 import type { ValleyClient } from '../game/valleyClient';
+import { playerId } from '../game/persistence';
 import { bagText, describeLog } from './valley/format';
 import type { Game } from '../game/Game';
 import { runtime } from '../game/runtime';
@@ -170,6 +171,17 @@ export function attachNotifications(game: Game): () => void {
 
 /** Valley milestones (restorations, new projects) become toasts; routine deliveries don't. */
 export function attachValleyNotifications(client: ValleyClient): void {
+  // Other players' chat pops up while the chat is closed; neighbours' chatter stays in the thread.
+  client.onChat = (messages, snapshot) => {
+    if (ui.get().panel === 'chat') return;
+    const me = playerId();
+    for (const m of messages) {
+      const author = snapshot.members.find((x) => x.id === m.member);
+      if (m.member === me || author?.kind !== 'player') continue;
+      ui.toast({ kind: 'info', title: author.name, body: m.text, icon: 'chat' }, 6000);
+      runtime.audio.play('notify');
+    }
+  };
   client.onLog = (entries, snapshot) => {
     for (const e of entries) {
       if (e.kind !== 'finished') continue;

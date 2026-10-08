@@ -3,7 +3,7 @@ import { DISTRICTS, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, type ValleyBuilding
 import { IDENTITY } from '../../config/identity';
 import { playerId } from '../../game/persistence';
 import type { ValleyBuildingState } from '../../valley/types';
-import { deliveredFraction, levelDef } from '../../valley/valleySim';
+import { activeMembers, deliveredFraction, levelDef } from '../../valley/valleySim';
 import { contributeToValley, returnToVillage, selectValleyBuilding } from '../actions';
 import { Bar, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
@@ -71,7 +71,7 @@ export function ValleySidebar() {
         <div>
           <h3>{snapshot.name}</h3>
           <small>
-            {snapshot.members.length} villages · {connection === 'offline' ? 'reconnecting…' : 'together'}
+            {activeMembers(snapshot).length} villages · {connection === 'offline' ? 'reconnecting…' : 'together'}
           </small>
         </div>
       </header>
@@ -108,7 +108,7 @@ export function ValleySidebar() {
           })}
         </ul>
       </Section>
-      <MembersSection snapshot={snapshot} online={online} />
+      <MembersSection snapshot={snapshot} online={online} serverNow={serverNow} />
       <Section title="Valley news">
         <ul className="vs-news">
           {news.map((e) => (

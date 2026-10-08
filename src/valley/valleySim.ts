@@ -1,11 +1,11 @@
 import { IDENTITY } from '../config/identity';
 import type { ResourceId } from '../config/resources';
-import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES, type ValleyBuildingId, type ValleyLevelDef } from '../config/valley';
+import { CHAT_BALANCE, NEIGHBOUR_LINES, NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES, type ValleyBuildingId, type ValleyLevelDef } from '../config/valley';
 import type { ValleyBonuses } from '../sim/types';
 import { newValleyBonuses } from '../sim/save';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER, type ValleyResearchId } from '../config/valleyResearch';
 import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../config/festivals';
-import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestival, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleyState } from './types';
+import type { ChatMessage, ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestival, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleyState } from './types';
 
 /**
  * The shared Valley as a deterministic, discrete-event simulation over wall-clock
@@ -14,7 +14,7 @@ import type { ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestiv
  * same Valley advanced in one step or in many ends up identical.
  */
 
-export const VALLEY_SCHEMA = 5;
+export const VALLEY_SCHEMA = 6;
 /** Real players a Valley can hold. */
 export const MAX_PLAYERS = 10;
 /** Neighbours keep the Valley at least this busy until enough players arrive. */
@@ -128,6 +128,7 @@ function finishBuilding(v: ValleyState, b: ValleyBuildingState, at: number): voi
   b.doneAt = null;
   b.status = levelDef(b.id, b.level) ? 'collecting' : 'complete';
   log(v, { at, kind: 'finished', building: b.id, level: b.level });
+  neighbourSays(v, at, 'finished', { building: VALLEY_BUILDINGS[b.id].name });
   openUnlocked(v, at);
   // A newly opened Library puts the banked Knowledge to work.
   if (b.id === 'greatLibrary') spendKnowledge(v, at);
@@ -180,6 +181,7 @@ function startFestival(v: ValleyState, at: number): void {
   };
   v.nextFestivalAt = null;
   log(v, { at, kind: 'festivalStarted', festival: kind });
+  neighbourSays(v, at, 'festival', { festival: FESTIVALS[kind].name });
 }
 
 function scheduleNextFestival(v: ValleyState, from: number): void {
@@ -218,6 +220,7 @@ function giveToFestival(v: ValleyState, member: ValleyMember, resources: Resourc
     if (Object.keys(festivalRemaining(f)).length === 0) {
       f.outcome = 'won';
       log(v, { at, kind: 'festivalWon', festival: f.kind });
+      neighbourSays(v, at, 'won', { festival: FESTIVALS[f.kind].name });
       raiseKnowledge(v, FESTIVALS[f.kind].reward.knowledge * f.rewardMult, at);
       scheduleNextFestival(v, f.endsAt);
     }
@@ -502,6 +505,7 @@ export function createValley(id: string, seed: number, now: number, player: Foun
     research: newResearchState(),
     festival: null,
     nextFestivalAt: null,
+    chat: [],
     ops: {},
   };
   NEIGHBOURS.forEach((n, i) => {
@@ -541,6 +545,7 @@ export function addPlayer(v: ValleyState, player: FoundingPlayer, now: number): 
   }
   log(v, { at: now, kind: 'joined', member: m.id });
   rebalanceNeighbours(v, now);
+  neighbourSays(v, now, 'welcome', { player: m.name, village: m.villageName });
   return m;
 }
 
@@ -572,6 +577,10 @@ export function upgradeValley(v: ValleyState, now: number): boolean {
     v.nextFestivalAt = null;
     changed = true;
   }
+  if (v.chat === undefined) {
+    v.chat = [];
+    changed = true;
+  }
   if (v.code === undefined) {
     v.code = inviteCode(v.seed);
     v.open = false;
@@ -601,6 +610,40 @@ export function millraceCrew(v: ValleyState | ValleySnapshot, now: number): stri
   return v.members
     .filter((m) => m.kind === 'simulated' && m.leftAt === null && hoursIntoNight(m, now) < 0 && (hour + m.neighbour! * 5) % 7 < 3)
     .map((m) => m.name);
+}
+
+// ---------------------------------------------------------------------------
+// Chat
+// ---------------------------------------------------------------------------
+
+function pushChat(v: ValleyState, member: string, text: string, at: number): ChatMessage {
+  const msg: ChatMessage = { id: v.nextLogId++, at, member, text };
+  v.chat.push(msg);
+  if (v.chat.length > CHAT_BALANCE.keep) v.chat.splice(0, v.chat.length - CHAT_BALANCE.keep);
+  return msg;
+}
+
+/** A member's message. Whitespace is tidied and length capped; empty messages are dropped. */
+export function postChat(v: ValleyState, memberId: string, text: string, now: number): ChatMessage | null {
+  if (!v.members.some((m) => m.id === memberId && m.leftAt === null)) return null;
+  const clean = text.replace(/\s+/g, ' ').trim().slice(0, CHAT_BALANCE.maxLength);
+  if (!clean) return null;
+  return pushChat(v, memberId, clean, now);
+}
+
+/** An awake neighbour says something fitting (welcomes, cheers). Seeded, so replays match. */
+function neighbourSays(v: ValleyState, at: number, kind: keyof typeof NEIGHBOUR_LINES, vars: Record<string, string>): void {
+  const awake = v.members.filter((m) => m.kind === 'simulated' && m.leftAt === null && hoursIntoNight(m, at) < 0);
+  if (awake.length === 0) return;
+  const who = awake[Math.floor(rand(v) * awake.length) % awake.length];
+  const lines = NEIGHBOUR_LINES[kind];
+  const line = lines[Math.floor(rand(v) * lines.length) % lines.length].replace(/\{(\w+)\}/g, (_m, k: string) => vars[k] ?? '');
+  pushChat(v, who.id, line, at);
+}
+
+/** Simulated neighbours who are awake (and so "here") at `now`. */
+export function neighboursAwake(v: ValleyState | ValleySnapshot, now: number): string[] {
+  return v.members.filter((m) => m.kind === 'simulated' && m.leftAt === null && hoursIntoNight(m, now) < 0).map((m) => m.id);
 }
 
 /** Processes every neighbour visit and finished build up to `now`, in time order. */

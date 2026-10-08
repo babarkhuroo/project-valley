@@ -109,7 +109,7 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
           return;
         }
       }
-      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|create|leave|settings|contribute|vote|profile|dev-skip))?$/.exec(url.pathname);
+      const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|create|leave|settings|contribute|vote|profile|chat|dev-skip))?$/.exec(url.pathname);
       if (valleyMatch && valleys) {
         await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false, json());
         return;
@@ -208,6 +208,12 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
   if (action === 'profile') {
     const view = await valleys.profile(playerId, typeof body.name === 'string' ? body.name : '', typeof body.villageName === 'string' ? body.villageName : '');
     if (!view) sendJson(res, 404, { error: 'not in a valley' });
+    else sendJson(res, 200, view);
+    return;
+  }
+  if (action === 'chat') {
+    const view = typeof body.text === 'string' ? await valleys.chat(playerId, body.text) : null;
+    if (!view) sendJson(res, 422, { error: 'Message not sent (empty, or too fast)' });
     else sendJson(res, 200, view);
     return;
   }

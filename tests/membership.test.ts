@@ -72,3 +72,19 @@ describe('valley service: founding, joining, leaving', () => {
     expect((await service.contribute(p(4).id, 'hearthHall', { timber: 5 }, 'x'))).toBeNull();
   });
 });
+
+describe('valley chat', () => {
+  it('tidies messages, only from members, and neighbours welcome newcomers', async () => {
+    const { postChat } = await import('../src/valley/valleySim');
+    const v = createValley('v-c', 21, T0, p(1));
+    expect(postChat(v, p(1).id, '   ', T0)).toBeNull();
+    expect(postChat(v, 'p-stranger-00001', 'hi', T0)).toBeNull();
+    expect(postChat(v, p(1).id, 'hi   there\n friends', T0)?.text).toBe('hi there friends');
+    expect(postChat(v, p(1).id, 'x'.repeat(500), T0)?.text).toHaveLength(200);
+    const before = v.chat.length;
+    addPlayer(v, p(2), T0);
+    // Seeded: a welcome comes from an awake neighbour (T0 is midday UTC).
+    expect(v.chat.length).toBe(before + 1);
+    expect(v.chat[v.chat.length - 1].text).toMatch(/Player 2|Village 2/);
+  });
+});

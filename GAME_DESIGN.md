@@ -196,6 +196,13 @@ Training is a real trade-off: the lesson costs coins (100 → 480) and the villa
 
 Reputation (from Valley deliveries and trade) unlocks a road of twelve rewards claimed in order: coins, tonics, bundles of planks/bricks/stone, and two decorations only it gives (the Valley Banner and the Fountain). Nothing on it is paid; it rewards taking part.
 
+## Playing together (milestone 4)
+
+- **Sign-in.** Every browser plays straight away as a guest; *Settings → You* adds a username and password so the same village can be played on any device, and sets the name other players see.
+- **Finding a Valley.** The first trip over the ridge asks how: **found** a Valley (name it, open or invite-only), **join friends** with a six-letter invite code, or **browse** open Valleys with room (busiest first). A Valley holds up to ten players; the simulated neighbours make room as players arrive (the least involved family moves on first, keeping the Valley at eight) and come back if players leave. Leaving keeps your past help on the Valley's record; parcels still on the road come home.
+- **Live.** While you're connected, everything other members do arrives as it happens — deliveries filling bars, builds finishing, votes, festival goals, chat. A dot shows who is here now (players while connected, neighbours while awake).
+- **Chat.** One friendly thread per Valley, reachable from the top bar anywhere; other players' messages pop up while it's closed. Neighbours chime in too — welcoming newcomers, cheering finished buildings and festivals.
+
 ## Pacing targets
 
 Measured by the autoplayer (`npm run simulate`, see BALANCING.md); it plays faster than most people, so real play is slower.
@@ -213,5 +220,5 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
 - **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ✅ cooperative crafting at the Millrace.
-- **Milestone 4:** Real multiplayer (auth, Valley membership, synced contributions, chat, presence, events).
+- **Milestone 4:** ✅ Accounts and authorised API · ✅ found / join (code or open list) / leave Valleys, real players replacing neighbours · ✅ live updates over WebSockets, presence, chat · next: a database-backed store and multi-process hosting.
 - **Polish:** Richer models and animation, VFX, day/night, accessibility pass, mobile tuning, balancing from playtests.

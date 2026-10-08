@@ -17,6 +17,7 @@ import { TravelVeil, ValleyActionBar, ValleyProjectPanel, ValleySidebar } from '
 import { ValleyView } from './valley/ValleyView';
 import { RoadPanel, SatchelPanel } from './valley/TradeUi';
 import { ValleyChooser } from './valley/ValleyChooser';
+import { ChatPanel } from './valley/ChatUi';
 
 // Compiled out of production builds entirely.
 const DevPanel = import.meta.env.DEV ? lazy(() => import('./dev/DevPanel').then((m) => ({ default: m.DevPanel }))) : null;
@@ -65,6 +66,7 @@ export function App() {
         <NotificationsPanel />
         <SatchelPanel />
         <RoadPanel />
+        <ChatPanel />
         <SettingsPanel />
         {DevPanel ? (
           <Suspense fallback={null}>

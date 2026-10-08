@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { playerId } from '../../game/persistence';
 import { runtime } from '../../game/runtime';
 import type { ValleySnapshot } from '../../valley/types';
-import { activeMembers, MAX_PLAYERS } from '../../valley/valleySim';
+import { activeMembers, MAX_PLAYERS, neighboursAwake } from '../../valley/valleySim';
 import { leaveCurrentValley } from '../actions';
 import { Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
 import { ui } from '../store';
 
 /** Who's in the Valley, how to invite friends, and the way out. */
-export function MembersSection({ snapshot, online }: { snapshot: ValleySnapshot; online: ReadonlySet<string> }) {
+export function MembersSection({ snapshot, online: live, serverNow }: { snapshot: ValleySnapshot; online: ReadonlySet<string>; serverNow: number }) {
   const me = playerId();
+  // Players are here when connected; neighbours when they're awake.
+  const online = new Set([...live, ...neighboursAwake(snapshot, serverNow), me]);
   const [confirm, setConfirm] = useState(false);
   const members = activeMembers(snapshot);
   const players = members.filter((m) => m.kind === 'player');

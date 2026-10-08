@@ -2,12 +2,12 @@ import type { ValleyBuildingId } from '../config/valley';
 import type { ValleyResearchId } from '../config/valleyResearch';
 import { isValleyUnlocked } from '../sim/modifiers';
 import { claimFestival, joinValley, leaveValley, returnValleyOp, sendToFestival, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
-import type { ContributionResult, ValleyLogEntry, ValleySnapshot } from '../valley/types';
+import type { ChatMessage, ContributionResult, ValleyLogEntry, ValleySnapshot } from '../valley/types';
 import { festivalRemaining, remainingFor, valleyBonuses } from '../valley/valleySim';
 import { now } from './clock';
 import type { Game } from './Game';
 import { playerId } from './persistence';
-import { apiFetch } from './session';
+import { apiFetch, sessionToken } from './session';
 
 export interface ValleyListing {
   id: string;
@@ -36,6 +36,7 @@ interface ServerView {
 
 const POLL_MS = 45_000;
 const POLL_VISITING_MS = 12_000;
+const POLL_LIVE_MS = 120_000;
 
 /**
  * The client's window onto the server-owned Valley. It polls snapshots, joins when the
@@ -73,10 +74,58 @@ export class ValleyClient {
 
   start(): void {
     const loop = () => {
-      void this.refresh();
-      this.timer = window.setTimeout(loop, this.visiting ? POLL_VISITING_MS : POLL_MS);
+      void this.refresh().then(() => this.connectLive());
+      // With a live link the server pushes changes; polling is only a safety net.
+      this.timer = window.setTimeout(loop, this.live ? POLL_LIVE_MS : this.visiting ? POLL_VISITING_MS : POLL_MS);
     };
     loop();
+  }
+
+  // -------------------------------------------------------------------------
+  // Live link (WebSocket): pushed snapshots and presence
+  // -------------------------------------------------------------------------
+
+  private ws: WebSocket | null = null;
+  private retryMs = 1000;
+  /** True while the WebSocket to the server is open. */
+  live = false;
+
+  private connectLive(): void {
+    const token = sessionToken();
+    if (this.ws || !token || !this.game.state.valley.valleyId || typeof WebSocket === 'undefined') return;
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${scheme}://${location.host}/api/live?token=${encodeURIComponent(token)}`);
+    this.ws = ws;
+    ws.onopen = () => {
+      this.live = true;
+      this.retryMs = 1000;
+    };
+    ws.onmessage = (e: MessageEvent<string>) => {
+      try {
+        const msg = JSON.parse(e.data) as { type: string; online?: string[] } & ServerView;
+        if (msg.type === 'snapshot') this.apply(msg);
+        else if (msg.type === 'presence') {
+          this.online = new Set(msg.online ?? []);
+          for (const l of this.listeners) l();
+        }
+      } catch {
+        // Ignore malformed pushes; the next poll catches up.
+      }
+    };
+    ws.onclose = () => {
+      this.ws = null;
+      this.live = false;
+      this.online = new Set();
+      for (const l of this.listeners) l();
+      if (!this.game.state.valley.valleyId) return;
+      window.setTimeout(() => this.connectLive(), this.retryMs);
+      this.retryMs = Math.min(30_000, this.retryMs * 2);
+    };
+  }
+
+  private disconnectLive(): void {
+    this.ws?.close();
+    this.ws = null;
   }
 
   stop(): void {
@@ -93,8 +142,30 @@ export class ValleyClient {
       // A festival the village helped win: collect the rewards (once).
       if (f && f.outcome === 'won' && (f.shares[view.memberId] ?? 0) > 0) claimFestival(state, f.id, f.kind, f.rewardMult, sink);
     });
+    const chat = this.lastChatId === null ? [] : (view.valley.chat ?? []).filter((m) => m.id > this.lastChatId!);
+    this.lastChatId = (view.valley.chat ?? []).reduce((m, c) => Math.max(m, c.id), this.lastChatId ?? 0);
     this.set({ snapshot: view.valley, connection: 'ready', fetchedAt: view.now, receivedAt: Date.now() });
     if (fresh.length > 0) this.onLog?.(fresh, view.valley);
+    if (chat.length > 0) this.onChat?.(chat, view.valley);
+    this.connectLive();
+  }
+
+  private lastChatId: number | null = null;
+  /** New chat messages since the last snapshot (not called for the first snapshot). */
+  onChat: ((messages: ChatMessage[], snapshot: ValleySnapshot) => void) | null = null;
+
+  /** Posts to the Valley chat. Returns a refusal reason, or null. */
+  async sendChat(text: string): Promise<string | null> {
+    try {
+      const res = await this.post('chat', { text });
+      const body = (await res.json()) as ServerView & { error?: string };
+      if (!res.ok) return body.error ?? 'Message not sent';
+      this.apply(body);
+      return null;
+    } catch {
+      this.set({ connection: 'offline' });
+      return 'The Valley is out of reach right now';
+    }
   }
 
   /** Polls the Valley (when the village belongs to one) and retries pending deliveries. */
@@ -109,6 +180,7 @@ export class ValleyClient {
         // Not (or no longer) in a Valley — left from another device, or the Valley is
         // gone. Parcels on the road come home; the player can pick a Valley again.
         if (state.valley.valleyId) this.game.mutate((s) => leaveValley(s));
+        this.disconnectLive();
         this.set({ snapshot: null, connection: 'idle' });
         return;
       }
@@ -176,7 +248,9 @@ export class ValleyClient {
       return false;
     }
     this.game.mutate((s) => leaveValley(s));
+    this.disconnectLive();
     this.lastLogId = null;
+    this.lastChatId = null;
     this.set({ snapshot: null, connection: 'idle' });
     return true;
   }

@@ -3835,3 +3835,77 @@ h4 {
 .leave-btn {
   margin-top: 6px;
 }
+
+/* ---------- Chat ---------- */
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  flex: 1;
+  min-height: 160px;
+  max-height: calc(100vh - 330px);
+  overflow-y: auto;
+}
+
+.chat li {
+  padding: 6px 9px;
+  margin-bottom: 5px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--paper-3);
+}
+
+.chat li.mine {
+  background: #fff1ee;
+  border-color: #f3c4ba;
+  margin-left: 24px;
+}
+
+.chat li.neighbour {
+  background: var(--paper-2);
+}
+
+.chat-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.chat-meta strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.chat-meta time {
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+
+.chat-text {
+  display: block;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.chat-form {
+  display: flex;
+  gap: 6px;
+}
+
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--edge);
+  background: #fff;
+  font: inherit;
+  color: var(--ink);
+}

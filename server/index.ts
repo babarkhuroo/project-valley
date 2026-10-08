@@ -6,14 +6,16 @@ import { createApiMiddleware } from './api.ts';
 import { FileSaveStore, FileValleyStore } from './saveStore.ts';
 import { ValleyService } from './valleyService.ts';
 import { AuthService, FileAuthStore } from './auth.ts';
+import { LiveHub } from './live.ts';
 
 /** Production server: serves the built client from /dist plus the persistence API. */
 const root = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(root, '../dist');
 const port = Number(process.env.PORT ?? 8080);
-const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')), new ValleyService(new FileValleyStore(path.resolve(root, 'data'))), {
-  auth: new AuthService(new FileAuthStore(path.resolve(root, 'data/auth.json'))),
-});
+const valleys = new ValleyService(new FileValleyStore(path.resolve(root, 'data')));
+const auth = new AuthService(new FileAuthStore(path.resolve(root, 'data/auth.json')));
+const hub = new LiveHub(valleys, auth);
+const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')), valleys, { auth });
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -40,6 +42,11 @@ createServer((req, res) => {
       res.end(await fs.readFile(path.join(distDir, 'index.html')));
     }
   });
-}).listen(port, () => {
-  console.log(`Project Valley server listening on http://localhost:${port}`);
-});
+})
+  .on('upgrade', (req, socket) => {
+    if (req.url?.startsWith('/api/live')) void hub.handleUpgrade(req, socket);
+    else socket.destroy();
+  })
+  .listen(port, () => {
+    console.log(`Project Valley server listening on http://localhost:${port}`);
+  });

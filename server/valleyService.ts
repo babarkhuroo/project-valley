@@ -1,6 +1,6 @@
-import { VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
+import { CHAT_BALANCE, VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
 import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
-import { activeMembers, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
+import { activeMembers, postChat, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
 import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
 
 /**
@@ -76,11 +76,60 @@ function hashString(s: string): number {
  */
 export class ValleyService {
   private readonly locks = new Map<string, Promise<unknown>>();
+  private readonly lastChat = new Map<string, number>();
+  /** Called after any change to a Valley (the live hub pushes it to connected members). */
+  readonly listeners = new Set<(valley: ValleySnapshot, now: number) => void>();
+  /** Called when a player joins or leaves a Valley (the live hub moves their connection). */
+  readonly membership = new Set<(playerId: string, valleyId: string | null) => void>();
 
   constructor(
     private readonly store: ValleyStore,
     private readonly clock: () => number = Date.now,
   ) {}
+
+  private async commit(v: ValleyState, notify = true): Promise<void> {
+    await this.store.save(v);
+    if (!notify || this.listeners.size === 0) return;
+    const snap = snapshotOf(v);
+    const now = this.clock();
+    for (const l of this.listeners) l(snap, now);
+  }
+
+  private announce(playerId: string, valleyId: string | null): void {
+    for (const l of this.membership) l(playerId, valleyId);
+  }
+
+  async valleyIdFor(playerId: string): Promise<string | null> {
+    return this.store.valleyFor(playerId);
+  }
+
+  /** Brings a Valley up to now; tells listeners only if something happened (new log or chat). */
+  async touch(valleyId: string): Promise<void> {
+    await this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return;
+      const before = v.nextLogId;
+      advanceValley(v, this.clock());
+      await this.commit(v, v.nextLogId !== before);
+    });
+  }
+
+  /** A chat message from a member. Null when refused (not a member, empty, too fast). */
+  async chat(playerId: string, text: string): Promise<ValleyView | null> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    const now = this.clock();
+    if (now - (this.lastChat.get(playerId) ?? 0) < CHAT_BALANCE.minGapMs) return null;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return null;
+      advanceValley(v, now);
+      if (!postChat(v, playerId, text, now)) return null;
+      this.lastChat.set(playerId, now);
+      await this.commit(v);
+      return { valley: snapshotOf(v), memberId: playerId, now };
+    });
+  }
 
   /** Loads a Valley and brings it up to the current content version. */
   private async load(valleyId: string): Promise<ValleyState | null> {
@@ -108,8 +157,9 @@ export class ValleyService {
       const v = await this.load(valleyId);
       if (!v) return null;
       const now = this.clock();
+      const before = v.nextLogId;
       advanceValley(v, now);
-      await this.store.save(v);
+      await this.commit(v, v.nextLogId !== before);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });
   }
@@ -134,8 +184,9 @@ export class ValleyService {
     const valleyId = `v-${hashString(`${playerId}:${now}:${Math.random()}`).toString(16)}`;
     return this.locked(valleyId, async () => {
       const v = createValley(valleyId, hashString(valleyId), now, { id: playerId, ...names }, options);
-      await this.store.save(v);
+      await this.commit(v);
       await this.store.setMembership(playerId, valleyId);
+      this.announce(playerId, valleyId);
       return { ok: true as const, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
   }
@@ -174,8 +225,9 @@ export class ValleyService {
       const now = this.clock();
       advanceValley(v, now);
       if (!addPlayer(v, { id: playerId, ...names }, now)) return { ok: false as const, status: 409, error: 'That Valley is full' };
-      await this.store.save(v);
+      await this.commit(v);
       await this.store.setMembership(playerId, valleyId);
+      this.announce(playerId, valleyId);
       return { ok: true as const, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
   }
@@ -190,9 +242,10 @@ export class ValleyService {
         const now = this.clock();
         advanceValley(v, now);
         removePlayer(v, playerId, now);
-        await this.store.save(v);
+        await this.commit(v);
       }
       await this.store.clearMembership(playerId);
+      this.announce(playerId, null);
       return true;
     });
   }
@@ -207,7 +260,7 @@ export class ValleyService {
       v.open = open;
       const now = this.clock();
       advanceValley(v, now);
-      await this.store.save(v);
+      await this.commit(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });
   }
@@ -222,7 +275,7 @@ export class ValleyService {
       const now = this.clock();
       ageValley(v, ms);
       advanceValley(v, now);
-      await this.store.save(v);
+      await this.commit(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });
   }
@@ -237,7 +290,7 @@ export class ValleyService {
       const now = this.clock();
       advanceValley(v, now);
       const out = contributeKnowledge(v, playerId, amount, opId, now);
-      await this.store.save(v);
+      await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
   }
@@ -252,7 +305,7 @@ export class ValleyService {
       const now = this.clock();
       advanceValley(v, now);
       const out = contributeFestival(v, playerId, festivalId, resources, opId);
-      await this.store.save(v);
+      await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
   }
@@ -270,7 +323,7 @@ export class ValleyService {
       m.villageName = villageName.slice(0, 28) || m.villageName;
       const now = this.clock();
       advanceValley(v, now);
-      await this.store.save(v);
+      await this.commit(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });
   }
@@ -286,7 +339,7 @@ export class ValleyService {
       const now = this.clock();
       advanceValley(v, now);
       if (!voteResearch(v, playerId, research as ValleyResearchId)) return null;
-      await this.store.save(v);
+      await this.commit(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
     });
   }
@@ -301,7 +354,7 @@ export class ValleyService {
       const now = this.clock();
       advanceValley(v, now);
       const out = contribute(v, playerId, building as ValleyBuildingId, resources, opId, now);
-      await this.store.save(v);
+      await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
   }
