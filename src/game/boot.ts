@@ -7,6 +7,7 @@ import { clampOffline, summarizeAway, type AwaySummary } from './offline';
 import { loadGame, type SaveSource } from './persistence';
 import { ensureSession } from './session';
 import { updateTutorial } from './tutorial';
+import { seedIntros } from './intros';
 
 export interface BootResult {
   game: Game;
@@ -25,6 +26,7 @@ export async function bootGame(): Promise<BootResult> {
   const loaded = await loadGame();
   const state = loaded.state ?? createInitialState(world, now());
   ensureMapNodes(state, world);
+  seedIntros(state);
   const game = new Game(state, world);
   let away: AwaySummary | null = null;
   if (loaded.state && loaded.elapsedSeconds > 1) {

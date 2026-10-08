@@ -13,6 +13,7 @@ import { SelectionPanel } from './panels/SelectionPanel';
 import { ResearchScreen } from './research/ResearchScreen';
 import { useUI } from './store';
 import { TutorialCoach } from './tutorial/TutorialCoach';
+import { IntroCard } from './tutorial/IntroCard';
 import { TravelVeil, ValleyActionBar, ValleyProjectPanel, ValleySidebar } from './valley/ValleyHud';
 import { ValleyView } from './valley/ValleyView';
 import { RoadPanel, SatchelPanel } from './valley/TradeUi';
@@ -53,6 +54,7 @@ export function App() {
             <div className="left-stack">
               <NextSteps />
               <TutorialCoach />
+              <IntroCard />
             </div>
             <SelectionPanel />
             <ActionBar />

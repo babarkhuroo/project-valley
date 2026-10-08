@@ -242,7 +242,7 @@ export function tutorialSkip(): void {
 
 export function tutorialRestart(): void {
   game().mutate((s) => {
-    s.tutorial = { step: 0, done: false, skipped: false };
+    s.tutorial = { step: 0, done: false, skipped: false, intros: s.tutorial.intros };
   });
 }
 

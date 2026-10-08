@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -60,6 +60,9 @@ export const MIGRATIONS: Record<number, Migration> = {
     if (valley) out.valley = { ...valley, bonuses: { ...newValleyBonuses(), ...(valley.bonuses as object) } };
     return out;
   },
+  // v10: feature introductions. Null = not seeded yet: on load, systems already in use
+  // count as introduced, so existing villages don't get a backlog of cards.
+  9: (d) => ({ ...d, tutorial: { ...(d.tutorial as object), intros: null } }),
 };
 
 /** Bonuses for a village with no Valley (or nothing restored yet). */

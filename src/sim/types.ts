@@ -8,6 +8,7 @@ import type { SkillId } from '../config/skills';
 import type { ValleyBuildingId } from '../config/valley';
 import type { BoostId } from '../config/trade';
 import type { CoopRecipeId } from '../config/millrace';
+import type { IntroId } from '../config/intros';
 import type { Appearance } from '../config/villagers';
 
 /**
@@ -187,6 +188,8 @@ export interface TutorialState {
   step: number;
   done: boolean;
   skipped: boolean;
+  /** Feature introductions already shown (null until first seeded on load). */
+  intros: IntroId[] | null;
 }
 
 /** Village-side bonuses from restored Valley buildings (cached from the last Valley sync). */

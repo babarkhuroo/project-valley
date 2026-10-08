@@ -3997,3 +3997,29 @@ h4 {
   font: inherit;
   color: var(--ink);
 }
+
+/* ---------- Feature introductions ---------- */
+
+.intro-card {
+  padding: 12px 14px;
+  border-color: var(--honey-dark);
+}
+
+.intro-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.intro-head strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.intro-card p {
+  margin: 6px 0 8px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-size: 14px;
+}

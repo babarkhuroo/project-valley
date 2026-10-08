@@ -22,7 +22,7 @@ export function createInitialState(world: World, now: number, seed = world.map.s
     nodes: [],
     research: { completed: [], progress: {}, active: null },
     newcomers: null,
-    tutorial: { step: 0, done: false, skipped: false },
+    tutorial: { step: 0, done: false, skipped: false, intros: [] },
     stats: {},
     valley: newValleyState(),
     trade: newTradeState(),
