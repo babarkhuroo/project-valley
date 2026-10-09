@@ -17,6 +17,7 @@ import { SKILLS, SKILL_ORDER } from '../src/config/skills.ts';
 import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VALLEY_RESOURCES } from '../src/config/valley.ts';
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
 import { TRAINING } from '../src/config/training.ts';
+import { FARMING } from '../src/config/farming.ts';
 import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../src/config/festivals.ts';
 import { COOP_RECIPES, COOP_RECIPE_ORDER, MILLRACE } from '../src/config/millrace.ts';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER } from '../src/config/valleyResearch.ts';
@@ -78,7 +79,27 @@ table(['Setting', 'Value'], [
   ['Stew eaten per full-time worker', `${fmt(60 / BALANCE.villager.mealDuration)} / min`],
   ['One cook produces', `${fmt((JOBS.cook.output!.amount / JOBS.cook.batchWork) * 60)} Stew / min`],
   ['Full-time workers one cook sustains', fmt((JOBS.cook.output!.amount / JOBS.cook.batchWork) * BALANCE.villager.mealDuration)],
+  ['With grain: one pot takes', `${FARMING.cookGrain} Grain → ${JOBS.cook.output!.amount + FARMING.cookBonus} Stew (when there's room for them)`],
+  ['One cook with grain produces', `${fmt(((JOBS.cook.output!.amount + FARMING.cookBonus) / JOBS.cook.batchWork) * 60)} Stew / min, using ${fmt((FARMING.cookGrain / JOBS.cook.batchWork) * 60)} Grain / min`],
 ]);
+
+out('## Farming');
+out();
+{
+  const load = JOBS.farm.output!.amount;
+  const batch = JOBS.farm.batchWork / BALANCE.work.baseRate;
+  const tends = Math.ceil(FARMING.growSeconds / (batch + FARMING.tendSeconds));
+  const cuts = Math.ceil(FARMING.yield / load);
+  const cycle = (1 + tends + cuts) * batch;
+  table(['Setting', 'Value'], [
+    ['Untended crop ripens in', `${FARMING.growSeconds / 60} min`],
+    ['Each tending batch saves', `${FARMING.tendSeconds} s of growing`],
+    ['Grain per ripe field', `${FARMING.yield} (× ${FARMING.fertileMult} on the southern meadow; Crop Rotation × 1.25)`],
+    ['Harvest load', `${load} Grain per batch, carried to a Granary`],
+    ['One untrained farmer, alone, per crop', `1 sow + ${tends} tend + ${cuts} harvest batches ≈ ${fmt(cycle / 60)} min of work + walking`],
+    ['…so at best', `${fmt((FARMING.yield / cycle) * 60)} Grain / min before walking`],
+  ]);
+}
 
 out('## Resource nodes');
 out();

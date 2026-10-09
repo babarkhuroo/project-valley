@@ -17,6 +17,8 @@ export interface Modifiers {
   regrowMult: Partial<Record<NodeKind, number>>;
   /** Extra levels villagers can reach through practice alone. */
   practiceCapBonus: number;
+  /** Grain per harvest. */
+  fieldYieldMult: number;
 }
 
 const cache = new WeakMap<GameState, { key: string; mods: Modifiers }>();
@@ -34,6 +36,7 @@ export function getModifiers(state: GameState): Modifiers {
     mealDurationMult: 1,
     regrowMult: {},
     practiceCapBonus: 0,
+    fieldYieldMult: 1,
   };
   for (const id of state.research.completed) {
     for (const e of RESEARCH[id].effects) {
@@ -63,6 +66,9 @@ export function getModifiers(state: GameState): Modifiers {
           break;
         case 'practiceCap':
           mods.practiceCapBonus += e.add;
+          break;
+        case 'fieldYield':
+          mods.fieldYieldMult *= e.mult;
           break;
       }
     }

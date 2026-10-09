@@ -40,6 +40,8 @@ export const AUTOPLAY_GOALS: Goal[] = [
   { build: 'warehouse', count: 1 },
   { upgrade: 'lodge', level: 2 },
   { build: 'cottage', count: 3 },
+  { build: 'granary', count: 1 },
+  { build: 'field', count: 1 },
   { build: 'woodlot', count: 1 },
   { build: 'clayPit', count: 1 },
   { upgrade: 'timberYard', level: 3 },
@@ -48,13 +50,14 @@ export const AUTOPLAY_GOALS: Goal[] = [
   { upgrade: 'academy', level: 3 },
   { build: 'quarry', count: 1 },
   { build: 'house', count: 2 },
+  { build: 'field', count: 2 },
 ];
 
 export const AUTOPLAY_RESEARCH: ResearchId[] = [
   'cottageCraft', 'clayDigging', 'heartyRecipes', 'stonecutting', 'growingHamlet', 'carpentry', 'sturdyRacks', 'sharpAxes',
   'studyNotes', 'fieldRations', 'masonry', 'villageCommons', 'brickmaking', 'claySpades', 'woodlandTending', 'buildersPlans',
-  'familyHomes', 'woodlots', 'clayPits', 'organisedStores', 'apprenticeship', 'masterCrafts', 'preservedFood', 'townhouses',
-  'stoneQuarry', 'masterBuilders',
+  'fieldSowing', 'familyHomes', 'woodlots', 'clayPits', 'organisedStores', 'apprenticeship', 'masterCrafts', 'preservedFood',
+  'townhouses', 'stoneQuarry', 'masterBuilders', 'cropRotation',
 ];
 
 /** Where each kind of building is placed: storage near its resource, workshops in the clearing. */
@@ -65,6 +68,9 @@ const ANCHORS: Partial<Record<BuildingId, [number, number]>> = {
   clayPit: [41, 40],
   stoneYard: [44, 18],
   quarry: [41, 15],
+  // Fields on the fertile southern meadow, the Granary beside them.
+  field: [25, 56],
+  granary: [29, 54],
 };
 const CLEARING: [number, number] = [32, 37];
 
@@ -179,6 +185,13 @@ function allocate(state: GameState, world: World, sink: EventSink): void {
     // A bigger village staffs every Academy desk: late tiers are research-bound.
     const job: Job = { kind: 'operate', buildingId: academy.id };
     roles.push({ job, want: n >= 6 ? jobSlots(state, job) : 1 });
+  }
+
+  // Farmers keep grain coming once a Granary has room for it.
+  if (n >= 6 && capacity(state, 'grain') > 0 && fill(state, 'grain') < 0.95) {
+    for (const b of state.buildings) {
+      if (b.field && b.status === 'complete') roles.push({ job: { kind: 'operate', buildingId: b.id }, want: 1 });
+    }
   }
 
   if (n >= 4) {

@@ -19,7 +19,7 @@ export interface VillagerRig {
   legL: THREE.Group;
   legR: THREE.Group;
   tools: Record<ToolId, THREE.Object3D>;
-  loads: { timber: THREE.Object3D; clay: THREE.Object3D };
+  loads: { timber: THREE.Object3D; clay: THREE.Object3D; grain: THREE.Object3D };
   hitbox: THREE.Mesh;
 }
 
@@ -105,6 +105,27 @@ function buildTool(id: ToolId): THREE.Object3D {
       g.add(mesh(new THREE.BoxGeometry(0.12, 0.14, 0.02), metal, 0, -0.52, 0));
       break;
     }
+    case 'hoe': {
+      g.add(mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.62, 6), handle, 0, -0.25, 0));
+      const blade = mesh(new THREE.BoxGeometry(0.14, 0.02, 0.09), metal, 0, -0.56, 0.05);
+      blade.rotation.x = 0.35;
+      g.add(blade);
+      break;
+    }
+    case 'sickle': {
+      g.add(mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.14, 6), handle, 0, -0.06, 0));
+      const blade = mesh(new THREE.TorusGeometry(0.12, 0.014, 4, 12, Math.PI * 1.1), mat('#cfd6df', { flat: true }), 0, -0.14, 0.12);
+      blade.rotation.set(Math.PI / 2, 0, -Math.PI / 2);
+      g.add(blade);
+      break;
+    }
+    case 'seeds': {
+      const pouch = mesh(new THREE.SphereGeometry(0.08, 8, 6), mat('#cdb487'), 0, -0.04, 0.03);
+      pouch.scale.set(1, 0.8, 1);
+      g.add(pouch);
+      g.add(mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.04, 6), mat(PALETTE.woodDark), 0, 0.03, 0.03));
+      break;
+    }
     case 'ladle': {
       g.add(mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.4, 6), handle, 0, -0.16, 0));
       g.add(mesh(new THREE.SphereGeometry(0.05, 8, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat(PALETTE.woodDark), 0, -0.36, 0));
@@ -129,7 +150,7 @@ function buildTool(id: ToolId): THREE.Object3D {
   return g;
 }
 
-function buildLoads(): { timber: THREE.Object3D; clay: THREE.Object3D } {
+function buildLoads(): { timber: THREE.Object3D; clay: THREE.Object3D; grain: THREE.Object3D } {
   const timber = new THREE.Group();
   const logMat = mat(PALETTE.bark);
   const endMat = mat(PALETTE.woodLight);
@@ -150,7 +171,20 @@ function buildLoads(): { timber: THREE.Object3D; clay: THREE.Object3D } {
   clay.add(basket, lump);
   clay.position.set(0, 1.0, 0);
   clay.visible = false;
-  return { timber, clay };
+
+  // A tied sheaf of grain carried across both arms.
+  const grain = new THREE.Group();
+  const straw = mat(PALETTE.thatch, { flat: true });
+  const sheaf = mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.5, 8), straw, 0, 0, 0);
+  sheaf.rotation.z = Math.PI / 2;
+  const ears = mesh(new THREE.ConeGeometry(0.14, 0.2, 8), mat('#e6c25a', { flat: true }), 0.33, 0, 0);
+  ears.rotation.z = -Math.PI / 2;
+  const band = mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.05, 8), mat(PALETTE.woodDark), 0, 0, 0);
+  band.rotation.z = Math.PI / 2;
+  grain.add(sheaf, ears, band);
+  grain.position.set(0, 1.02, 0.04);
+  grain.visible = false;
+  return { timber, clay, grain };
 }
 
 export function createVillagerRig(a: Appearance): VillagerRig {
@@ -241,6 +275,9 @@ export function createVillagerRig(a: Appearance): VillagerRig {
   const tools = {
     axe: buildTool('axe'),
     pickaxe: buildTool('pickaxe'),
+    hoe: buildTool('hoe'),
+    sickle: buildTool('sickle'),
+    seeds: buildTool('seeds'),
     saw: buildTool('saw'),
     shovel: buildTool('shovel'),
     ladle: buildTool('ladle'),
@@ -257,7 +294,7 @@ export function createVillagerRig(a: Appearance): VillagerRig {
   body.add(tools.book);
 
   const loads = buildLoads();
-  body.add(loads.timber, loads.clay);
+  body.add(loads.timber, loads.clay, loads.grain);
 
   const hitbox = new THREE.Mesh(G.hit, new THREE.MeshBasicMaterial({ visible: false }));
   hitbox.position.y = 0.55;

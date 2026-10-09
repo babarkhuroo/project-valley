@@ -15,6 +15,8 @@ export type BuildingId =
   | 'woodlot'
   | 'clayPit'
   | 'quarry'
+  | 'field'
+  | 'granary'
   | 'house'
   | 'academy'
   | 'cottage'
@@ -300,6 +302,44 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 2.6,
     upgrades: [{ cost: { resources: { timber: 160, planks: 60, bricks: 40 }, work: 80 }, slots: 3, outputMult: 1.2, xp: 60 }],
   },
+  field: {
+    id: 'field',
+    name: 'Grain Field',
+    description: 'Ploughed rows for grain. Farmers sow, tend and harvest it; a crop ripens on its own too, only slower. Fields on the southern meadow yield more.',
+    category: 'production',
+    footprint: { w: 3, d: 3 },
+    buildable: true,
+    requiresResearch: 'fieldSowing',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 40 }, work: 20 },
+      { resources: { timber: 60, planks: 10 }, work: 30 },
+    ],
+    xp: 25,
+    operate: { job: 'farm', slots: 2 },
+    model: 'field',
+    height: 0.7,
+    upgrades: [{ cost: { resources: { timber: 80, planks: 30, stone: 20 }, work: 40 }, slots: 3, outputMult: 1.2, xp: 30 }],
+  },
+  granary: {
+    id: 'granary',
+    name: 'Granary',
+    description: 'A raised barn on stone feet that keeps grain dry and the mice out. Farmers carry their harvest here.',
+    category: 'storage',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresResearch: 'fieldSowing',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 60, stone: 20 }, work: 35 },
+      { resources: { timber: 90, stone: 40, planks: 20 }, work: 45 },
+    ],
+    xp: 25,
+    storage: { grain: 80 },
+    model: 'granary',
+    height: 2.6,
+    upgrades: [{ cost: { resources: { timber: 80, stone: 40, planks: 20 }, work: 35 }, storage: { grain: 140 }, xp: 25 }],
+  },
   house: {
     id: 'house',
     name: 'House',
@@ -450,6 +490,8 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'woodlot',
   'clayPit',
   'quarry',
+  'granary',
+  'field',
   'cottage',
   'house',
   'flowerBed',

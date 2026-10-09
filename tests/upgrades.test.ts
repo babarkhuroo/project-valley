@@ -9,7 +9,7 @@ import { ensureMapNodes } from '../src/sim/world';
 import { building, cloneGame, makeGame, villager } from './helpers';
 
 function rich(h: ReturnType<typeof makeGame>) {
-  h.state.resources = { timber: 2000, clay: 2000, stone: 2000, planks: 2000, bricks: 2000, stew: 40, knowledge: 0 };
+  h.state.resources = { timber: 2000, clay: 2000, stone: 2000, planks: 2000, bricks: 2000, grain: 0, stew: 40, knowledge: 0 };
   // Generous storage so costs above the starting caps are payable in tests.
 }
 

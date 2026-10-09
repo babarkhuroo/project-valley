@@ -16,6 +16,7 @@ import { completeConstruction, completeUpgrade } from './construction';
 import { buildingStats, siteWork } from './levels';
 import { finishItem, startNextItem } from './crafting';
 import { RECIPES } from '../config/recipes';
+import { cookPot, finishFarmBatch } from './farming';
 import type { BuildingInstance, GameState, Job, ResourceNode, Vec2, Villager, WalkPurpose } from './types';
 import type { World } from './world';
 
@@ -405,7 +406,22 @@ function completeBatch(state: GameState, world: World, v: Villager, sink: EventS
         becomeIdle(state, world, v, sink, 'removed');
         return;
       }
-      const { resource, amount } = def.output;
+      const { resource } = def.output;
+      let { amount } = def.output;
+      if (jt === 'farm') {
+        // Sowing and tending stay put; a harvest is carried to the Granary like any load.
+        v.workProgress = 0;
+        v.batchWork = 0;
+        const cut = finishFarmBatch(state, world, b, v.id, sink);
+        if (cut <= 0) {
+          beginBatch(state, world, v, sink);
+          return;
+        }
+        v.carrying = { resource, amount: cut };
+        headToStorage(state, world, v, sink);
+        return;
+      }
+      if (jt === 'cook') amount = cookPot(state, amount);
       if (def.output.delivery === 'carry') {
         // Production areas (Woodlot, Clay Pit, Quarry): gatherers haul each load to storage.
         v.workProgress = 0;

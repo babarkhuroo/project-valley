@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -63,6 +63,13 @@ export const MIGRATIONS: Record<number, Migration> = {
   // v10: feature introductions. Null = not seeded yet: on load, systems already in use
   // count as introduced, so existing villages don't get a backlog of cards.
   9: (d) => ({ ...d, tutorial: { ...(d.tutorial as object), intros: null } }),
+  // v11: farming — grain, and a crop on every Grain Field.
+  10: (d) => {
+    const out = { ...d };
+    if (d.resources && typeof d.resources === 'object') out.resources = { grain: 0, ...(d.resources as Record<string, number>) };
+    if (Array.isArray(d.buildings)) out.buildings = (d.buildings as Record<string, unknown>[]).map((b) => ({ field: null, ...b }));
+    return out;
+  },
 };
 
 /** Bonuses for a village with no Valley (or nothing restored yet). */

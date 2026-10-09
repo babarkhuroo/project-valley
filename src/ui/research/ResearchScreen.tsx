@@ -53,6 +53,8 @@ function effectText(e: ResearchEffect): string {
       return `Buildings can be upgraded to level ${e.level}`;
     case 'practiceCap':
       return `Practice can raise skills ${e.add} level${e.add > 1 ? 's' : ''} higher`;
+    case 'fieldYield':
+      return `Harvests +${Math.round((e.mult - 1) * 100)}% grain`;
     case 'unlockValley':
       return `Opens the road to ${IDENTITY.valleyName}`;
   }

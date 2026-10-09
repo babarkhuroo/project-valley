@@ -6,7 +6,7 @@ import type { BuildingId } from './buildings';
  * the player is looking.
  */
 
-export type IntroId = 'clay' | 'stone' | 'upgrades' | 'workshops' | 'productionAreas' | 'valley' | 'merchants' | 'tonics' | 'road' | 'training' | 'valleyResearch' | 'festivals' | 'millrace';
+export type IntroId = 'clay' | 'stone' | 'upgrades' | 'workshops' | 'productionAreas' | 'valley' | 'merchants' | 'tonics' | 'road' | 'training' | 'valleyResearch' | 'festivals' | 'millrace' | 'farming';
 
 export type IntroAction =
   | { type: 'openBuild'; building: BuildingId }
@@ -33,7 +33,8 @@ export const INTROS: IntroDef[] = [
   { id: 'stone', title: 'Stone in the hills', body: 'Rock outcrops in the north-east hills can be quarried. A Stone Yard close by keeps the walk short.', icon: 'stone', action: { type: 'openBuild', building: 'stoneYard' }, actionLabel: 'Build a Stone Yard' },
   { id: 'upgrades', title: 'Upgrades', body: 'Buildings grow: an upgrade adds storage, workers or speed, and the building keeps working while builders improve it.', icon: 'upgrade', action: { type: 'selectUpgradable' }, actionLabel: 'Show me one' },
   { id: 'workshops', title: 'Workshops', body: 'The Sawmill turns timber into planks. Give it orders — a number, or “keep making” — and a crafter works through them, even while you’re away.', icon: 'craft', action: { type: 'openBuild', building: 'sawmill' }, actionLabel: 'Build a Sawmill' },
-  { id: 'productionAreas', title: 'Fields that never run out', body: 'Woodlots, Clay Pits and Quarries are permanent sources — place them near their store, because villagers still carry every load.', icon: 'build', action: { type: 'openBuild', building: 'woodlot' }, actionLabel: 'See the Woodlot' },
+  { id: 'farming', title: 'Grain Fields', body: 'Plough a field and sow grain — the meadow south of the bridge has the richest soil. Farmers tend and harvest it, a Granary stores the grain, and every handful in the pot makes three bowls of Stew.', icon: 'grain', action: { type: 'openBuild', building: 'field' }, actionLabel: 'Plough a field' },
+  { id: 'productionAreas', title: 'Sources that never run out', body: 'Woodlots, Clay Pits and Quarries are permanent sources — place them near their store, because villagers still carry every load.', icon: 'build', action: { type: 'openBuild', building: 'woodlot' }, actionLabel: 'See the Woodlot' },
   { id: 'valley', title: 'The road over the ridge', body: 'Neighbouring villages share a Valley. Restore it together and every village gets the bonuses — and new things to do.', icon: 'valley', action: { type: 'openValley' }, actionLabel: 'Visit the Valley' },
   { id: 'merchants', title: 'Merchant ships', body: 'Ships now call at Saltreach Harbour. Fill their crates for coins and reputation — but not every price is worth your goods.', icon: 'ship', action: { type: 'openHarbour' }, actionLabel: 'Go to the harbour' },
   { id: 'tonics', title: 'Tonics', body: 'A tonic speeds one trade by half for a while. Use them when it counts — a big build, a long study.', icon: 'potion', action: { type: 'openSatchel' }, actionLabel: 'Open your satchel' },

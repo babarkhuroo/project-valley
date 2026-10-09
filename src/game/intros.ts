@@ -21,6 +21,8 @@ export function introMet(state: GameState, id: IntroId, valley: ValleySnapshot |
       return state.buildings.some((b) => b.status === 'complete' && !b.upgrade && upgradeBlocker(state, b) === null);
     case 'workshops':
       return done('carpentry');
+    case 'farming':
+      return done('fieldSowing');
     case 'productionAreas':
       return done('woodlots');
     case 'valley':

@@ -23,6 +23,7 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Cutting timber | Woodcutting | 6 | 4 Timber | carry | yes | 40 |
 | Digging clay | Mining | 8 | 4 Clay | carry | yes | 30 |
 | Quarrying stone | Mining | 10 | 3 Stone | carry | yes | 18 |
+| Farming | Farming | 6 | 4 Grain | carry | yes | 40 |
 | Cooking stew | Farming | 8 | 1 Stew | direct | no | 7.50 |
 | Studying | Research | 6 | 1 Knowledge | direct | yes | 10 |
 | Crafting | Crafting | 12 | 12 construction work | site | yes | 60 work |
@@ -36,6 +37,19 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Stew eaten per full-time worker | 3 / min |
 | One cook produces | 7.50 Stew / min |
 | Full-time workers one cook sustains | 2.50 |
+| With grain: one pot takes | 1 Grain → 3 Stew (when there's room for them) |
+| One cook with grain produces | 22.50 Stew / min, using 7.50 Grain / min |
+
+## Farming
+
+| Setting | Value |
+| --- | --- |
+| Untended crop ripens in | 10 min |
+| Each tending batch saves | 45 s of growing |
+| Grain per ripe field | 24 (× 1.25 on the southern meadow; Crop Rotation × 1.25) |
+| Harvest load | 4 Grain per batch, carried to a Granary |
+| One untrained farmer, alone, per crop | 1 sow + 12 tend + 6 harvest batches ≈ 1.90 min of work + walking |
+| …so at best | 12.63 Grain / min before walking |
 
 ## Resource nodes
 
@@ -61,6 +75,8 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Woodlot | 3×3 | 2 | #1: 80 Timber, 20 Planks<br>#2: 120 Timber, 20 Stone, 40 Planks | 50 / 60 | 40 | 2 × cutting timber | Managed Woodland |
 | Clay Pit | 2×2 | 2 | #1: 80 Timber, 20 Stone, 20 Planks<br>#2: 120 Timber, 40 Stone, 40 Planks | 45 / 55 | 40 | 2 × digging clay | Clay Pits |
 | Quarry | 3×3 | 1 | #1: 120 Timber, 40 Planks, 20 Bricks | 70 | 60 | 2 × quarrying stone | Stone Quarry |
+| Granary | 2×2 | 2 | #1: 60 Timber, 20 Stone<br>#2: 90 Timber, 40 Stone, 20 Planks | 35 / 45 | 25 | stores 80 Grain | Field Sowing |
+| Grain Field | 3×3 | 2 | #1: 40 Timber<br>#2: 60 Timber, 10 Planks | 20 / 30 | 25 | 2 × farming | Field Sowing |
 | Cottage | 2×2 | 1 | #1: 100 Timber<br>#2: 120 Timber, 50 Clay<br>#3: 120 Timber, 60 Clay, 40 Planks, 30 Bricks | 60 / 75 / 90 | 50 | houses 1 | Cottage Craft |
 | House | 3×2 | 1 | #1: 160 Timber, 40 Stone, 60 Planks, 40 Bricks<br>#2: 200 Timber, 60 Stone, 80 Planks, 60 Bricks | 100 / 120 | 80 | houses 2 | Family Homes |
 | Flower Bed | 1×1 | 24 | #1: 5 Timber | instant | 1 | decoration | — |
@@ -101,6 +117,8 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | Woodlot | 1 → 2 | 120 Timber, 40 Stone, 40 Planks | 60 | — | 3 worker slots; work ×1.2 | 40 |
 | Clay Pit | 1 → 2 | 100 Timber, 40 Planks, 20 Bricks | 55 | — | 3 worker slots; work ×1.2 | 40 |
 | Quarry | 1 → 2 | 160 Timber, 60 Planks, 40 Bricks | 80 | — | 3 worker slots; work ×1.2 | 60 |
+| Granary | 1 → 2 | 80 Timber, 40 Stone, 20 Planks | 35 | — | stores 140 Grain | 25 |
+| Grain Field | 1 → 2 | 80 Timber, 20 Stone, 30 Planks | 40 | — | 3 worker slots; work ×1.2 | 30 |
 
 ## Research
 
@@ -119,6 +137,7 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 3 | Village Commons | 120 | 120 | Growing Hamlet | Plan a proper village green with room for a third Cottage. |
 | 3 | Iron-shod Spades | 80 | 80 | Stonecutting | Iron edges on every spade and pick. Digging clay and quarrying stone are 20% faster. |
 | 3 | Masonry | 100 | 100 | Stonecutting | Mortar, footings and true walls. Buildings can be raised to level 3, and the Founders’ Lodge can grow a third bed. |
+| 3 | Field Sowing | 90 | 60 | Field Rations | Plough the meadow and sow grain. Unlocks the Grain Field and the Granary; a handful of grain in the pot makes three bowls of Stew instead of one. |
 | 3 | Woodland Tending | 110 | 110 | Sharpened Axes | Replant as you go. Felled trees regrow three times faster. |
 | 3 | Builder's Plans | 90 | 90 | Study Notes | Drawn plans and measured timber. Construction is 25% faster. |
 | 3 | Brickmaking | 110 | 110 | Carpentry | Moulded clay fired hard in a kiln. Build a Brickworks, and a Warehouse for finished goods. |
@@ -126,17 +145,18 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 4 | Family Homes | 420 | 200 | Village Commons | Two storeys, a brick chimney and room for two. Unlocks the House. |
 | 4 | Clay Pits | 380 | 180 | Iron-shod Spades | Dig a proper pit wherever the ground is good. Unlocks the Clay Pit — clay that never runs out. |
 | 4 | Organised Stores | 400 | 190 | Masonry | Labelled bays and tidy stacks. Stone, plank and brick storage +50%. |
-| 4 | Preserved Food | 360 | 170 | Field Rations | Salted, smoked and sealed. Each bowl of Stew fuels another 30% more work. |
+| 4 | Preserved Food | 360 | 170 | Field Sowing | Salted, smoked and sealed. Each bowl of Stew fuels another 30% more work. |
 | 4 | Managed Woodland | 380 | 180 | Woodland Tending | Coppice and replant on purpose. Unlocks the Woodlot — timber that never runs out, placed where you like. |
 | 4 | Apprenticeship | 420 | 200 | Study Notes | Elders teach while they work. Villagers can practise any skill up to level 3. |
 | 4 | Master Crafts | 450 | 210 | Brickmaking | Jigs, moulds and better kilns. Workshops produce 25% faster. |
 | 5 | Townhouses | 800 | 320 | Family Homes | Shared walls and tidy lanes: room for a second House. |
 | 5 | Stone Quarry | 720 | 300 | Clay Pits | Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out. |
+| 5 | Crop Rotation | 700 | 300 | Preserved Food | Rest and feed the soil between sowings. One more Grain Field, and every harvest yields 25% more grain. |
 | 5 | Master Builders | 720 | 300 | Apprenticeship | Cranes, templates and practised crews. Construction is 30% faster. |
 
 - Tier 1: 60 Knowledge in total ≈ 6 scholar-minutes.
 - Tier 2: 340 Knowledge in total ≈ 34 scholar-minutes.
-- Tier 3: 710 Knowledge in total ≈ 71 scholar-minutes.
+- Tier 3: 800 Knowledge in total ≈ 80 scholar-minutes.
 
 ## Village levels
 
@@ -144,9 +164,9 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | --- | --- | --- |
 | 1 | 0 | Research tier 1: Cottage Craft, Clay Digging, Hearty Recipes |
 | 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Carpentry, Stonecutting |
-| 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans, The Valley Road |
+| 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans, The Valley Road, Field Sowing |
 | 4 | 700 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
-| 5 | 1500 | Research tier 5: Townhouses, Stone Quarry, Master Builders |
+| 5 | 1500 | Research tier 5: Townhouses, Stone Quarry, Master Builders, Crop Rotation |
 | 6 | 2800 | — |
 | 7 | 4600 | — |
 
@@ -201,9 +221,9 @@ Shared projects restored by every member. Costs are Valley-wide totals. Reputati
 | Miners' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Digging and quarrying +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
 |  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Digging and quarrying ×1.10 in all; trains up to level 5 |  |
 |  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Digging and quarrying ×1.16 in all; trains up to level 6 |  |
-| Cooks' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Cooking +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
-|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Cooking ×1.10 in all; trains up to level 5 |  |
-|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Cooking ×1.16 in all; trains up to level 6 |  |
+| Cooks' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Cooking and farming +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
+|  | 2 | 5000 Timber, 2000 Stone, 800 Bricks | 6h | Cooking and farming ×1.10 in all; trains up to level 5 |  |
+|  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Cooking and farming ×1.16 in all; trains up to level 6 |  |
 | Scholars' Guild | 1 | 2400 Timber, 1200 Clay | 2h | Study +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
 |  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Study ×1.10 in all; trains up to level 5 |  |
 |  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Study ×1.16 in all; trains up to level 6 |  |
@@ -221,38 +241,38 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | Valley time | Finished |
 | --- | --- |
 | 0.2 days | Hearth Hall → level 1 |
-| 1.4 days | Trading Post → level 1 |
-| 1.6 days | Builders' Guild → level 1 |
-| 1.9 days | Scholars' Guild → level 1 |
-| 2.0 days | Cooks' Guild → level 1 |
-| 2.2 days | Miners' Guild → level 1 |
+| 1.3 days | Trading Post → level 1 |
+| 1.5 days | Builders' Guild → level 1 |
+| 1.5 days | Cooks' Guild → level 1 |
+| 2.1 days | Miners' Guild → level 1 |
+| 2.2 days | Scholars' Guild → level 1 |
 | 2.3 days | Foresters' Lodge → level 1 |
-| 2.4 days | Craftsfolk's Guild → level 1 |
+| 2.9 days | Craftsfolk's Guild → level 1 |
 | 3.2 days | Great Library → level 1 |
-| 6.2 days | Miners' Guild → level 2 |
-| 6.2 days | Scholars' Guild → level 2 |
-| 6.4 days | Trading Post → level 2 |
-| 6.4 days | Hearth Hall → level 2 |
-| 6.5 days | Builders' Guild → level 2 |
-| 7.1 days | Foresters' Lodge → level 2 |
-| 7.3 days | Cooks' Guild → level 2 |
-| 7.4 days | Craftsfolk's Guild → level 2 |
-| 8.5 days | Great Library → level 2 |
-| 12.0 days | Millrace Workshop → level 1 |
-| 12.5 days | Festival Grounds → level 1 |
-| 13.7 days | Trading Post → level 3 |
-| 14.3 days | Foresters' Lodge → level 3 |
-| 15.4 days | Miners' Guild → level 3 |
-| 15.5 days | Builders' Guild → level 3 |
-| 17.1 days | Millrace Workshop → level 2 |
-| 17.5 days | Scholars' Guild → level 3 |
-| 17.7 days | Craftsfolk's Guild → level 3 |
-| 17.7 days | Festival Grounds → level 2 |
-| 19.0 days | Great Library → level 3 |
-| 19.3 days | Cooks' Guild → level 3 |
-| 19.3 days | Hearth Hall → level 3 |
-| 20.5 days | Millrace Workshop → level 3 |
-| 20.8 days | Festival Grounds → level 3 |
+| 5.6 days | Trading Post → level 2 |
+| 6.0 days | Hearth Hall → level 2 |
+| 6.0 days | Builders' Guild → level 2 |
+| 6.6 days | Scholars' Guild → level 2 |
+| 7.2 days | Miners' Guild → level 2 |
+| 7.2 days | Cooks' Guild → level 2 |
+| 7.4 days | Foresters' Lodge → level 2 |
+| 7.5 days | Craftsfolk's Guild → level 2 |
+| 8.2 days | Great Library → level 2 |
+| 11.6 days | Trading Post → level 3 |
+| 12.6 days | Festival Grounds → level 1 |
+| 13.1 days | Millrace Workshop → level 1 |
+| 15.7 days | Miners' Guild → level 3 |
+| 15.7 days | Foresters' Lodge → level 3 |
+| 16.7 days | Scholars' Guild → level 3 |
+| 16.8 days | Builders' Guild → level 3 |
+| 17.0 days | Cooks' Guild → level 3 |
+| 17.4 days | Craftsfolk's Guild → level 3 |
+| 18.1 days | Great Library → level 3 |
+| 18.5 days | Festival Grounds → level 2 |
+| 18.5 days | Millrace Workshop → level 2 |
+| 18.6 days | Hearth Hall → level 3 |
+| 20.6 days | Festival Grounds → level 3 |
+| 20.7 days | Millrace Workshop → level 3 |
 
 ## Valley research
 
@@ -329,6 +349,7 @@ Ships call once the Valley's Trading Post is restored: the first 10 min later, e
 | Stone | 1.5 | Stonecutting |
 | Planks | 2.5 | Carpentry |
 | Bricks | 3 | Brickmaking |
+| Grain | 1.1 | Field Sowing |
 
 | Merchant | Ship | Likes | Pay |
 | --- | --- | --- | --- |
@@ -344,7 +365,7 @@ Ships call once the Valley's Trading Post is restored: the first 10 min later, e
 | --- | --- | --- | --- |
 | Woodworker Tonic | chop ×1.5 | 30 min | 60 coins ±15% |
 | Miner's Meal | dig, quarry ×1.5 | 30 min | 70 coins ±15% |
-| Farmer's Tea | cook ×1.5 | 30 min | 50 coins ±15% |
+| Farmer's Tea | cook, farm ×1.5 | 30 min | 50 coins ±15% |
 | Research Brew | study ×1.5 | 30 min | 80 coins ±15% |
 | Builder's Brew | build ×1.5 | 30 min | 70 coins ±15% |
 | Crafter's Oil | craft ×1.5 | 30 min | 70 coins ±15% |
@@ -395,18 +416,22 @@ A deterministic autoplayer (`src/sim/autoplay.ts`) plays a fresh village for 4 h
 | 1h 16m | Villager #5 joins |
 | 1h 23m | Cottage |
 | 1h 23m | Villager #6 joins |
-| 1h 28m | Timber Yard → level 3 |
-| 1h 40m | House |
-| 1h 40m | Villager #7 joins |
-| 1h 40m | Villager #8 joins |
-| 1h 44m | Woodlot |
-| 1h 48m | Cookhouse → level 3 |
-| 1h 53m | Clay Pit |
-| 2h 05m | Academy → level 3 |
-| 2h 13m | Village level 6 |
-| 2h 51m | House |
-| 2h 51m | Villager #9 joins |
-| 2h 51m | Villager #10 joins |
-| 3h 06m | Quarry |
+| 1h 25m | Granary |
+| 1h 25m | Grain Field |
+| 1h 34m | Timber Yard → level 3 |
+| 1h 45m | Woodlot |
+| 1h 49m | House |
+| 1h 49m | Villager #7 joins |
+| 1h 50m | Villager #8 joins |
+| 1h 54m | Cookhouse → level 3 |
+| 1h 55m | Clay Pit |
+| 2h 08m | Academy → level 3 |
+| 2h 08m | Grain Field |
+| 2h 08m | Village level 6 |
+| 2h 57m | House |
+| 2h 57m | Villager #9 joins |
+| 2h 58m | Villager #10 joins |
+| 3h 08m | Quarry |
+| 3h 39m | Village level 7 |
 
-Research completed: 26 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 34% waiting, h4: 87% waiting (waiting rises once everything unlocked is built and research is the bottleneck).
+Research completed: 28 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 30% waiting, h4: 78% waiting (waiting rises once everything unlocked is built and research is the bottleneck).

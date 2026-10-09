@@ -37,6 +37,7 @@ export const TRADE_GOODS: { resource: ResourceId; requires: ResearchId | null; v
   { resource: 'stone', requires: 'stonecutting', value: 1.5 },
   { resource: 'planks', requires: 'carpentry', value: 2.5 },
   { resource: 'bricks', requires: 'brickmaking', value: 3 },
+  { resource: 'grain', requires: 'fieldSowing', value: 1.1 },
 ];
 
 export type BoostId = 'woodTonic' | 'minersMeal' | 'farmersTea' | 'researchBrew' | 'buildersBrew' | 'craftersOil';
@@ -58,7 +59,7 @@ export interface BoostDef {
 export const BOOSTS: Record<BoostId, BoostDef> = {
   woodTonic: { id: 'woodTonic', name: 'Woodworker Tonic', description: 'Woodcutting +50% for 30 minutes.', jobs: ['chop'], mult: 1.5, seconds: 1800, price: 60, color: '#7aa84f' },
   minersMeal: { id: 'minersMeal', name: "Miner's Meal", description: 'Digging and quarrying +50% for 30 minutes.', jobs: ['dig', 'quarry'], mult: 1.5, seconds: 1800, price: 70, color: '#c7764a' },
-  farmersTea: { id: 'farmersTea', name: "Farmer's Tea", description: 'Cooking +50% for 30 minutes.', jobs: ['cook'], mult: 1.5, seconds: 1800, price: 50, color: '#e0b040' },
+  farmersTea: { id: 'farmersTea', name: "Farmer's Tea", description: 'Cooking and farming +50% for 30 minutes.', jobs: ['cook', 'farm'], mult: 1.5, seconds: 1800, price: 50, color: '#e0b040' },
   researchBrew: { id: 'researchBrew', name: 'Research Brew', description: 'Study +50% for 30 minutes.', jobs: ['study'], mult: 1.5, seconds: 1800, price: 80, color: '#6f8fe0' },
   buildersBrew: { id: 'buildersBrew', name: "Builder's Brew", description: 'Construction +50% for 30 minutes.', jobs: ['build'], mult: 1.5, seconds: 1800, price: 70, color: '#9a7b62' },
   craftersOil: { id: 'craftersOil', name: "Crafter's Oil", description: 'Workshop crafting +50% for 30 minutes.', jobs: ['craft'], mult: 1.5, seconds: 1800, price: 70, color: '#b36fc2' },

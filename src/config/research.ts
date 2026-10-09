@@ -30,7 +30,9 @@ export type ResearchId =
   | 'claySpades'
   | 'woodlandTending'
   | 'buildersPlans'
-  | 'valleyRoad';
+  | 'valleyRoad'
+  | 'fieldSowing'
+  | 'cropRotation';
 
 export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge' | 'crafting' | 'valley';
 
@@ -43,6 +45,8 @@ export type ResearchEffect =
   | { type: 'mealDuration'; mult: number }
   | { type: 'regrow'; node: NodeKind; mult: number }
   | { type: 'practiceCap'; add: number }
+  /** Grain from every harvest. */
+  | { type: 'fieldYield'; mult: number }
   /** Informational: opens building upgrades up to this level (checked by upgrade definitions). */
   | { type: 'upgradeTier'; level: number }
   /** Opens the road to the shared Valley. */
@@ -293,6 +297,21 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     xp: 100,
     row: 7,
   },
+  fieldSowing: {
+    id: 'fieldSowing',
+    name: 'Field Sowing',
+    description: 'Plough the meadow and sow grain. Unlocks the Grain Field and the Granary; a handful of grain in the pot makes three bowls of Stew instead of one.',
+    category: 'food',
+    tier: 3,
+    cost: 90,
+    prereqs: ['fieldRations'],
+    effects: [
+      { type: 'unlockBuilding', building: 'field' },
+      { type: 'unlockBuilding', building: 'granary' },
+    ],
+    xp: 60,
+    row: 3,
+  },
   // ---------------------------------------------------------------- Tier 4 (level 4)
   familyHomes: {
     id: 'familyHomes',
@@ -337,7 +356,7 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     category: 'food',
     tier: 4,
     cost: 360,
-    prereqs: ['fieldRations'],
+    prereqs: ['fieldSowing'],
     effects: [{ type: 'mealDuration', mult: 1.3 }],
     xp: 170,
     row: 3,
@@ -414,6 +433,21 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     effects: [{ type: 'jobRate', job: 'build', mult: 1.3 }],
     xp: 300,
     row: 5,
+  },
+  cropRotation: {
+    id: 'cropRotation',
+    name: 'Crop Rotation',
+    description: 'Rest and feed the soil between sowings. One more Grain Field, and every harvest yields 25% more grain.',
+    category: 'food',
+    tier: 5,
+    cost: 700,
+    prereqs: ['preservedFood'],
+    effects: [
+      { type: 'maxCount', building: 'field', add: 1 },
+      { type: 'fieldYield', mult: 1.25 },
+    ],
+    xp: 300,
+    row: 3,
   },
 };
 

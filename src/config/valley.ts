@@ -284,7 +284,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
     facing: -Math.PI / 2,
     trains: 'farming',
     requires: { building: 'hearthHall', level: 1 },
-    levels: guildLevels(['cook'], 'bricks', 'Cooking'),
+    levels: guildLevels(['cook', 'farm'], 'bricks', 'Cooking and farming'),
   },
   scholarsGuild: {
     id: 'scholarsGuild',

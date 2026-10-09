@@ -1,11 +1,12 @@
 import type { ResourceId } from './resources';
 import type { SkillId } from './skills';
 
-export type JobType = 'chop' | 'dig' | 'quarry' | 'cook' | 'study' | 'craft' | 'build';
+export type JobType = 'chop' | 'dig' | 'quarry' | 'farm' | 'cook' | 'study' | 'craft' | 'build';
 
 /** Visual hint for the villager animation layer. The simulation never reads it. */
-export type WorkAnim = 'chop' | 'dig' | 'mine' | 'cook' | 'research' | 'craft' | 'build';
-export type ToolId = 'axe' | 'shovel' | 'pickaxe' | 'ladle' | 'book' | 'saw' | 'hammer';
+export type WorkAnim = 'chop' | 'dig' | 'mine' | 'farm' | 'cook' | 'research' | 'craft' | 'build';
+/** `sickle` and `seeds` are farm tools the view swaps in for harvesting and sowing. */
+export type ToolId = 'axe' | 'shovel' | 'pickaxe' | 'hoe' | 'sickle' | 'seeds' | 'ladle' | 'book' | 'saw' | 'hammer';
 
 export interface JobDef {
   id: JobType;
@@ -55,6 +56,17 @@ export const JOBS: Record<JobType, JobDef> = {
     output: { resource: 'stone', amount: 3, delivery: 'carry' },
     anim: 'mine',
     tool: 'pickaxe',
+  },
+  farm: {
+    id: 'farm',
+    verb: 'Farming',
+    skill: 'farming',
+    // One batch does whatever the field needs: sow it, tend the crop, or cut a load of grain.
+    batchWork: 6,
+    consumesFood: true,
+    output: { resource: 'grain', amount: 4, delivery: 'carry' },
+    anim: 'farm',
+    tool: 'hoe',
   },
   cook: {
     id: 'cook',

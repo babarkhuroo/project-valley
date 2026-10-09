@@ -1,6 +1,7 @@
 import type { EventSink } from './events';
 import { processTrade, tradeNextEvent } from './trade';
 import { finishTrip } from './away';
+import { fieldsNextEvent, processFields } from './farming';
 import type { GameState } from './types';
 import { EPS, integrateVillager, processVillager, regrowNode, settleVillagers, villagerNextEvent } from './villagerAI';
 import type { World } from './world';
@@ -10,7 +11,7 @@ const MAX_EVENTS_PER_ADVANCE = 5_000_000;
 const MAX_CASCADE = 64;
 
 function nextEventTime(state: GameState): number {
-  let t = tradeNextEvent(state);
+  let t = Math.min(tradeNextEvent(state), fieldsNextEvent(state));
   for (const v of state.villagers) {
     const e = villagerNextEvent(state, v);
     if (e < t) t = e;
@@ -29,6 +30,7 @@ function integrate(state: GameState, dt: number): void {
 function processDue(state: GameState, world: World, sink: EventSink): void {
   for (let pass = 0; pass < MAX_CASCADE; pass++) {
     let acted = processTrade(state, sink, EPS);
+    if (processFields(state, world, sink, EPS)) acted = true;
     for (const n of state.nodes) {
       if (n.regrowAt !== null && n.regrowAt <= state.time + EPS) {
         regrowNode(n, sink);
@@ -52,7 +54,7 @@ function processDue(state: GameState, world: World, sink: EventSink): void {
 
 /**
  * Advances the world by `dt` seconds using discrete-event integration: time jumps
- * straight to the next state change (arrival, finished batch, meal, regrowth) and all
+ * straight to the next state change (arrival, finished batch, meal, regrowth, a ripe crop) and all
  * continuous quantities are integrated analytically in between.
  *
  * The same function runs every animation frame (tiny dt), under dev speed-ups, and

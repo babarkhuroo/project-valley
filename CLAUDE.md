@@ -33,6 +33,7 @@ Dependency direction is strict: `config ← world ← sim ← valley ← game �
   - Walks are time-parameterised `Route`s; a villager's position is a function of sim time (`villagerPosition`), which is also how the renderer draws them.
   - `World` (terrain + `NavGrid` occupancy/walkability) is derived and never saved; call `syncWorld` + `refreshAfterGridChange` after buildings change (commands already do).
   - Building stats depend on level: always read storage/housing/slots/speed through `levels.ts` (`buildingStats`), never straight from the definition. Upgrades reuse the `construct` job via `siteWork()`.
+  - Grain Fields (`farming.ts`): a farm batch acts on the field's stage (sow / tend / harvest); crops ripen on a `ripeAt` timer that is an event in the loop (`fieldsNextEvent`/`processFields`), and tending pulls it earlier. Cooking consumes grain at batch end for extra bowls (`cookPot`).
   - All player mutations go through `commands.ts` (validated, return readable refusal reasons). Research effects are aggregated in `modifiers.ts`. UI read-models (task labels, rate breakdowns, estimates, "next steps") live in `selectors.ts`.
   - `SimEvent`s are transient (never saved) and feed particles/sound, toasts and offline summaries.
   - Balancing: `autoplay.ts` (scripted player using only commands) + `economySim.ts` (`runEconomySim` → `PacingReport`). `tests/pacing.test.ts` guards pacing; after tuning config, re-run `npm run simulate` and `npm run balance-doc`, and update the autoplayer's goal and research lists when you add content.

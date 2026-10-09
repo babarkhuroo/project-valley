@@ -6,6 +6,9 @@ export type SoundId =
   | 'hammer'
   | 'pick'
   | 'saw'
+  | 'hoe'
+  | 'sickle'
+  | 'seeds'
   | 'bubble'
   | 'deposit'
   | 'treeFall'
@@ -199,6 +202,20 @@ export class AudioEngine {
         // A rasping stroke: filtered noise swept in pitch.
         this.noiseBurst(out, now, 0.22, 2600, 'bandpass', 0.32, 6);
         this.tone(out, now, 'sawtooth', 420, 380, 0.18, 0.025);
+        break;
+      case 'hoe':
+        // A blade biting soft earth: a dull thud with a crumbly tail.
+        this.noiseBurst(out, now, 0.12, 380, 'lowpass', 0.4, 1);
+        this.tone(out, now, 'sine', 130, 80, 0.1, 0.35);
+        break;
+      case 'sickle':
+        // Swish through dry stalks.
+        this.noiseBurst(out, now, 0.18, 3400, 'bandpass', 0.22, 1.4);
+        this.noiseBurst(out, now + 0.04, 0.12, 5200, 'highpass', 0.08, 0.7);
+        break;
+      case 'seeds':
+        // A light patter of seed landing.
+        for (let i = 0; i < 4; i++) this.noiseBurst(out, now + 0.05 + i * 0.035 + Math.random() * 0.02, 0.025, 4200 + Math.random() * 1500, 'highpass', 0.07, 1);
         break;
       case 'pick':
         // Steel on stone: a bright ping over a short gritty crack.

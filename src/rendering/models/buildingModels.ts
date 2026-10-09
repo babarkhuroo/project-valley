@@ -4,6 +4,7 @@ import type { BuildingId } from '../../config/buildings';
 import type { ResourceId } from '../../config/resources';
 import { PALETTE, glowMat, mat } from '../materials';
 import { logGeometry } from './natureModels';
+import { fieldModel, granaryModel, type CropRows } from './farmModels';
 
 /**
  * Procedural building models. Local origin is the footprint centre on the ground and
@@ -21,6 +22,8 @@ export interface BuildingModel {
   fills: { resource: ResourceId; items: THREE.Object3D[] }[];
   /** Parts that only move while someone works here (e.g. a saw blade). */
   busy: { obj: THREE.Object3D; axis: 'x' | 'y' | 'z'; speed: number }[];
+  /** A field's crop rows, grown and harvested by the view. */
+  crops?: CropRows;
 }
 
 export function box(parent: THREE.Object3D, w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
@@ -889,6 +892,12 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
     case 'festivalLanterns':
       model = festivalLanterns();
       break;
+    case 'field':
+      model = fieldModel(variant);
+      break;
+    case 'granary':
+      model = granaryModel();
+      break;
   }
   addLevelDetails(model, id, level);
   mergeStatic(model);
@@ -915,6 +924,7 @@ export function mergeStatic(model: BuildingModel): void {
   model.flames.forEach(keep);
   model.fills.forEach((f) => f.items.forEach(keep));
   model.busy.forEach((b) => keep(b.obj));
+  model.crops?.rows.forEach(keep);
   const root = model.root;
   root.updateMatrixWorld(true);
   const inverse = new THREE.Matrix4().copy(root.matrixWorld).invert();

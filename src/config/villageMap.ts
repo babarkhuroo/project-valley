@@ -38,6 +38,8 @@ export interface VillageMapDef {
   boulders: [number, number, number][];
   /** Flower-rich meadows (decorative density hint). */
   meadows: Point[][];
+  /** Fertile soil: Grain Fields centred here yield more. */
+  farmland: Point[][];
   /** Area kept free of generated trees and clutter. */
   clearing: { x: number; z: number; r: number };
   startBuildings: { building: BuildingId; cellX: number; cellZ: number; rotation: 0 | 1 | 2 | 3 }[];
@@ -117,6 +119,7 @@ export const VILLAGE_MAP: VillageMapDef = {
     [[18, 53], [44, 52], [46, 63], [18, 63]],
     [[35, 37], [44, 38], [42, 46], [34, 45]],
   ],
+  farmland: [[[18, 52.5], [44, 51.5], [46, 63], [18, 63]]],
   clearing: { x: 31, z: 32, r: 9.5 },
   startBuildings: [
     { building: 'cookhouse', cellX: 31, cellZ: 29, rotation: 0 },

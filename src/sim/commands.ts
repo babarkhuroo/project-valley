@@ -1,3 +1,4 @@
+import { isField, newFieldState } from './farming';
 import { BUILDINGS, BUILD_MENU_ORDER, type BuildingId } from '../config/buildings';
 import { JOBS } from '../config/jobs';
 import { NODES } from '../config/nodes';
@@ -170,6 +171,7 @@ export function placeBuilding(
     variant: state.nextId % 4,
     upgrade: null,
     craft: BUILDINGS[defId].workshop ? newCraftState() : null,
+    field: isField(defId) ? newFieldState() : null,
   };
   state.buildings.push(b);
   syncWorld(world, state);

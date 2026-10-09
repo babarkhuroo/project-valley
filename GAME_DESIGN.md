@@ -33,7 +33,7 @@ A hand-authored 64×64 tile valley floor (`src/config/villageMap.ts`):
 | Creek (east → south-west) | Clay banks on both sides; two footbridges |
 | Lake (south-west) | Scenery, reeds, lilies |
 | Rocky hills (north-east) | Boulders — future stone quarrying |
-| Southern meadow | Open, flowery land beyond the bridge — future farmland |
+| Southern meadow | Open, flowery land beyond the bridge — fertile farmland: Grain Fields here yield 25% more |
 | Mountain rim (N/E/W) | Natural boundary; the south edge stays low so the camera never looks through hills |
 
 The map is data: forests are polygons scattered with a seeded, spacing-aware sampler, so procedural or seeded maps can reuse the same pipeline.
@@ -70,6 +70,7 @@ The opening tension: two villagers, one cook sustains ≈2.5 full-time workers. 
 | Stone | Rock Outcrops in the north-east hills (after *Stonecutting*) → Stone Yards | Building upgrades |
 | Planks | Sawmill: 4 timber → 2 planks (after *Carpentry*) | Level-3 upgrades, Lodge extension, third Cottage, Warehouse |
 | Bricks | Brickworks: 3 clay + 1 timber → 2 bricks (after *Brickmaking*) | Level-3 Cookhouse/Academy, third Cottage |
+| Grain | Grain Fields (after *Field Sowing*) → Granaries | Cooking: 1 grain makes a pot of 3 Stew instead of 1; merchant crates |
 | Stew | Cookhouse | Keeps labour at full speed |
 | Knowledge | Academy scholars | Research |
 
@@ -88,6 +89,12 @@ Natural trees, clay banks and outcrops are finite and regrow slowly. Mid-game re
 | Woodlot | Managed Woodland (4) | Cutting timber | 2 | 3 workers, ×1.2 |
 | Clay Pit | Clay Pits (4) | Digging clay | 2 | 3 workers, ×1.2 |
 | Quarry | Stone Quarry (5) | Quarrying stone | 2 | 3 workers, ×1.2 |
+
+## Farming
+
+*Field Sowing* (tier 3, food) unlocks the **Grain Field** (3×3, two farmers, Farming skill) and the **Granary**. A farmer's batch does whatever the field needs: **sow** a fallow field, **tend** a growing crop (each tending batch brings the harvest 45 s closer), or **cut** a load of 4 grain and carry it to a Granary. A sown crop also ripens untended in 10 minutes, so fields keep growing while nobody — or nobody online — is there; ripening is an exact event in the sim. A ripe field holds 24 grain (30 on the southern meadow; *Crop Rotation* adds 25% and a third field), cut row by row from the open side.
+
+Grain is what lets food scale past the Cookhouse's one or two cooks: with grain in store each pot takes one handful and makes three bowls. Two farmers keep one cook's pot full. The farmer's animation follows the field — scattering seed, hoeing, a low sickle sweep, carrying sheaves — and the crop visibly sprouts, grows, turns gold and is cut down. Farmer's Tea and the Cooks' Guild speed farming as well as cooking; merchants start asking for grain once a village has a Granary.
 
 ## Workshops & crafting
 
@@ -229,4 +236,4 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
 - **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ✅ cooperative crafting at the Millrace.
 - **Milestone 4:** ✅ Accounts and authorised API · ✅ found / join (code or open list) / leave Valleys, real players replacing neighbours · ✅ live updates over WebSockets, presence, chat · next: a database-backed store and multi-process hosting.
-- **Polish:** ✅ day/night ambience · ✅ accessibility and quality settings · ✅ sound (water, night, footsteps, music moods) · ✅ feature introductions · next: balancing from playtests.
+- **Polish:** ✅ day/night ambience · ✅ accessibility and quality settings · ✅ sound (water, night, footsteps, music moods) · ✅ feature introductions · ✅ farming (Grain Fields, Granary, hearty Stew) · next: balancing from playtests.

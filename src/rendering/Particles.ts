@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type ParticleKind = 'smoke' | 'steam' | 'dust' | 'sparkle' | 'chips' | 'clods' | 'rubble' | 'confetti' | 'leaves' | 'knowledge';
+export type ParticleKind = 'smoke' | 'steam' | 'dust' | 'sparkle' | 'chips' | 'clods' | 'rubble' | 'confetti' | 'leaves' | 'knowledge' | 'seeds' | 'soil' | 'chaff';
 
 interface Particle {
   alive: boolean;
@@ -34,6 +34,9 @@ const COLORS: Record<ParticleKind, string[]> = {
   confetti: ['#e86b8a', '#f2c14e', '#6fc3e0', '#8fd16b', '#b58be0'],
   leaves: ['#6fae4f', '#8cc265', '#5f9748'],
   knowledge: ['#9fb6ff', '#c9d6ff', '#7f9cf5'],
+  seeds: ['#e6c25a', '#c9a040', '#f0d27a'],
+  soil: ['#7a5a3a', '#8d6a45', '#5f4630'],
+  chaff: ['#e2c26a', '#f0dc94', '#c8a24a'],
 };
 
 const PUFF_KINDS = new Set<ParticleKind>(['smoke', 'steam', 'dust']);
@@ -144,6 +147,7 @@ export class Particles {
           break;
         }
         case 'leaves':
+        case 'chaff':
           p.vel.set((Math.random() - 0.5) * 0.8, 0.2 + Math.random() * 0.4, (Math.random() - 0.5) * 0.8);
           p.life = 1.4 + Math.random() * 0.6;
           p.size = 0.7;
@@ -156,7 +160,7 @@ export class Particles {
           const a = Math.random() * Math.PI * 2;
           p.vel.set(Math.cos(a) * 1.2, 1.4 + Math.random() * 1.2, Math.sin(a) * 1.2);
           p.life = 0.6 + Math.random() * 0.4;
-          p.size = kind === 'chips' ? 0.75 : 0.9;
+          p.size = kind === 'chips' ? 0.75 : kind === 'seeds' ? 0.45 : 0.9;
           p.grow = 0;
           p.gravity = 7;
           p.drag = 0.6;

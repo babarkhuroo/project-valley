@@ -29,6 +29,8 @@ import { BuildingThumb, Portrait } from '../common/Portrait';
 import { formatDuration, useGameState } from '../hooks';
 import type { IconName } from '../icons';
 import { ui, useUI } from '../store';
+import { FARMING } from '../../config/farming';
+import { fieldYield, growthFraction, isFertile } from '../../sim/farming';
 
 // ---------------------------------------------------------------------------
 // Shared pieces
@@ -53,7 +55,11 @@ function Formula({ est }: { est: JobEstimate }) {
         </span>
       </div>
       <p className="formula-note">
-        {est.recipe ? (
+        {est.note ? (
+          <>
+            {est.note} ≈ <strong>{est.perMinute.toFixed(1)}</strong> {RESOURCES[est.resource ?? 'stew'].name.toLowerCase()} per minute.
+          </>
+        ) : est.recipe ? (
           <>
             Each item takes {RECIPES[est.recipe].work} work ({est.workSeconds.toFixed(1)}s) and turns{' '}
             {Object.entries(RECIPES[est.recipe].inputs)
@@ -62,11 +68,11 @@ function Formula({ est }: { est: JobEstimate }) {
             into {RECIPES[est.recipe].output.amount} {RESOURCES[RECIPES[est.recipe].output.resource].name.toLowerCase()}. ≈ <strong>{est.perMinute.toFixed(1)}</strong> per minute.
           </>
         ) : null}
-        {est.recipe ? null : def.output
+        {est.recipe || est.note ? null : def.output
           ? `Each batch takes ${def.batchWork} work (${est.workSeconds.toFixed(1)}s) and yields ${def.output.amount} ${RESOURCES[def.output.resource].name.toLowerCase()}`
           : `Each batch adds ${def.batchWork} work to the site (${est.workSeconds.toFixed(1)}s)`}
-        {est.recipe ? null : est.travelSeconds > 0 ? `, plus ${est.travelSeconds.toFixed(1)}s walking to ${est.destination} and back.` : '.'}
-        {est.resource && !est.recipe ? (
+        {est.recipe || est.note ? null : est.travelSeconds > 0 ? `, plus ${est.travelSeconds.toFixed(1)}s walking to ${est.destination} and back.` : '.'}
+        {est.resource && !est.recipe && !est.note ? (
           <>
             {' '}
             ≈ <strong>{est.perMinute.toFixed(1)}</strong> per minute.
@@ -391,6 +397,39 @@ function StorageBars({ resources }: { resources: ResourceId[] }) {
 
 const PERCENT = (m: number) => `+${Math.round((m - 1) * 100)}%`;
 
+/** A field's crop: what stage it's at, when it ripens, what's left to cut, and how good the soil is. */
+function CropSection({ b }: { b: BuildingInstance }) {
+  const state = useGameState();
+  const map = game().world.map;
+  const f = b.field;
+  const crop = fieldYield(state, map, b);
+  const fertile = isFertile(map, b);
+  const farmers = workersOn(state, { kind: 'operate', buildingId: b.id }).length;
+  return (
+    <Section title="Crop">
+      {!f || f.stage === 'fallow' ? (
+        <p className="muted small">Fallow — {farmers > 0 ? 'the farmers are ploughing and sowing it.' : 'a farmer will plough and sow it.'}</p>
+      ) : f.stage === 'growing' ? (
+        <>
+          <Bar value={growthFraction(state, b)} tone="green" label={`Growing — ${Math.floor(growthFraction(state, b) * 100)}%`} />
+          <p className="muted small">
+            Ripe in {formatDuration(Math.max(0, (f.ripeAt ?? state.time) - state.time))} on its own{farmers > 0 ? ' — sooner, with the farmers tending it' : '. A farmer tending it brings that forward'}.
+          </p>
+        </>
+      ) : (
+        <>
+          <Bar value={f.stock / Math.max(1, crop)} tone="honey" label={`Ripe — ${Math.ceil(f.stock)} Grain standing`} />
+          {farmers === 0 ? <p className="muted small">Assign a farmer to bring it in.</p> : null}
+        </>
+      )}
+      <p className="muted small">
+        {fertile ? `Rich meadow soil: ${crop} Grain a crop (+${Math.round((FARMING.fertileMult - 1) * 100)}%).` : `${crop} Grain a crop. Fields on the southern meadow yield ${Math.round((FARMING.fertileMult - 1) * 100)}% more.`}
+      </p>
+      {capacity(state, 'grain') > 0 ? <StorageBars resources={['grain']} /> : <p className="blocker"><Icon name="info" size={20} /> Build a Granary to store the harvest.</p>}
+    </Section>
+  );
+}
+
 /** What the next level brings, what it costs, and exactly why it can't start yet. */
 function UpgradeSection({ b }: { b: BuildingInstance }) {
   const state = useGameState();
@@ -593,6 +632,13 @@ function BuildingPanel({ id }: { id: number }) {
               <p className="muted small">
                 Cooking ≈ {rates.stew.gain.toFixed(1)}/min · eaten ≈ {rates.stew.use.toFixed(1)}/min by working villagers.
               </p>
+              {state.research.completed.includes('fieldSowing') ? (
+                <p className="muted small">
+                  {state.resources.grain >= FARMING.cookGrain
+                    ? `Grain in store (${Math.floor(state.resources.grain)}): each pot makes ${1 + FARMING.cookBonus} bowls instead of 1.`
+                    : 'No grain in store — each pot makes 1 bowl. With grain from the fields it makes 3.'}
+                </p>
+              ) : null}
             </Section>
           ) : null}
           {b.defId === 'academy' ? (
@@ -636,6 +682,7 @@ function BuildingPanel({ id }: { id: number }) {
             </Section>
           ) : null}
           {def.workshop ? <OrdersSection b={b} /> : null}
+          {b.field ? <CropSection b={b} /> : null}
           {def.operate ? <AssignList job={{ kind: 'operate', buildingId: b.id }} /> : null}
           {!b.upgrade ? <UpgradeSection b={b} /> : null}
           <div className="row-buttons">

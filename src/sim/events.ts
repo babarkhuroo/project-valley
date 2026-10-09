@@ -20,6 +20,9 @@ export type SimEvent =
   | { type: 'batch'; villagerId: number; job: JobType }
   | { type: 'nodeDepleted'; nodeId: number }
   | { type: 'nodeRegrown'; nodeId: number }
+  | { type: 'fieldSown'; buildingId: number; villagerId: number }
+  | { type: 'fieldRipe'; buildingId: number }
+  | { type: 'fieldHarvested'; buildingId: number }
   | { type: 'constructionStarted'; buildingId: number; defId: BuildingId }
   | { type: 'constructionComplete'; buildingId: number; defId: BuildingId }
   | { type: 'upgradeStarted'; buildingId: number; defId: BuildingId; level: number }

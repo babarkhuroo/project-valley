@@ -4,14 +4,19 @@ import { buildingCenter } from '../sim/grid';
 import { sampleRoute } from '../sim/pathfinding';
 import type { GameState, Villager } from '../sim/types';
 import { findBuilding, findNode, jobTypeOf, villagerPosition, workRate } from '../sim/villagerAI';
+import { farmTask } from '../sim/farming';
 import type { Terrain } from '../world/terrain';
 import { createVillagerFarMesh, createVillagerRig, type VillagerRig } from './models/villagerModel';
 
 type Anim = WorkAnim | 'idle' | 'walk' | 'carry' | 'carryIdle' | 'celebrate';
 
+type FarmTask = ReturnType<typeof farmTask>;
+
 export interface ImpactEvent {
   villagerId: number;
   anim: WorkAnim;
+  /** What a farmer was doing (farm impacts only). */
+  task: FarmTask | null;
   position: THREE.Vector3;
   nodeId: number | null;
 }
@@ -37,6 +42,7 @@ const WORK_CYCLE: Record<WorkAnim, { period: number; impact: number | null }> = 
   chop: { period: 1.1, impact: 0.66 },
   dig: { period: 1.3, impact: 0.55 },
   mine: { period: 1.25, impact: 0.62 },
+  farm: { period: 1.3, impact: 0.6 },
   craft: { period: 0.8, impact: 0.5 },
   cook: { period: 1.8, impact: null },
   research: { period: 3.2, impact: null },
@@ -151,12 +157,14 @@ export class VillagersView {
     vis.heading = lerpAngle(vis.heading, targetHeading, 1 - Math.exp(-dt * 10));
     rig.root.rotation.y = vis.heading;
 
-    // Tools and loads.
+    // Tools and loads. Farmers swap tools with the field's stage.
+    const task: FarmTask | null = jt === 'farm' && v.job?.kind === 'operate' ? farmTask(findBuilding(state, v.job.buildingId)) : null;
     let tool: ToolId | null = null;
-    if (jobDef && !v.carrying && anim !== 'celebrate') tool = jobDef.tool;
+    if (jobDef && !v.carrying && anim !== 'celebrate') tool = task === 'sow' ? 'seeds' : task === 'harvest' ? 'sickle' : jobDef.tool;
     for (const [id, obj] of Object.entries(rig.tools)) obj.visible = id === tool && (anim !== 'idle' || v.activity === 'blocked');
     rig.loads.timber.visible = v.carrying?.resource === 'timber';
     rig.loads.clay.visible = v.carrying?.resource === 'clay';
+    rig.loads.grain.visible = v.carrying?.resource === 'grain';
 
     // Reset to the neutral pose, then layer the current animation on top.
     rig.body.position.set(0, 0, 0);
@@ -217,7 +225,7 @@ export class VillagersView {
         break;
       }
       default:
-        this.work(anim, vis, rig, dt * workSpeed * (hungry ? 0.7 : 1), t, v);
+        this.work(anim, vis, rig, dt * workSpeed * (hungry ? 0.7 : 1), t, v, task);
     }
     if (hungry) {
       rig.head.rotation.x += 0.22;
@@ -235,7 +243,7 @@ export class VillagersView {
     return b ? buildingCenter(b) : null;
   }
 
-  private work(anim: WorkAnim, vis: Visual, rig: VillagerRig, dt: number, t: number, v: Villager): void {
+  private work(anim: WorkAnim, vis: Visual, rig: VillagerRig, dt: number, t: number, v: Villager, task: FarmTask | null): void {
     const cycle = WORK_CYCLE[anim];
     vis.lastPhase = vis.phase;
     vis.phase = (vis.phase + dt / cycle.period) % 1;
@@ -245,7 +253,7 @@ export class VillagersView {
       const wrapped = vis.lastPhase > ph && (cycle.impact > vis.lastPhase || cycle.impact <= ph);
       if ((crossed || wrapped) && this.onImpact) {
         const pos = rig.root.localToWorld(new THREE.Vector3(0, 0.1, 0.45));
-        this.onImpact({ villagerId: v.id, anim, position: pos, nodeId: v.job?.kind === 'gather' ? v.job.nodeId : null });
+        this.onImpact({ villagerId: v.id, anim, task, position: pos, nodeId: v.job?.kind === 'gather' ? v.job.nodeId : null });
       }
     }
     switch (anim) {
@@ -302,6 +310,9 @@ export class VillagersView {
         rig.legR.rotation.x = 0.1;
         break;
       }
+      case 'farm':
+        this.farmPose(task ?? 'tend', ph, rig);
+        break;
       case 'cook': {
         const a = ph * Math.PI * 2;
         rig.armR.rotation.x = -1.05 + Math.sin(a) * 0.22;
@@ -330,6 +341,52 @@ export class VillagersView {
         rig.body.rotation.x = 0.22;
         rig.legL.rotation.x = -0.35;
         rig.legR.rotation.x = 0.35;
+        break;
+      }
+    }
+  }
+
+  /** Sowing casts seed in a wide arc, tending chops a hoe into the furrow, harvesting sweeps a sickle low. */
+  private farmPose(task: FarmTask, ph: number, rig: VillagerRig): void {
+    switch (task) {
+      case 'sow': {
+        // Hand dips into the pouch, then flings outward and across.
+        const cast = ph < 0.45 ? ease(ph / 0.45) : 1 - ease((ph - 0.45) / 0.55);
+        rig.armR.rotation.set(-0.5 - cast * 0.9, 0, -0.2 - cast * 0.9);
+        rig.armL.rotation.set(-0.35, 0, 0.25);
+        rig.body.rotation.y = -0.35 + cast * 0.6;
+        rig.body.rotation.x = 0.08;
+        rig.head.rotation.y = -0.2 + cast * 0.35;
+        rig.legL.rotation.x = -0.12;
+        rig.legR.rotation.x = 0.12;
+        break;
+      }
+      case 'tend': {
+        // Lift the hoe, drop it into the soil, draw it back.
+        let a: number;
+        if (ph < 0.5) a = -1.7 * ease(ph / 0.5);
+        else if (ph < 0.62) a = -1.7 + 1.5 * ((ph - 0.5) / 0.12);
+        else a = -0.2 - 0.25 * Math.sin(((ph - 0.62) / 0.38) * Math.PI);
+        rig.armR.rotation.x = a;
+        rig.armL.rotation.x = a * 0.9;
+        rig.armL.rotation.z = -0.3;
+        rig.armR.rotation.z = 0.1;
+        rig.body.rotation.x = ph > 0.5 ? 0.35 : 0.15;
+        rig.head.rotation.x = 0.25;
+        rig.legL.rotation.x = -0.25;
+        rig.legR.rotation.x = 0.25;
+        break;
+      }
+      case 'harvest': {
+        // Bent low: the left hand gathers a handful, the sickle sweeps across under it.
+        const sweep = ph < 0.6 ? ease(ph / 0.6) : 1 - ease((ph - 0.6) / 0.4);
+        rig.body.position.y = -0.07;
+        rig.body.rotation.x = 0.5;
+        rig.legL.rotation.x = -0.7;
+        rig.legR.rotation.x = 0.35;
+        rig.armL.rotation.set(-1.25, 0, 0.35 - sweep * 0.2);
+        rig.armR.rotation.set(-1.1, 0, 0.75 - sweep * 1.6);
+        rig.head.rotation.x = 0.2;
         break;
       }
     }

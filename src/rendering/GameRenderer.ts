@@ -173,6 +173,17 @@ export class GameRenderer {
       } else if (e.anim === 'dig') {
         this.particles.emit('clods', e.position, 4, 0.2);
         this.audio.playAt('dig', e.position);
+      } else if (e.anim === 'farm') {
+        if (e.task === 'sow') {
+          this.particles.emit('seeds', e.position.clone().setY(e.position.y + 0.5), 4, 0.35);
+          this.audio.playAt('seeds', e.position);
+        } else if (e.task === 'harvest') {
+          this.particles.emit('chaff', e.position.clone().setY(e.position.y + 0.3), 3, 0.3);
+          this.audio.playAt('sickle', e.position);
+        } else {
+          this.particles.emit('soil', e.position, 3, 0.2);
+          this.audio.playAt('hoe', e.position);
+        }
       } else if (e.anim === 'build') {
         this.particles.emit('dust', e.position.clone().setY(e.position.y + 0.3), 1, 0.3);
         this.audio.playAt('hammer', e.position);

@@ -61,6 +61,23 @@ export interface BuildingInstance {
   upgrade: UpgradeProgress | null;
   /** Workshop orders (null for non-workshops). */
   craft: CraftState | null;
+  /** The crop on a Grain Field (null for everything else). */
+  field: FieldState | null;
+}
+
+/**
+ * A Grain Field's crop: fallow → sown and growing → ripe → harvested load by load →
+ * fallow again. Growth is a timer (`ripeAt`) that tending brings forward, so the field
+ * ripens at an exact sim time like any other event.
+ */
+export interface FieldState {
+  stage: 'fallow' | 'growing' | 'ripe';
+  /** Sim time the current crop was sown (growing/ripe). */
+  sownAt: number | null;
+  /** Sim time the crop ripens (growing). */
+  ripeAt: number | null;
+  /** Grain still standing (ripe). */
+  stock: number;
 }
 
 export interface CraftOrder {

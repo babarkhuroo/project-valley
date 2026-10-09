@@ -33,6 +33,8 @@ import {
   type RateFactor,
 } from './villagerAI';
 import type { World } from './world';
+import { FARMING } from '../config/farming';
+import { farmTask, fieldYield } from './farming';
 
 /**
  * Read-only derived views of the state for the UI. Nothing here mutates the game.
@@ -114,6 +116,8 @@ export function villagerTask(state: GameState, v: Villager): TaskInfo {
   } else if (jt === 'study') {
     const active = state.research.active;
     label = active ? `Studying ${RESEARCH[active].name}` : 'Studying';
+  } else if (jt === 'farm' && v.job.kind === 'operate') {
+    label = { sow: 'Sowing grain', tend: 'Tending the crop', harvest: 'Harvesting grain' }[farmTask(findBuilding(state, v.job.buildingId))];
   } else if (jt === 'build') {
     const site = v.job.kind === 'construct' ? findBuilding(state, v.job.buildingId) : undefined;
     label = site?.upgrade ? `Upgrading ${target}` : `Building ${target}`;
@@ -145,14 +149,17 @@ export interface JobEstimate {
   consumes: Partial<Record<ResourceId, number>>;
   /** Recipe being estimated (workshops). */
   recipe?: RecipeId;
+  /** How the estimate works, when a batch isn't simply "work in, output out" (fields, cooking with grain). */
+  note?: string;
 }
 
 const travelCache = new Map<string, number>();
 
-const STORE_FOR: Record<'timber' | 'clay' | 'stone', BuildingId> = {
+const STORE_FOR: Record<'timber' | 'clay' | 'stone' | 'grain', BuildingId> = {
   timber: 'timberYard',
   clay: 'clayShed',
   stone: 'stoneYard',
+  grain: 'granary',
 };
 
 /** Walking time from a work spot to the nearest storage for `resource` and back (cached per layout). */
@@ -190,6 +197,11 @@ export function estimateJob(state: GameState, world: World, v: Villager, job: Jo
     return { jobType: jt, rate, factors, workSeconds: seconds, travelSeconds: 0, resource: recipe.output.resource, perMinute: recipe.output.amount * perItem, destination: BUILDINGS[shop.defId].name, consumes, recipe: recipeId };
   }
   const workSeconds = def.batchWork / rate;
+  if (jt === 'farm' && job.kind === 'operate') {
+    const field = findBuilding(state, job.buildingId);
+    if (!field) return null;
+    return estimateFarm(state, world, field, jt, rate, factors, workSeconds);
+  }
   let travelSeconds = 0;
   let destination: string | null = null;
   const out = def.output;
@@ -207,8 +219,47 @@ export function estimateJob(state: GameState, world: World, v: Villager, job: Jo
     const b = findBuilding(state, (job as { buildingId: number }).buildingId);
     destination = out.resource === 'knowledge' ? (state.research.active ? RESEARCH[state.research.active].name : 'Academy bank') : b ? BUILDINGS[b.defId].name : null;
   }
-  const perMinute = out ? (out.amount / (workSeconds + travelSeconds)) * 60 : (def.batchWork / workSeconds) * 60;
-  return { jobType: jt, rate, factors, workSeconds, travelSeconds, resource: out?.resource ?? null, perMinute, destination, consumes: {} };
+  let perMinute = out ? (out.amount / (workSeconds + travelSeconds)) * 60 : (def.batchWork / workSeconds) * 60;
+  const consumes: Partial<Record<ResourceId, number>> = {};
+  if (jt === 'cook' && state.resources.grain >= FARMING.cookGrain) {
+    // With grain in store each pot makes extra bowls.
+    const pots = 60 / (workSeconds + travelSeconds);
+    consumes.grain = pots * FARMING.cookGrain;
+    perMinute += pots * FARMING.cookBonus;
+    const note = `Each pot takes ${def.batchWork} work (${workSeconds.toFixed(1)}s) and, with ${FARMING.cookGrain} grain from the Granary, makes ${def.output!.amount + FARMING.cookBonus} stew.`;
+    return { jobType: jt, rate, factors, workSeconds, travelSeconds, resource: out?.resource ?? null, perMinute, destination, consumes, note };
+  }
+  return { jobType: jt, rate, factors, workSeconds, travelSeconds, resource: out?.resource ?? null, perMinute, destination, consumes };
+}
+
+/**
+ * One farmer working a field alone, a whole crop at a time: sow, tend until ripe (each
+ * tending batch saves `tendSeconds` on top of the time it takes), then cut and carry
+ * every load. `workSeconds` / `travelSeconds` are per batch, averaged over the cycle.
+ */
+function estimateFarm(state: GameState, world: World, field: BuildingInstance, jt: JobType, rate: number, factors: RateFactor[], batchSeconds: number): JobEstimate {
+  const load = JOBS.farm.output!.amount;
+  const crop = fieldYield(state, world.map, field);
+  const tends = Math.ceil(FARMING.growSeconds / (batchSeconds + FARMING.tendSeconds));
+  const cuts = Math.ceil(crop / load);
+  const trip = roundTripSeconds(state, world, frontSpot(world, field), `b${field.id}:${field.cellX},${field.cellZ},${field.rotation}`, 'grain');
+  const batches = 1 + tends + cuts;
+  const cycle = batches * batchSeconds + cuts * trip.seconds;
+  return {
+    jobType: jt,
+    rate,
+    factors,
+    workSeconds: batchSeconds,
+    travelSeconds: (cuts * trip.seconds) / batches,
+    resource: 'grain',
+    perMinute: (crop / cycle) * 60,
+    destination: trip.storage ? BUILDINGS[trip.storage.defId].name : null,
+    consumes: {},
+    note:
+      `A crop takes a sowing, about ${tends} tending and ${cuts} harvest batches of ${JOBS.farm.batchWork} work (${batchSeconds.toFixed(1)}s each)` +
+      (trip.storage ? `, plus ${trip.seconds.toFixed(1)}s walking to the ${BUILDINGS[trip.storage.defId].name} and back with each load of ${load}.` : '.') +
+      ' Working alone,',
+  };
 }
 
 /** Estimated net flow per minute for each resource given current assignments. */
@@ -283,7 +334,16 @@ export function nextSteps(state: GameState): Suggestion[] {
     const kitchen = state.buildings.find((b) => b.defId === 'cookhouse');
     tips.push({ id: 'food', kind: 'warning', text: 'Stew is running low — put someone on the pot', action: kitchen ? { type: 'selectBuilding', id: kitchen.id } : undefined });
   }
-  for (const r of ['timber', 'clay', 'stone'] as const) {
+  for (const b of state.buildings) {
+    if (b.field?.stage !== 'ripe' || state.villagers.some((v) => v.job?.kind === 'operate' && v.job.buildingId === b.id)) continue;
+    tips.push({ id: `ripe-${b.id}`, kind: 'idea', text: 'Grain is ripe — send a farmer to bring it in', action: { type: 'selectBuilding', id: b.id } });
+    break;
+  }
+  if (state.resources.grain >= FARMING.cookGrain && cooks === 0 && eaters > 0) {
+    const kitchen = state.buildings.find((b) => b.defId === 'cookhouse');
+    tips.push({ id: 'grain-cook', kind: 'idea', text: 'There is grain in the Granary — a cook can turn it into hearty Stew', action: kitchen ? { type: 'selectBuilding', id: kitchen.id } : undefined });
+  }
+  for (const r of ['timber', 'clay', 'stone', 'grain'] as const) {
     const cap = capacity(state, r);
     if (cap > 0 && state.resources[r] >= cap) {
       // Prefer pointing at an affordable upgrade of an existing store over building a new one.

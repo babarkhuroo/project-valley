@@ -47,6 +47,7 @@ export function createInitialState(world: World, now: number, seed = world.map.s
       variant: 0,
       upgrade: null,
       craft: null,
+      field: null,
     };
     state.buildings.push(b);
   }
