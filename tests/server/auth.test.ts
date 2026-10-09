@@ -3,20 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
 import { createApiMiddleware } from '../../server/api.ts';
 import { AuthService, MemoryAuthStore } from '../../server/auth.ts';
-import type { SaveStore, StoredSave } from '../../server/saveStore.ts';
-
-class MemorySaveStore implements SaveStore {
-  readonly saves = new Map<string, StoredSave>();
-  async load(id: string) {
-    return this.saves.get(id) ?? null;
-  }
-  async save(r: StoredSave) {
-    this.saves.set(r.playerId, r);
-  }
-  async remove(id: string) {
-    this.saves.delete(id);
-  }
-}
+import { MemorySaveStore } from '../../server/saveStore.ts';
 
 /** Drives the middleware with an in-memory request/response pair. */
 async function call(api: ReturnType<typeof createApiMiddleware>, method: string, url: string, body?: unknown, token?: string): Promise<{ status: number; body: Record<string, unknown> }> {

@@ -4,8 +4,8 @@ import { activeMembers, postChat, activePlayers, addPlayer, advanceValley, ageVa
 import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
 
 /**
- * Persistence for shared Valleys. A file-backed store ships now; the multiplayer
- * milestone swaps in PostgreSQL behind the same interface (see ARCHITECTURE.md).
+ * Persistence for shared Valleys: JSON files for a single process
+ * (`server/saveStore.ts`), Postgres for several (`server/db/pgStores.ts`).
  */
 export interface ValleyStore {
   valleyFor(playerId: string): Promise<string | null>;
@@ -13,8 +13,47 @@ export interface ValleyStore {
   clearMembership(playerId: string): Promise<void>;
   load(valleyId: string): Promise<ValleyState | null>;
   save(valley: ValleyState): Promise<void>;
-  /** Every Valley id (for browsing open Valleys and finding invite codes). */
-  list(): Promise<string[]>;
+  /** Open Valleys with room for another player, busiest first. */
+  listOpen(limit: number): Promise<ValleyListing[]>;
+  /** The Valley with this invite code (already upper-cased and trimmed). */
+  findByCode(code: string): Promise<string | null>;
+  /**
+   * Runs `fn` holding this Valley's lock for every process that shares the store.
+   * Single-process stores just run it: the service already serialises calls in-process.
+   */
+  lock<T>(valleyId: string, fn: () => Promise<T>): Promise<T>;
+}
+
+export interface ValleyListing {
+  id: string;
+  name: string;
+  players: number;
+  neighbours: number;
+  /** Building levels restored so far — a feel for how established it is. */
+  levels: number;
+}
+
+/** How a Valley shows in the "open Valleys" list (stores keep this next to the state). */
+export function listingOf(v: ValleyState): ValleyListing & { open: boolean; code: string } {
+  const players = activePlayers(v).length;
+  return {
+    id: v.id,
+    name: v.name,
+    players,
+    neighbours: activeMembers(v).length - players,
+    levels: Object.values(v.buildings).reduce((n, b) => n + b.level, 0),
+    open: v.open,
+    code: v.code,
+  };
+}
+
+/** Listing for stores that scan every Valley (files, memory). */
+export function rankOpen(all: (ValleyListing & { open: boolean })[], limit: number): ValleyListing[] {
+  return all
+    .filter((l) => l.open && l.players < MAX_PLAYERS)
+    .sort((a, b) => b.players - a.players || b.levels - a.levels)
+    .slice(0, limit)
+    .map(({ id, name, players, neighbours, levels }) => ({ id, name, players, neighbours, levels }));
 }
 
 export class MemoryValleyStore implements ValleyStore {
@@ -29,9 +68,6 @@ export class MemoryValleyStore implements ValleyStore {
   async clearMembership(playerId: string): Promise<void> {
     this.members.delete(playerId);
   }
-  async list(): Promise<string[]> {
-    return [...this.valleys.keys()];
-  }
   async load(valleyId: string): Promise<ValleyState | null> {
     const raw = this.valleys.get(valleyId);
     return raw ? (JSON.parse(raw) as ValleyState) : null;
@@ -39,15 +75,19 @@ export class MemoryValleyStore implements ValleyStore {
   async save(valley: ValleyState): Promise<void> {
     this.valleys.set(valley.id, JSON.stringify(valley));
   }
-}
-
-export interface ValleyListing {
-  id: string;
-  name: string;
-  players: number;
-  neighbours: number;
-  /** Building levels restored so far — a feel for how established it is. */
-  levels: number;
+  async listOpen(limit: number): Promise<ValleyListing[]> {
+    return rankOpen([...this.valleys.values()].map((raw) => listingOf(JSON.parse(raw) as ValleyState)), limit);
+  }
+  async findByCode(code: string): Promise<string | null> {
+    for (const raw of this.valleys.values()) {
+      const v = JSON.parse(raw) as ValleyState;
+      if (v.code === code) return v.id;
+    }
+    return null;
+  }
+  lock<T>(_valleyId: string, fn: () => Promise<T>): Promise<T> {
+    return fn();
+  }
 }
 
 export type JoinOutcome = { ok: true; view: ValleyView } | { ok: false; status: number; error: string };
@@ -140,7 +180,7 @@ export class ValleyService {
 
   private async locked<T>(valleyId: string, fn: () => Promise<T>): Promise<T> {
     const prev = this.locks.get(valleyId) ?? Promise.resolve();
-    const run = prev.catch(() => undefined).then(fn);
+    const run = prev.catch(() => undefined).then(() => this.store.lock(valleyId, fn));
     this.locks.set(valleyId, run);
     try {
       return await run;
@@ -193,30 +233,19 @@ export class ValleyService {
 
   /** Open Valleys with room, busiest first. */
   async listOpen(): Promise<ValleyListing[]> {
-    const out: ValleyListing[] = [];
-    for (const id of await this.store.list()) {
-      const v = await this.load(id);
-      if (!v || !v.open) continue;
-      const players = activePlayers(v).length;
-      if (players >= MAX_PLAYERS) continue;
-      out.push({ id: v.id, name: v.name, players, neighbours: activeMembers(v).length - players, levels: Object.values(v.buildings).reduce((n, b) => n + b.level, 0) });
-    }
-    return out.sort((a, b) => b.players - a.players || b.levels - a.levels).slice(0, 30);
+    return this.store.listOpen(30);
   }
 
-  private async findByCode(code: string): Promise<string | null> {
-    const want = code.trim().toUpperCase();
-    for (const id of await this.store.list()) {
-      const v = await this.load(id);
-      if (v?.code === want) return id;
-    }
-    return null;
+  /** A Valley's latest committed state, without advancing or writing it (for other processes' pushes). */
+  async peek(valleyId: string): Promise<ValleySnapshot | null> {
+    const v = await this.load(valleyId);
+    return v ? snapshotOf(v) : null;
   }
 
   /** Joins a Valley by invite code, or (if it is open) by id. */
   async joinExisting(playerId: string, names: PlayerNames, by: { code?: string; valleyId?: string }): Promise<JoinOutcome> {
     if (await this.store.valleyFor(playerId)) return { ok: false, status: 409, error: 'Leave your Valley first' };
-    const valleyId = by.code ? await this.findByCode(by.code) : (by.valleyId ?? null);
+    const valleyId = by.code ? await this.store.findByCode(by.code.trim().toUpperCase()) : (by.valleyId ?? null);
     if (!valleyId) return { ok: false, status: 404, error: 'No Valley has that code' };
     return this.locked(valleyId, async () => {
       const v = await this.load(valleyId);

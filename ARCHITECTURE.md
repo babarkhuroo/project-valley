@@ -53,7 +53,7 @@ The Valley is a second, independent simulation whose state is **owned by the ser
 
 - **State** (`valley/types.ts`): members (players and simulated neighbours), one record per communal building (`level`, `status` locked → collecting → building → collecting/complete, `delivered`, per-member `shares`, `doneAt`), a capped news log (deliveries make way before milestones), seeded RNG, and per-member op results for idempotency.
 - **Simulation** (`valley/valleySim.ts`): discrete-event like the village — `advanceValley(v, now)` jumps between neighbour visits and build completions; neighbours wake, sleep (8 h a day at their own hour), and deliver seeded parcels to the projects closest to done. One big advance equals many small ones (tested), so a Valley left alone for a week replays exactly.
-- **Server** (`server/valleyService.ts`): every read or write first advances the Valley to `Date.now()`; calls on one Valley are serialised by a promise lock so concurrent members can't overwrite each other. `ValleyStore` has file and in-memory implementations (Postgres later). Until matchmaking (milestone 4) each player founds their own Valley shared with seven simulated neighbours.
+- **Server** (`server/valleyService.ts`): every read or write first advances the Valley to `Date.now()`; calls on one Valley are serialised by a promise lock so concurrent members can't overwrite each other. `ValleyStore` has file, in-memory and Postgres implementations. Until matchmaking (milestone 4) each player founds their own Valley shared with seven simulated neighbours.
 - **Village side** (`sim/valley.ts`): `sendToValley` takes resources out of the village at once and queues a `ValleyOp` in the saved **outbox**; `game/valleyClient.ts` posts ops oldest-first with their `opId` (the server returns the stored result for a repeat, so retries after a dropped connection are safe) and applies the answer with `settleValleyOp` — reputation for what was accepted, anything no longer needed comes home. Nothing is ever lost or double-counted, even across reloads and offline play.
 - **Bonuses** from restored buildings (guild job rates, storage, meal length) are copied from each snapshot into `state.valley.bonuses`, so village offline catch-up stays deterministic: it uses the bonuses known when the save was made.
 
@@ -134,32 +134,51 @@ DELETE /api/save/:playerId
 
 **Identity** (`server/auth.ts`, `src/game/session.ts`): every browser holds a session token proving it owns its player id — guests get one automatically (an existing local village is claimed first-come), and a username + password account (scrypt-hashed, tokens stored as sha-256, a short lockout after repeated failures) lets the same village be played on any device. With an `AuthService`, every `/api/save/:id` and `/api/valley/:id` call must carry a token for that id (`Authorization: Bearer`, or `token` in the body for `sendBeacon`). While the browser switches identity nothing is saved, so the old village can never be written under the new id.
 
-The API is Connect-style middleware mounted in Vite for development and in `server/index.ts` for production, over a `SaveStore` interface (file-backed today).
+The API is Connect-style middleware mounted in Vite for development and in `server/index.ts` for production, over `SaveStore` / `ValleyStore` / `AuthStore` interfaces (files, or Postgres — below).
 
-### Planned relational model (PostgreSQL via Prisma, milestone 4)
+### Storage: files or PostgreSQL
 
-Static definitions stay in code/config; only per-player and shared runtime state is stored:
+`server/backend.ts` chooses the stores for a process: **PostgreSQL** when `DATABASE_URL` is set, JSON files in `server/data/` otherwise (one process only). Everything above the `SaveStore` / `ValleyStore` / `AuthStore` interfaces is identical.
+
+The schema lives in `server/db/schema.ts` as ordered, append-only migrations, applied at start-up under an advisory lock (so processes starting together don't race):
 
 ```
-User(id, auth…)                       Player(id, userId, name, level, xp)
-Village(playerId, stateJson, revision, savedAt)   -- the personal sim stays a versioned document
-Valley(id, name, seed, stateJson, revision)   -- today: server/data/valleys/<id>.json
-ValleyMember(valleyId, playerId, joinedAt, role)
-ValleyBuilding(valleyId, defId, level, status, progress)
-ValleyContribution(valleyId, buildingId, playerId, resource, amount, at)
-ValleyResearch(valleyId, researchId, progress, completedAt)
-Merchant(valleyId, arrivesAt, leavesAt) / TradeTask(merchantId, playerId, request, reward, status)
-Event(id, kind, startsAt, endsAt, goal) / EventContribution(eventId, playerId, amount)
+village_saves(player_id PK, revision, server_saved_at, payload jsonb)
+valleys(id PK, name, code, open, players, neighbours, levels, state jsonb, updated_at)   -- code + open-list indexes
+valley_members(player_id PK, valley_id → valleys, joined_at)
+accounts(username PK, display_name, player_id, salt, hash, created_at)
+players(player_id PK, username → accounts)        -- ids someone owns (guest or account)
+sessions(token_hash PK, player_id, username, created_at)
 ```
 
-Personal villages remain single documents (their state is highly interlinked and simulated as a whole); shared Valley state is relational because many players write to it concurrently.
+Villages and Valleys are stored as **versioned JSON documents**, not normalised tables. This departs from the earlier plan (a relational Valley model through Prisma): both are simulated as a whole — the client's deterministic village sim, the server's Valley sim with idempotent op ids — so the document is the unit that is read, advanced and written, and splitting it into rows would only add joins to every request. What has to be found or unique on its own (membership, invite codes, the open-Valley list, accounts, sessions, guest claims) has real columns and indexes. Plain `pg` with hand-written SQL keeps the dependency small.
+
+**What keeps several processes correct:**
+
+| Risk | Where it's handled |
+| --- | --- |
+| A stale save overwriting a newer one | `SaveStore.write`: one conditional upsert (`… WHERE revision <= EXCLUDED.revision`) |
+| Two processes advancing the same Valley at once (lost deliveries) | `ValleyStore.lock`: a session advisory lock per Valley, held on its own connection pool for the whole load → advance → save; released by Postgres if the process dies. `tests/server/postgres.test.ts` shows deliveries are lost without it |
+| Two browsers claiming one player id, or one username | `INSERT … ON CONFLICT DO NOTHING` |
+| Login lockout | Per process (it only needs to slow guessing down) |
+| Chat rate limit | Per process, as before |
+
+### Live updates across processes
+
+Each process keeps its own WebSocket connections. The `LiveHub` publishes three small messages on a `LiveBus` (`server/bus.ts`; Postgres `LISTEN`/`NOTIFY` in production, an in-memory network in tests):
+
+- `changed {valleyId}` after every commit: other processes with members of that Valley reload it from the database and push the snapshot.
+- `member {playerId, valleyId}` when someone joins or leaves: their socket may be on another process.
+- `presence {valleyId, online}` whenever a process's connected players change, and as a 10 s heartbeat. Each process merges the others' lists; a process that goes silent (crash) is forgotten after 35 s.
+
+Measured with two production processes on one database: a delivery or chat line through one reaches a player on the other immediately, a graceful shutdown updates presence in ≈0.2 s, a `kill -9` in ≈40 s, and a dropped `LISTEN` connection reconnects by itself. `scripts/import-to-postgres.ts` copies a file-backed server's data into Postgres.
 
 ## Multiplayer (milestone 4)
 
 - **Membership** (`valleySim.ts` + `server/valleyService.ts`): Valleys carry a name, an invite `code` and an `open` flag; members have `leftAt` (players who left, neighbours who moved on). `addPlayer` / `removePlayer` call `rebalanceNeighbours`, which keeps active members at `TARGET_MEMBERS` (8) by retiring or recalling simulated neighbours; at most `MAX_PLAYERS` (10) players. Routes: `GET /api/valleys` (open Valleys with room), `POST /api/valley/:id/{create,join,leave,settings,profile,chat}`; joining takes `{ code }` or an open `{ valleyId }`.
 - **Live link** (`server/ws.ts`, `server/live.ts`, client in `game/valleyClient.ts`): a dependency-free RFC 6455 endpoint at `/api/live?token=…` (Vite's dev server and the production server both route upgrades to it). `ValleyService` notifies listeners after every committed change; the `LiveHub` pushes a snapshot to every connected member (serialised once per change) and the list of connected players on every arrival/departure, and advances connected Valleys every 10 s so neighbours' activity streams in. All writes stay on the HTTP API (validated, idempotent); the socket is server → client only, so a dropped connection loses nothing — the client reconnects with backoff and keeps a slow poll as a safety net.
 - **Chat** lives in `ValleyState.chat` (last 80, tidied, 200 chars, rate-limited per member); simulated neighbours add seeded lines on welcomes, finished buildings and festivals, so replays stay deterministic.
-- **Scaling path:** a single process holds the per-Valley locks and the hub. Running several processes means moving the stores to Postgres (model below) and the hub's fan-out to a pub/sub channel per Valley; nothing above the store and hub interfaces changes.
+- **Scaling:** with `DATABASE_URL` set, any number of processes can serve players behind a load balancer (no sticky sessions needed): per-Valley locks are Postgres advisory locks and the hubs share commits and presence over `LISTEN`/`NOTIFY` (see *Storage* above). Without it, files and one process.
 
 ## Multiplayer direction
 

@@ -141,13 +141,12 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
             sendJson(res, 400, { error: 'malformed save' });
             return;
           }
-          const existing = await store.load(playerId);
-          if (existing && existing.revision > body.revision) {
-            sendJson(res, 409, { error: 'stale revision', revision: existing.revision });
+          const serverSavedAt = Date.now();
+          const written = await store.write({ playerId, revision: body.revision, serverSavedAt, payload: body.payload });
+          if (!written.ok) {
+            sendJson(res, 409, { error: 'stale revision', revision: written.revision });
             return;
           }
-          const serverSavedAt = Date.now();
-          await store.save({ playerId, revision: body.revision, serverSavedAt, payload: body.payload });
           sendJson(res, 200, { revision: body.revision, serverSavedAt });
           return;
         }

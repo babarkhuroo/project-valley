@@ -3,19 +3,19 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApiMiddleware } from './api.ts';
-import { FileSaveStore, FileValleyStore } from './saveStore.ts';
-import { ValleyService } from './valleyService.ts';
-import { AuthService, FileAuthStore } from './auth.ts';
-import { LiveHub } from './live.ts';
+import { createBackend } from './backend.ts';
 
-/** Production server: serves the built client from /dist plus the persistence API. */
+/**
+ * Production server: serves the built client from /dist plus the persistence API.
+ * With DATABASE_URL set it uses Postgres and any number of these processes can run
+ * side by side (behind a load balancer); without it, JSON files in server/data.
+ */
 const root = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(root, '../dist');
 const port = Number(process.env.PORT ?? 8080);
-const valleys = new ValleyService(new FileValleyStore(path.resolve(root, 'data')));
-const auth = new AuthService(new FileAuthStore(path.resolve(root, 'data/auth.json')));
-const hub = new LiveHub(valleys, auth);
-const api = createApiMiddleware(new FileSaveStore(path.resolve(root, 'data/saves')), valleys, { auth });
+const backend = await createBackend({ dataDir: path.resolve(root, 'data'), databaseUrl: process.env.DATABASE_URL });
+const { hub } = backend;
+const api = createApiMiddleware(backend.saves, backend.valleys, { auth: backend.auth });
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -27,7 +27,7 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
-createServer((req, res) => {
+const server = createServer((req, res) => {
   void api(req, res, async () => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const requested = path.normalize(path.join(distDir, decodeURIComponent(url.pathname)));
@@ -48,5 +48,13 @@ createServer((req, res) => {
     else socket.destroy();
   })
   .listen(port, () => {
-    console.log(`Project Valley server listening on http://localhost:${port}`);
+    console.log(`Project Valley server listening on http://localhost:${port} (${backend.kind} storage)`);
   });
+
+// Close sockets, the bus and the database cleanly so a rolling restart drops nothing mid-write.
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    server.close();
+    void backend.close().finally(() => process.exit(0));
+  });
+}

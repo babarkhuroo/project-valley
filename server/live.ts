@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { ValleySnapshot } from '../src/valley/types.ts';
 import type { AuthService } from './auth.ts';
+import type { Envelope, LiveBus } from './bus.ts';
 import type { ValleyService } from './valleyService.ts';
 import { acceptWebSocket, type WsConnection } from './ws.ts';
 
@@ -15,28 +16,56 @@ import { acceptWebSocket, type WsConnection } from './ws.ts';
  *   → { type: 'snapshot', memberId, now, valley }
  *   → { type: 'presence', online: string[] }
  *   ← { type: 'ping' }  → { type: 'pong' }
+ *
+ * With a `LiveBus`, several processes share the work: each keeps its own sockets,
+ * tells the others when it commits a change or someone's membership moves, and
+ * shares who is connected through it — so presence and pushes span every process.
  */
+
+/** Presence heard from another process is dropped if not refreshed within this long. */
+const REMOTE_PRESENCE_MS = 35_000;
+
 export class LiveHub {
   private readonly connections = new Map<string, Set<WsConnection>>();
   private readonly valleyOf = new Map<string, string>();
+  /** Players connected to each Valley through this process. */
   private readonly members = new Map<string, Set<string>>();
+  /** valleyId → origin → players connected through that other process. */
+  private readonly remote = new Map<string, Map<string, { online: string[]; at: number }>>();
+  /** The presence list each Valley's local members were last sent, so only changes go out. */
+  private readonly lastPresence = new Map<string, string>();
   private readonly timer: ReturnType<typeof setInterval>;
+  private readonly unsubscribe: (() => void) | null;
+  private readonly bus: LiveBus | null;
+  private readonly clock: () => number;
 
   constructor(
     private readonly valleys: ValleyService,
     private readonly auth: AuthService,
-    options: { tickMs?: number } = {},
+    options: { tickMs?: number; bus?: LiveBus; clock?: () => number } = {},
   ) {
-    valleys.listeners.add((snap, now) => this.pushSnapshot(snap, now));
-    valleys.membership.add((playerId, valleyId) => this.move(playerId, valleyId));
+    this.bus = options.bus ?? null;
+    this.clock = options.clock ?? Date.now;
+    valleys.listeners.add((snap, now) => {
+      this.pushSnapshot(snap, now);
+      this.bus?.publish({ type: 'changed', valleyId: snap.id });
+    });
+    valleys.membership.add((playerId, valleyId) => {
+      this.move(playerId, valleyId);
+      this.bus?.publish({ type: 'member', playerId, valleyId });
+    });
+    this.unsubscribe = this.bus?.subscribe((m) => void this.hear(m)) ?? null;
     // Keep connected Valleys moving so neighbours' parcels and builds show up live.
     this.timer = setInterval(() => void this.tick(), options.tickMs ?? 10_000);
     this.timer.unref?.();
   }
 
-  /** Players connected to a Valley right now. */
+  /** Players connected to a Valley right now, through any process. */
   online(valleyId: string): string[] {
-    return [...(this.members.get(valleyId) ?? [])];
+    const all = new Set(this.members.get(valleyId) ?? []);
+    const now = this.clock();
+    for (const r of this.remote.get(valleyId)?.values() ?? []) if (now - r.at < REMOTE_PRESENCE_MS) for (const id of r.online) all.add(id);
+    return [...all].sort();
   }
 
   async handleUpgrade(req: IncomingMessage, socket: Duplex): Promise<void> {
@@ -67,10 +96,13 @@ export class LiveHub {
         this.move(id, null);
       }
     };
-    this.move(id, await this.valleys.valleyIdFor(id));
-    // A fresh snapshot straight away, so the client needn't poll on connect.
+    const valleyId = await this.valleys.valleyIdFor(id);
+    this.move(id, valleyId);
+    // A fresh snapshot and who's here straight away, so the client needn't poll on connect
+    // (and a second tab of someone already present still learns who's online).
     const view = await this.valleys.get(id);
     if (view && conn.isOpen) conn.send(JSON.stringify({ type: 'snapshot', ...view }));
+    if (valleyId && conn.isOpen) conn.send(JSON.stringify({ type: 'presence', online: this.online(valleyId) }));
   }
 
   /** Re-files a player under their (new) Valley and tells both Valleys who's here. */
@@ -83,14 +115,45 @@ export class LiveHub {
       this.members.get(before)?.delete(playerId);
       if (this.members.get(before)?.size === 0) this.members.delete(before);
       this.valleyOf.delete(playerId);
-      this.pushPresence(before);
+      this.presenceChanged(before);
     }
     if (after) {
       let m = this.members.get(after);
       if (!m) this.members.set(after, (m = new Set()));
       m.add(playerId);
       this.valleyOf.set(playerId, after);
-      this.pushPresence(after);
+      this.presenceChanged(after);
+    }
+  }
+
+  /** Local presence moved: tell local members and the other processes. */
+  private presenceChanged(valleyId: string): void {
+    this.pushPresence(valleyId);
+    this.bus?.publish({ type: 'presence', valleyId, online: [...(this.members.get(valleyId) ?? [])] });
+  }
+
+  /** Something happened on another process. */
+  private async hear(m: Envelope): Promise<void> {
+    switch (m.type) {
+      case 'changed': {
+        if (!this.members.has(m.valleyId)) return;
+        const snap = await this.valleys.peek(m.valleyId);
+        if (snap) this.pushSnapshot(snap, this.clock());
+        return;
+      }
+      case 'member':
+        // Their socket may be here even though they joined through another process.
+        if (this.connections.has(m.playerId)) this.move(m.playerId, m.valleyId);
+        return;
+      case 'presence': {
+        let byOrigin = this.remote.get(m.valleyId);
+        if (!byOrigin) this.remote.set(m.valleyId, (byOrigin = new Map()));
+        if (m.online.length > 0) byOrigin.set(m.origin, { online: m.online, at: this.clock() });
+        else byOrigin.delete(m.origin);
+        if (byOrigin.size === 0) this.remote.delete(m.valleyId);
+        this.pushPresence(m.valleyId);
+        return;
+      }
     }
   }
 
@@ -98,9 +161,19 @@ export class LiveHub {
     for (const c of this.connections.get(playerId) ?? []) if (c.isOpen) c.send(text);
   }
 
+  /** Sends local members the current presence list, if it differs from what they were last sent. */
   private pushPresence(valleyId: string): void {
-    const text = JSON.stringify({ type: 'presence', online: this.online(valleyId) });
-    for (const id of this.members.get(valleyId) ?? []) this.sendTo(id, text);
+    const ids = this.members.get(valleyId);
+    if (!ids || ids.size === 0) {
+      this.lastPresence.delete(valleyId);
+      return;
+    }
+    const online = this.online(valleyId);
+    const key = online.join(',');
+    if (this.lastPresence.get(valleyId) === key) return;
+    this.lastPresence.set(valleyId, key);
+    const text = JSON.stringify({ type: 'presence', online });
+    for (const id of ids) this.sendTo(id, text);
   }
 
   private pushSnapshot(snap: ValleySnapshot, now: number): void {
@@ -112,7 +185,15 @@ export class LiveHub {
   }
 
   private async tick(): Promise<void> {
+    // Forget processes that went quiet (crashed or cut off) and tell members who's really here.
+    for (const [valleyId, byOrigin] of this.remote) {
+      for (const [origin, r] of byOrigin) if (this.clock() - r.at >= REMOTE_PRESENCE_MS) byOrigin.delete(origin);
+      if (byOrigin.size === 0) this.remote.delete(valleyId);
+      this.pushPresence(valleyId);
+    }
     for (const valleyId of [...this.members.keys()]) {
+      // Heartbeat: other processes keep counting our players as present.
+      this.bus?.publish({ type: 'presence', valleyId, online: [...(this.members.get(valleyId) ?? [])] });
       try {
         await this.valleys.touch(valleyId);
       } catch {
@@ -123,6 +204,7 @@ export class LiveHub {
 
   close(): void {
     clearInterval(this.timer);
+    this.unsubscribe?.();
     for (const set of this.connections.values()) for (const c of set) c.close(1001);
   }
 }

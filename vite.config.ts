@@ -4,21 +4,17 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApiMiddleware } from './server/api.ts';
-import { FileSaveStore, FileValleyStore } from './server/saveStore.ts';
-import { ValleyService } from './server/valleyService.ts';
-import { AuthService, FileAuthStore } from './server/auth.ts';
-import { LiveHub } from './server/live.ts';
+import { createBackend } from './server/backend.ts';
+import type { LiveHub } from './server/live.ts';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
-function createApi(dev: boolean) {
-  const saves = new FileSaveStore(path.resolve(projectRoot, 'server/data/saves'));
-  const valleys = new ValleyService(new FileValleyStore(path.resolve(projectRoot, 'server/data')));
-  const auth = new AuthService(new FileAuthStore(path.resolve(projectRoot, 'server/data/auth.json')));
-  const hub = new LiveHub(valleys, auth);
-  return { middleware: createApiMiddleware(saves, valleys, { dev, auth }), hub };
+/** JSON files in server/data by default; set DATABASE_URL to develop against Postgres. */
+async function createApi(dev: boolean) {
+  const backend = await createBackend({ dataDir: path.resolve(projectRoot, 'server/data'), databaseUrl: process.env.DATABASE_URL });
+  return { middleware: createApiMiddleware(backend.saves, backend.valleys, { dev, auth: backend.auth }), hub: backend.hub };
 }
 
 /** Routes WebSocket upgrades for /api/live to the hub (Vite's own HMR socket is left alone). */
@@ -32,14 +28,14 @@ function liveUpgrades(httpServer: { on(event: 'upgrade', fn: (req: IncomingMessa
 function valleyApi(): Plugin {
   return {
     name: 'valley-api',
-    configureServer(server) {
+    async configureServer(server) {
       // Dev-only routes (Valley time skips) exist only on the dev server.
-      const api = createApi(true);
+      const api = await createApi(true);
       server.middlewares.use(api.middleware);
       liveUpgrades(server.httpServer, api.hub);
     },
-    configurePreviewServer(server) {
-      const api = createApi(false);
+    async configurePreviewServer(server) {
+      const api = await createApi(false);
       server.middlewares.use(api.middleware);
       liveUpgrades(server.httpServer, api.hub);
     },

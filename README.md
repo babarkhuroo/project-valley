@@ -22,16 +22,35 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The dev server also serves the save API (`/api/*`), storing saves in `server/data/saves/`.
+Open http://localhost:5173. The dev server also serves the save API (`/api/*`), storing saves, Valleys and accounts as JSON files in `server/data/`.
+
+### With PostgreSQL
+
+Set `DATABASE_URL` and the same server stores everything in Postgres instead (the schema is created and migrated on start-up). That is also what lets several server processes run side by side behind a load balancer: they share the database, serialise each Valley with an advisory lock, and pass live updates to each other with `LISTEN`/`NOTIFY`.
+
+```bash
+createdb project_valley
+```
+
+```bash
+DATABASE_URL=postgres:///project_valley npm run serve
+```
+
+To move an existing file-backed server's data across (safe to re-run):
+
+```bash
+DATABASE_URL=postgres:///project_valley npx tsx scripts/import-to-postgres.ts
+```
 
 Other scripts:
 
 | Command | What it does |
 | --- | --- |
 | `npm test` | Economy/simulation test suite (vitest) |
+| `npm run test:pg` | Postgres store tests, in a throwaway schema of `project_valley_test` (or `TEST_DATABASE_URL`) |
 | `npm run typecheck` | Strict TypeScript check |
 | `npm run build` | Production build into `dist/` (dev tools are stripped) |
-| `npm run serve` | Production server: `dist/` + save API on `PORT` (default 8080) |
+| `npm run serve` | Production server: `dist/` + save API on `PORT` (default 8080); Postgres when `DATABASE_URL` is set |
 | `npm run balance-doc` | Regenerate [BALANCING.md](BALANCING.md) from the config |
 | `npx tsx scripts/probe-map.ts` | ASCII view of the village grid and early production rates |
 

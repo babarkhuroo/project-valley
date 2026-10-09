@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ValleyState } from '../src/valley/types.ts';
-import type { ValleyStore } from './valleyService.ts';
+import { listingOf, rankOpen, type ValleyListing, type ValleyStore } from './valleyService.ts';
 
 /** A persisted save record. `serverSavedAt` is always stamped by the server clock. */
 export interface StoredSave {
@@ -12,19 +12,58 @@ export interface StoredSave {
   payload: unknown;
 }
 
+/** A write either lands, or loses to a newer revision already stored. */
+export type SaveWrite = { ok: true } | { ok: false; revision: number };
+
 /**
- * Storage abstraction for player saves. The vertical slice ships a JSON-file
- * implementation; the multiplayer milestone swaps in a PostgreSQL-backed store
- * behind the same interface (see ARCHITECTURE.md).
+ * Storage for player saves: JSON files for a single process, Postgres
+ * (`server/db/pgStores.ts`) for several. `write` refuses a revision older than the
+ * stored one atomically, so two processes can never let a stale save win.
  */
 export interface SaveStore {
   load(playerId: string): Promise<StoredSave | null>;
-  save(record: StoredSave): Promise<void>;
+  write(record: StoredSave): Promise<SaveWrite>;
   remove(playerId: string): Promise<void>;
 }
 
+/** Revision check + write for stores that can only do it as two steps (one process). */
+async function checkedWrite(store: { load(id: string): Promise<StoredSave | null>; put(r: StoredSave): Promise<void> }, record: StoredSave): Promise<SaveWrite> {
+  const existing = await store.load(record.playerId);
+  if (existing && existing.revision > record.revision) return { ok: false, revision: existing.revision };
+  await store.put(record);
+  return { ok: true };
+}
+
+export class MemorySaveStore implements SaveStore {
+  readonly saves = new Map<string, StoredSave>();
+  async load(playerId: string): Promise<StoredSave | null> {
+    return this.saves.get(playerId) ?? null;
+  }
+  async put(record: StoredSave): Promise<void> {
+    this.saves.set(record.playerId, record);
+  }
+  write(record: StoredSave): Promise<SaveWrite> {
+    return checkedWrite(this, record);
+  }
+  async remove(playerId: string): Promise<void> {
+    this.saves.delete(playerId);
+  }
+}
+
 export class FileSaveStore implements SaveStore {
+  private readonly queues = new Map<string, Promise<unknown>>();
   constructor(private readonly dir: string) {}
+
+  /** Check-and-write per player, one at a time (this store is single-process). */
+  write(record: StoredSave): Promise<SaveWrite> {
+    const prev = this.queues.get(record.playerId) ?? Promise.resolve();
+    const run = prev.catch(() => undefined).then(() => checkedWrite(this, record));
+    this.queues.set(record.playerId, run);
+    void run.finally(() => {
+      if (this.queues.get(record.playerId) === run) this.queues.delete(record.playerId);
+    });
+    return run;
+  }
 
   private fileFor(playerId: string): string {
     return path.join(this.dir, `${playerId}.json`);
@@ -40,7 +79,7 @@ export class FileSaveStore implements SaveStore {
     }
   }
 
-  async save(record: StoredSave): Promise<void> {
+  async put(record: StoredSave): Promise<void> {
     await fs.mkdir(this.dir, { recursive: true });
     const target = this.fileFor(record.playerId);
     const tmp = `${target}.${process.pid}.tmp`;
@@ -85,12 +124,33 @@ export class FileValleyStore implements ValleyStore {
     await fs.rm(path.join(this.dir, 'members', `${playerId}.json`), { force: true });
   }
 
-  async list(): Promise<string[]> {
+  private async ids(): Promise<string[]> {
     try {
       return (await fs.readdir(path.join(this.dir, 'valleys'))).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5));
     } catch {
       return [];
     }
+  }
+
+  private async all(): Promise<ValleyState[]> {
+    const out: ValleyState[] = [];
+    for (const id of await this.ids()) {
+      const v = await this.load(id);
+      if (v) out.push(v);
+    }
+    return out;
+  }
+
+  async listOpen(limit: number): Promise<ValleyListing[]> {
+    return rankOpen((await this.all()).map(listingOf), limit);
+  }
+
+  async findByCode(code: string): Promise<string | null> {
+    return (await this.all()).find((v) => v.code === code)?.id ?? null;
+  }
+
+  lock<T>(_valleyId: string, fn: () => Promise<T>): Promise<T> {
+    return fn();
   }
 
   async load(valleyId: string): Promise<ValleyState | null> {
