@@ -6,6 +6,7 @@ import type { Envelope } from '../../server/bus.ts';
 import { connectPostgres, PgAuthStore, PgBus, PgSaveStore, PgValleyStore, type PgConnection } from '../../server/db/pgStores.ts';
 import { MIGRATIONS, migrate } from '../../server/db/schema.ts';
 import { ValleyService } from '../../server/valleyService.ts';
+import { PgPlaytestStore, playtestReport } from '../../server/playtest.ts';
 
 /**
  * Runs against a real Postgres when TEST_DATABASE_URL is set (`npm run test:pg` uses
@@ -118,5 +119,17 @@ describe.skipIf(!URL)('postgres stores', () => {
     expect(heardA).toEqual([{ type: 'presence', valleyId: 'v-bus-1', online: ['p-1'], origin: b.origin }]);
     await a.close();
     await b.close();
+  });
+
+  it('keeps playtest feedback and progress', async () => {
+    const store = new PgPlaytestStore(db.pool);
+    await store.addFeedback({ playerId: 'p-pg-play-01', at: 1000, mood: 'stuck', text: 'where is clay?', context: { level: 2 } });
+    await store.addEvents([
+      { playerId: 'p-pg-play-01', at: 1000, kind: 'built', simTime: 300, playMinutes: 5, data: { id: 'academy', label: 'Built Academy' } },
+      { playerId: 'p-pg-play-02', at: 1001, kind: 'built', simTime: 500, playMinutes: 7, data: { id: 'academy', label: 'Built Academy' } },
+    ]);
+    const r = await playtestReport(store);
+    expect(r.feedback[0]).toMatchObject({ text: 'where is clay?', mood: 'stuck', context: { level: 2 } });
+    expect(r.milestones.find((m) => m.label === 'Built Academy')).toMatchObject({ players: 2, medianSimMinutes: 7, medianPlayMinutes: 6 });
   });
 });

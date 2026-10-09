@@ -15,7 +15,7 @@ const distDir = path.resolve(root, '../dist');
 const port = Number(process.env.PORT ?? 8080);
 const backend = await createBackend({ dataDir: path.resolve(root, 'data'), databaseUrl: process.env.DATABASE_URL });
 const { hub } = backend;
-const api = createApiMiddleware(backend.saves, backend.valleys, { auth: backend.auth });
+const api = createApiMiddleware(backend.saves, backend.valleys, { auth: backend.auth, playtest: backend.playtest, adminToken: process.env.ADMIN_TOKEN || undefined });
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

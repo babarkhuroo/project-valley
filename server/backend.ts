@@ -5,6 +5,7 @@ import { connectPostgres, PgAuthStore, PgBus, PgSaveStore, PgValleyStore } from 
 import { LiveHub } from './live.ts';
 import { FileSaveStore, FileValleyStore, type SaveStore } from './saveStore.ts';
 import { ValleyService, type ValleyStore } from './valleyService.ts';
+import { FilePlaytestStore, PgPlaytestStore, type PlaytestStore } from './playtest.ts';
 
 /**
  * Picks the storage for a server process: Postgres when `DATABASE_URL` is set (any
@@ -17,6 +18,7 @@ export interface Backend {
   valleys: ValleyService;
   auth: AuthService;
   hub: LiveHub;
+  playtest: PlaytestStore;
   close(): Promise<void>;
 }
 
@@ -24,6 +26,7 @@ export async function createBackend(options: { dataDir: string; databaseUrl?: st
   let saves: SaveStore;
   let valleyStore: ValleyStore;
   let authStore: AuthStore;
+  let playtest: PlaytestStore;
   let bus: LiveBus | null = null;
   let closeDb = async () => {};
   const url = options.databaseUrl?.trim();
@@ -32,12 +35,14 @@ export async function createBackend(options: { dataDir: string; databaseUrl?: st
     saves = new PgSaveStore(db);
     valleyStore = new PgValleyStore(db);
     authStore = new PgAuthStore(db);
+    playtest = new PgPlaytestStore(db.pool);
     bus = await PgBus.start(db);
     closeDb = () => db.close();
   } else {
     saves = new FileSaveStore(path.join(options.dataDir, 'saves'));
     valleyStore = new FileValleyStore(options.dataDir);
     authStore = new FileAuthStore(path.join(options.dataDir, 'auth.json'));
+    playtest = new FilePlaytestStore(path.join(options.dataDir, 'playtest'));
   }
   const valleys = new ValleyService(valleyStore);
   const auth = new AuthService(authStore);
@@ -48,6 +53,7 @@ export async function createBackend(options: { dataDir: string; databaseUrl?: st
     valleys,
     auth,
     hub,
+    playtest,
     async close() {
       hub.close();
       await bus?.close();

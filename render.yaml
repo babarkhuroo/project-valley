@@ -14,6 +14,9 @@ services:
         value: "24"
       - key: VITE_CONFIG_NATIVE_IGNORE_WARNING
         value: "true"
+      # Read the playtest report with this (Render generates it; see the service's Environment tab).
+      - key: ADMIN_TOKEN
+        generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: project-valley-db

@@ -3,6 +3,7 @@ import type { SaveStore } from './saveStore.ts';
 import type { ResourceBag } from '../src/valley/types.ts';
 import type { JoinOutcome, ValleyService } from './valleyService.ts';
 import type { AuthResult, AuthService } from './auth.ts';
+import { isAdmin, playtestReport, receiveFeedback, receiveProgress, type PlaytestStore } from './playtest.ts';
 
 const PLAYER_ID = /^[a-z0-9-]{8,64}$/;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -59,6 +60,10 @@ function readBody(req: IncomingMessage): Promise<string> {
 export interface ApiOptions {
   dev?: boolean;
   auth?: AuthService;
+  /** Feedback notes and opt-in progress events. */
+  playtest?: PlaytestStore;
+  /** Bearer token for `GET /api/admin/playtest` (unset: the report is unavailable). */
+  adminToken?: string;
 }
 
 function bearer(req: IncomingMessage): string | null {
@@ -89,6 +94,27 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
       const token = bearer(req);
       if (auth && (url.pathname === '/api/session' || url.pathname === '/api/me' || url.pathname.startsWith('/api/account/'))) {
         await handleAuth(req, res, auth, url.pathname, token, json());
+        return;
+      }
+      const playtest = options.playtest;
+      if (playtest && (url.pathname === '/api/feedback' || url.pathname === '/api/progress') && req.method === 'POST') {
+        const body = json();
+        // sendBeacon (leaving the page) can't set headers: the token may ride in the body.
+        const me = auth ? await auth.authenticate(token ?? (typeof body.token === 'string' ? body.token : null)) : null;
+        if (!me) {
+          sendJson(res, 401, { error: 'Not signed in' });
+          return;
+        }
+        const out = url.pathname === '/api/feedback' ? await receiveFeedback(playtest, me.playerId, body) : await receiveProgress(playtest, me.playerId, body);
+        sendJson(res, out.status, out.body);
+        return;
+      }
+      if (playtest && url.pathname === '/api/admin/playtest' && req.method === 'GET') {
+        if (!isAdmin(req, options.adminToken)) {
+          sendJson(res, 401, { error: 'admin token required' });
+          return;
+        }
+        sendJson(res, 200, await playtestReport(playtest));
         return;
       }
       if (url.pathname === '/api/valleys' && req.method === 'GET' && valleys) {

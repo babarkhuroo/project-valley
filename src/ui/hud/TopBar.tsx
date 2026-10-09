@@ -92,6 +92,9 @@ export function TopBar() {
           <Icon name="bell" size={24} />
           {unread > 0 ? <span className="badge-count">{unread > 9 ? '9+' : unread}</span> : null}
         </button>
+        <button className="round-btn" onClick={() => ui.openPanel('feedback')} title="Send feedback" aria-label="Send feedback">
+          <Icon name="feedback" size={24} />
+        </button>
         <button className="round-btn" onClick={() => ui.openPanel('settings')} title="Settings">
           <Icon name="gear" size={24} />
         </button>

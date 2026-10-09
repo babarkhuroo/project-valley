@@ -14,7 +14,7 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 /** JSON files in server/data by default; set DATABASE_URL to develop against Postgres. */
 async function createApi(dev: boolean) {
   const backend = await createBackend({ dataDir: path.resolve(projectRoot, 'server/data'), databaseUrl: process.env.DATABASE_URL });
-  return { middleware: createApiMiddleware(backend.saves, backend.valleys, { dev, auth: backend.auth }), hub: backend.hub };
+  return { middleware: createApiMiddleware(backend.saves, backend.valleys, { dev, auth: backend.auth, playtest: backend.playtest, adminToken: process.env.ADMIN_TOKEN || (dev ? 'dev' : undefined) }), hub: backend.hub };
 }
 
 /** Routes WebSocket upgrades for /api/live to the hub (Vite's own HMR socket is left alone). */

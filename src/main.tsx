@@ -8,6 +8,7 @@ import { runtime } from './game/runtime';
 import { ValleyClient } from './game/valleyClient';
 import { App } from './ui/App';
 import { attachNotifications, attachValleyNotifications } from './ui/notifications';
+import { attachProgressReporter } from './game/playtest';
 import { applyPrefs, ui } from './ui/store';
 
 applyPrefs(ui.get().prefs);
@@ -29,6 +30,7 @@ bootGame()
   .then(({ game, away, source }) => {
     runtime.game = game;
     attachNotifications(game);
+    attachProgressReporter(game, () => ui.get().prefs.shareProgress === 'yes');
     runtime.valley = new ValleyClient(game);
     attachValleyNotifications(runtime.valley);
     runtime.valley.start();

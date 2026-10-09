@@ -4027,3 +4027,25 @@ h4 {
   color: var(--ink-soft);
   font-size: 14px;
 }
+
+/* Playtest feedback */
+.mood-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.feedback-text {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 10px;
+  border: 2px solid var(--paper-3);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 8px;
+}

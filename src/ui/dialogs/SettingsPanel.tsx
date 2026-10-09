@@ -117,6 +117,16 @@ export function SettingsPanel() {
         </label>
       </section>
       <section>
+        <h4>Playtest</h4>
+        <label className="toggle">
+          <input type="checkbox" checked={prefs.shareProgress === 'yes'} onChange={(e) => ui.setPrefs({ shareProgress: e.target.checked ? 'yes' : 'no' })} /> Share my progress to help balance the game
+        </label>
+        <p className="small muted">Levels, buildings, research and time played — nothing personal.</p>
+        <button className="btn small ghost" onClick={() => ui.openPanel('feedback')}>
+          Send feedback
+        </button>
+      </section>
+      <section>
         <h4>Tutorial</h4>
         <div className="row-buttons">
           <button className="btn small ghost" onClick={tutorialRestart}>

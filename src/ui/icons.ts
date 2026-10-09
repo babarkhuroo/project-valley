@@ -239,6 +239,10 @@ export const ICONS = {
      <path d="M12.6 4.2c3 2 4.6 5.2 4.6 9.3h-4.6z" fill="#fff8ea" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>
      <path d="M11.4 6.2c-2.4 1.7-3.8 4.2-3.8 7.3h3.8z" fill="#d9544a" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>`,
   ),
+  feedback: svg(
+    `<path d="M4 4.5h16a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 16.5h-8.5L7 20v-3.5H4A1.5 1.5 0 0 1 2.5 15V6A1.5 1.5 0 0 1 4 4.5z" fill="#fff6e0" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M12 13.6c-2.6-1.6-3.6-2.8-3.6-4.1a1.8 1.8 0 0 1 3.6-.6 1.8 1.8 0 0 1 3.6.6c0 1.3-1 2.5-3.6 4.1z" fill="#e86b8a" stroke="${O}" stroke-width="1.1" stroke-linejoin="round"/>`,
+  ),
   chat: svg(
     `<path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 20 17h-8.5L7 20.5V17H4a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 4 5.5z" fill="#fff6e0" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
      <circle cx="8" cy="11.3" r="1.2" fill="${O}"/><circle cx="12" cy="11.3" r="1.2" fill="${O}"/><circle cx="16" cy="11.3" r="1.2" fill="${O}"/>`,

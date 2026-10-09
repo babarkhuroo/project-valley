@@ -46,6 +46,16 @@ DATABASE_URL=postgres:///project_valley npx tsx scripts/import-to-postgres.ts
 
 The server is one long-running Node process (it holds WebSocket connections for live Valley updates), so it needs a host that runs servers rather than serverless functions. `render.yaml` sets this up on [Render](https://render.com): a web service built with `npm ci && npm run build` and started with `npm run serve`, plus a Postgres database wired in as `DATABASE_URL` (the schema is created on first start). In Render choose **New → Blueprint**, pick this repository, and apply. On the free plan the service sleeps after a while without visitors (the first visit after that takes a minute to wake it), and free databases are time-limited, so move to paid plans before relying on it.
 
+### Playtesting
+
+Players can send notes with the **feedback** button (top right, also in Settings); each note carries where they were (level, villagers, minutes played, screen). After a couple of tutorial steps they're asked once whether to **share progress** — levels, buildings, research, newcomers, joining a Valley and time played, nothing personal; it can be changed in Settings. Read it all with the admin token (on Render: the service's *Environment* tab → `ADMIN_TOKEN`):
+
+```bash
+ADMIN_TOKEN=… npx tsx scripts/playtest-report.ts https://project-valley.onrender.com
+```
+
+It lists how many players reached each milestone and the median game time / play time it took, next to the autoplayer's time, then every player's furthest level and the latest notes. Locally, `npx tsx scripts/playtest-report.ts` reads the dev server (token `dev`).
+
 Other scripts:
 
 | Command | What it does |

@@ -66,6 +66,29 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX sessions_player ON sessions (player_id);
   `,
+  // 2: playtest feedback and (opt-in) progress events.
+  `
+  CREATE TABLE playtest_feedback (
+    id         bigserial PRIMARY KEY,
+    player_id  text   NOT NULL,
+    at         bigint NOT NULL,
+    mood       text,
+    text       text   NOT NULL,
+    context    jsonb  NOT NULL
+  );
+  CREATE INDEX playtest_feedback_at ON playtest_feedback (at);
+
+  CREATE TABLE playtest_events (
+    id            bigserial PRIMARY KEY,
+    player_id     text   NOT NULL,
+    at            bigint NOT NULL,
+    kind          text   NOT NULL,
+    sim_time      double precision NOT NULL,
+    play_minutes  double precision NOT NULL,
+    data          jsonb  NOT NULL
+  );
+  CREATE INDEX playtest_events_player ON playtest_events (player_id, at);
+  `,
 ];
 
 /** Arbitrary constant key for the migration advisory lock. */

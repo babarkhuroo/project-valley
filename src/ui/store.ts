@@ -22,7 +22,7 @@ export interface Placement {
   reason: string | null;
 }
 
-export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | 'chat' | null;
+export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | 'chat' | 'feedback' | null;
 
 export interface Toast {
   id: number;
@@ -50,10 +50,12 @@ export interface Prefs {
   miniature: boolean;
   /** Passing showers and rainbows (purely cosmetic). */
   weather: boolean;
+  /** Playtest: share progress (levels, buildings, time played)? Asked once. */
+  shareProgress: 'ask' | 'yes' | 'no';
 }
 
 const PREFS_KEY = 'project-valley:prefs';
-const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock', uiScale: 1, reduceMotion: 'system', highContrast: false, quality: 'auto', miniature: true, weather: true };
+const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock', uiScale: 1, reduceMotion: 'system', highContrast: false, quality: 'auto', miniature: true, weather: true, shareProgress: 'ask' };
 
 function loadPrefs(): Prefs {
   try {
