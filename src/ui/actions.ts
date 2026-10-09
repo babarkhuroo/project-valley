@@ -353,6 +353,18 @@ export function contributeToFestival(resources: Partial<Record<ResourceId, numbe
   return true;
 }
 
+/** Sows grain at the Goldfurrow Commons. */
+export function sowAtGoldfurrow(grain: number): boolean {
+  const error = runtime.valley ? runtime.valley.contributeSowing(grain) : 'The Valley is out of reach right now';
+  if (error) {
+    ui.toast({ kind: 'warning', title: 'Couldn’t sow that', body: error, icon: 'info' }, 3000);
+    runtime.audio.play('error');
+    return false;
+  }
+  runtime.audio.play('seeds');
+  return true;
+}
+
 /** Sends a villager for a Millrace shift, credited to a Valley project. */
 export function sendOnShift(villagerId: number, recipe: CoopRecipeId, project: ValleyBuildingId, helpers: number): void {
   const res = game().run((s, w, sink) => startShift(s, w, villagerId, recipe, project, helpers, sink));

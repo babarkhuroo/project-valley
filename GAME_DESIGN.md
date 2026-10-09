@@ -165,7 +165,7 @@ Researching **The Valley Road** (tier 3) opens a road over the ridge to a shared
 | Lantern Hill | The Great Library — Valley research |
 | Market Green | The Festival Grounds — rotating festivals |
 | Millrace | The Millrace Workshop — cooperative crafting shifts |
-| Goldfurrow Fields | Farmland — reserved for farming (later) |
+| Goldfurrow Fields | The Goldfurrow Commons — communal sowing |
 | Old Wood, Greystep Quarry, Silverrun, The Far Reach | Scenery now; the Far Reach is fenced off for future expansion |
 
 - **Contributing:** pick a project, choose amounts per resource (or *All I can*) and send. Resources leave the village immediately; anything the project no longer needs (a neighbour got there first) comes back. Each delivery earns **reputation** (1 per 10 timber's worth; stone, planks and bricks count more).
@@ -188,6 +188,10 @@ Members **vote** on what to research next — the most-voted available project g
 ## Festivals
 
 The *Festival Charter* Valley research opens the **Festival Grounds** on Market Green. Once restored, the Valley holds a festival every few days — Harvest Festival, Great Construction Project, Expedition Supplies, Lantern Fair — each a 48-hour shared goal (Stew counts here, unlike building projects). Neighbours join in; if the goal is met, every member who delivered anything gets coins and reputation (more with Festival Grounds levels), the first win of some festivals unlocks Festival Lanterns for the village, and the Valley gets Valley Knowledge. Missing the goal costs nothing — there's always another. The sidebar shows the running festival and a "Next steps" tip points to it from the village.
+
+## Communal sowing: the Goldfurrow Commons
+
+Once the Cooks' Guild is restored, the **Goldfurrow Commons** — a great barn and shared plots on the southern road — can be restored too. From then on the Valley runs **sowing rounds**: sowing is open for 8 hours, the crop grows for 12, and a new round opens an hour after each harvest (about one a day). Any village can sow up to 300 Grain a round. At the harvest every grain comes back multiplied: ×1.5, plus 0.1 for each village that sowed (up to ×2.6), times the Commons' own level bonus (×1.2, then ×1.5). Neighbours sow too, so a lone player still sees a good return, and real players joining in lifts everyone's. Shares come home automatically the next time the village hears from the Valley (the last three harvests wait to be collected). It is the cooperative reason to farm: grain grown at home is worth more sown together, and Commons levels 2 and 3 also make every member's own Grain Fields yield +10% each. The plots in the Valley show the round — seedlings once anyone has sown, ripening green to gold, bare after the harvest.
 
 ## Cooperative crafting: the Millrace Workshop
 
@@ -236,4 +240,4 @@ Once everything is built (from hour 3 in the autoplayer), villagers mostly wait 
 - **Milestone 2:** ✅ Stone, quarrying and the Stone Yard · ✅ building upgrades with visual levels · ✅ processing chains (Sawmill → planks, Brickworks → bricks, Warehouse) with offline crafting queues · ✅ research tiers 4–5, Houses, permanent production areas · ✅ economy simulation / balancing tools (scripted autoplayer → pacing report, chart in the dev panel, pacing tests).
 - **Milestone 3:** ✅ The Hearthlands map, travel, server-owned Valley state with simulated neighbours, communal buildings restored through contributions, shared bonuses, reputation · ✅ Trading Post, merchant ships, coins, tonics, the Reputation Road · ✅ guild training · ✅ Valley research (Great Library, Valley Knowledge, votes) · ✅ festivals at Market Green · ✅ cooperative crafting at the Millrace.
 - **Milestone 4:** ✅ Accounts and authorised API · ✅ found / join (code or open list) / leave Valleys, real players replacing neighbours · ✅ live updates over WebSockets, presence, chat · next: a database-backed store and multi-process hosting.
-- **Polish:** ✅ day/night ambience · ✅ accessibility and quality settings · ✅ sound (water, night, footsteps, music moods) · ✅ feature introductions · ✅ farming (Grain Fields, Granary, hearty Stew) · ✅ PostgreSQL storage and multi-process servers · ✅ richer villagers (jointed limbs, faces that blink and talk, idle fidgets and chats, job clothing, blended animation), hens, working windlass · ✅ visual effects (bloom, miniature tilt-shift, colour grade; passing showers with rainbows; rings, light beams and fireworks for big moments) · next: balancing from playtests.
+- **Polish:** ✅ day/night ambience · ✅ accessibility and quality settings · ✅ sound (water, night, footsteps, music moods) · ✅ feature introductions · ✅ farming (Grain Fields, Granary, hearty Stew) · ✅ PostgreSQL storage and multi-process servers · ✅ richer villagers (jointed limbs, faces that blink and talk, idle fidgets and chats, job clothing, blended animation), hens, working windlass · ✅ Goldfurrow Commons (communal sowing) · ✅ visual effects (bloom, miniature tilt-shift, colour grade; passing showers with rainbows; rings, light beams and fireworks for big moments) · next: balancing from playtests.

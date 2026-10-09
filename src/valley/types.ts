@@ -56,7 +56,10 @@ export type ValleyLogEntry =
   | { id: number; at: number; kind: 'festivalStarted'; festival: FestivalId }
   | { id: number; at: number; kind: 'festivalGift'; member: string; festival: FestivalId; resources: ResourceBag }
   | { id: number; at: number; kind: 'festivalWon'; festival: FestivalId }
-  | { id: number; at: number; kind: 'festivalLost'; festival: FestivalId };
+  | { id: number; at: number; kind: 'festivalLost'; festival: FestivalId }
+  | { id: number; at: number; kind: 'sowingOpened'; round: number }
+  | { id: number; at: number; kind: 'sown'; member: string; round: number; grain: number }
+  | { id: number; at: number; kind: 'harvested'; round: number; villages: number; mult: number };
 
 export interface ContributionResult {
   accepted: ResourceBag;
@@ -93,6 +96,12 @@ export interface ValleyState {
   nextFestivalAt: number | null;
   /** Shared Valley research and the Knowledge waiting for it (banked until the Library opens). */
   research: ValleyResearchState;
+  /** The Goldfurrow sowing round: open for seed, then growing (null between rounds). */
+  sowing: ValleySowing | null;
+  /** When the next round opens (null until the Commons is restored, or while a round runs). */
+  nextSowingAt: number | null;
+  /** Recent harvests, newest last: each member's share waits here to be taken home. */
+  harvests: ValleyHarvest[];
   /** Recent contribution op ids per member → result, so retried requests are idempotent. */
   ops: Record<string, Record<string, ContributionResult>>;
 }
@@ -116,6 +125,28 @@ export interface ValleyFestival {
   outcome: 'running' | 'won' | 'lost';
   /** Reward multiplier from the Festival Grounds level when it started. */
   rewardMult: number;
+}
+
+export interface ValleySowing {
+  id: number;
+  opensAt: number;
+  /** Seed is accepted until here; then the crop grows. */
+  closesAt: number;
+  ripeAt: number;
+  /** Grain sown per member. */
+  seed: Record<string, number>;
+  /** From the Commons level when the round opened. */
+  returnMult: number;
+}
+
+export interface ValleyHarvest {
+  /** The round it came from. */
+  id: number;
+  at: number;
+  /** Seed × this comes home. */
+  mult: number;
+  /** Grain due to each member who sowed. */
+  yields: Record<string, number>;
 }
 
 export interface ValleyResearchState {

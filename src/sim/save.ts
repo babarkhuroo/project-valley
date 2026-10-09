@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -70,15 +70,22 @@ export const MIGRATIONS: Record<number, Migration> = {
     if (Array.isArray(d.buildings)) out.buildings = (d.buildings as Record<string, unknown>[]).map((b) => ({ field: null, ...b }));
     return out;
   },
+  // v12: Goldfurrow — harvest shares collected; the Commons' field bonus.
+  11: (d) => {
+    const out: Record<string, unknown> = { ...d, trade: { harvestsClaimed: [], ...((d.trade as object) ?? newTradeState()) } };
+    const valley = d.valley as Record<string, unknown> | undefined;
+    if (valley) out.valley = { ...valley, bonuses: { ...newValleyBonuses(), ...(valley.bonuses as object) } };
+    return out;
+  },
 };
 
 /** Bonuses for a village with no Valley (or nothing restored yet). */
 export function newValleyBonuses(): GameState['valley']['bonuses'] {
-  return { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {}, tradePayMult: 1, tradeGapMult: 1, trainingTimeMult: 1, trainingCostMult: 1, workshopLevel: 0, workshopYield: 1 };
+  return { jobRate: {}, storageMult: 1, mealDurationMult: 1, tradeLevel: 0, guildLevels: {}, tradePayMult: 1, tradeGapMult: 1, trainingTimeMult: 1, trainingCostMult: 1, workshopLevel: 0, workshopYield: 1, fieldYieldMult: 1 };
 }
 
 export function newTradeState(): GameState['trade'] {
-  return { coins: 0, ship: null, nextShipAt: null, shipsSeen: 0, inventory: {}, active: [], roadClaimed: 0, unlockedDecor: [], festivalsClaimed: [] };
+  return { coins: 0, ship: null, nextShipAt: null, shipsSeen: 0, inventory: {}, active: [], roadClaimed: 0, unlockedDecor: [], festivalsClaimed: [], harvestsClaimed: [] };
 }
 
 export function newValleyState(): GameState['valley'] {

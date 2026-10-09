@@ -6,7 +6,7 @@ import type { BuildingId } from './buildings';
  * the player is looking.
  */
 
-export type IntroId = 'clay' | 'stone' | 'upgrades' | 'workshops' | 'productionAreas' | 'valley' | 'merchants' | 'tonics' | 'road' | 'training' | 'valleyResearch' | 'festivals' | 'millrace' | 'farming';
+export type IntroId = 'clay' | 'stone' | 'upgrades' | 'workshops' | 'productionAreas' | 'valley' | 'merchants' | 'tonics' | 'road' | 'training' | 'valleyResearch' | 'festivals' | 'millrace' | 'farming' | 'goldfurrow';
 
 export type IntroAction =
   | { type: 'openBuild'; building: BuildingId }
@@ -16,7 +16,7 @@ export type IntroAction =
   | { type: 'openRoad' }
   | { type: 'selectUpgradable' }
   | { type: 'selectTrainable' }
-  | { type: 'openValleyBuilding'; building: 'greatLibrary' | 'festivalGrounds' | 'millraceWorkshop' };
+  | { type: 'openValleyBuilding'; building: 'greatLibrary' | 'festivalGrounds' | 'millraceWorkshop' | 'goldfurrowCommons' };
 
 export interface IntroDef {
   id: IntroId;
@@ -43,4 +43,5 @@ export const INTROS: IntroDef[] = [
   { id: 'valleyResearch', title: 'Valley research', body: 'The Great Library turns the Valley’s shared Knowledge into research for everyone. Vote for what comes next.', icon: 'knowledge', action: { type: 'openValleyBuilding', building: 'greatLibrary' }, actionLabel: 'Open the Library' },
   { id: 'festivals', title: 'Festivals', body: 'A festival is on at Market Green: a shared goal for two days. Everyone who helps shares the rewards.', icon: 'gift', action: { type: 'openValleyBuilding', building: 'festivalGrounds' }, actionLabel: 'Join in' },
   { id: 'millrace', title: 'The Millrace Workshop', body: 'Send a villager for a shift with materials: the shared saws and kiln make more than you would alone, straight into a Valley project.', icon: 'travel', action: { type: 'openValleyBuilding', building: 'millraceWorkshop' }, actionLabel: 'Open the Millrace' },
+  { id: 'goldfurrow', title: 'Sowing at Goldfurrow', body: 'The Commons is restored. While sowing is open, put grain in alongside the other villages — at the harvest it all comes back multiplied, more so the more villages sowed.', icon: 'grain', action: { type: 'openValleyBuilding', building: 'goldfurrowCommons' }, actionLabel: 'Go to Goldfurrow' },
 ];

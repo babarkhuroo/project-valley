@@ -18,6 +18,7 @@ import { NEIGHBOURS, VALLEY_BALANCE, VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, VA
 import { advanceValley, createValley } from '../src/valley/valleySim.ts';
 import { TRAINING } from '../src/config/training.ts';
 import { FARMING } from '../src/config/farming.ts';
+import { SOWING } from '../src/config/sowing.ts';
 import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../src/config/festivals.ts';
 import { COOP_RECIPES, COOP_RECIPE_ORDER, MILLRACE } from '../src/config/millrace.ts';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER } from '../src/config/valleyResearch.ts';
@@ -272,6 +273,15 @@ out();
 table(['Festival', 'Goal', 'Reward per helper', 'Valley Knowledge', 'Decoration'], FESTIVAL_ORDER.map((id) => {
   const f = FESTIVALS[id];
   return [f.name, bundle(f.goal), `${f.reward.coins} coins, ${f.reward.reputation} reputation`, f.reward.knowledge, f.decor ? BUILDINGS[f.decor].name : '—'];
+}));
+
+out('## Goldfurrow sowing');
+out();
+out(`Once the Goldfurrow Commons is restored (after the Cooks' Guild), a sowing round opens ${SOWING.gapHours}h later: sowing is open for ${SOWING.windowHours}h, the crop grows for ${SOWING.growHours}h, and the next round opens ${SOWING.gapHours}h after each harvest (one round every ${SOWING.windowHours + SOWING.growHours + SOWING.gapHours}h). A village sows up to ${SOWING.maxSeed} Grain a round. At the harvest each grain comes back × min(${SOWING.maxMult}, ${SOWING.baseMult} + ${SOWING.perVillage} × villages that sowed) × the Commons' level bonus (1 / 1.2 / 1.5); shares are collected automatically. Neighbours sow ${SOWING.neighbourSeed.min}–${SOWING.neighbourSeed.max} Grain (× generosity) on ${SOWING.neighbourChance * 100}% of their visits while sowing is open. Commons levels 2 and 3 also make every member's Grain Fields yield +10% each.`);
+out();
+table(['Villages that sowed', 'Return (level 1)', 'Level 2', 'Level 3', 'A full 300 Grain at level 1 brings home'], [1, 3, 5, 8, 10].map((n) => {
+  const m = Math.min(SOWING.maxMult, SOWING.baseMult + SOWING.perVillage * n);
+  return [n, `×${fmt(m)}`, `×${fmt(m * 1.2)}`, `×${fmt(m * 1.5)}`, Math.floor(SOWING.maxSeed * m)];
 }));
 
 out('## Millrace shifts');

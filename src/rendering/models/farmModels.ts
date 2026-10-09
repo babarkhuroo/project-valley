@@ -17,6 +17,43 @@ export interface CropRows {
 
 const ROWS = 5;
 const PER_ROW = 8;
+const SPROUT = new THREE.Color('#86b84e');
+const RIPE = new THREE.Color('#e2b54a');
+
+/**
+ * Shows a crop at `growth` (0 sprouts … 1 ripe, green turning gold) with the first
+ * `rowsLeft` rows standing; the rest have been cut (or never sown).
+ */
+export function paintCrops(crops: CropRows, growth: number, rowsLeft: number): void {
+  const g = Math.max(0, Math.min(1, growth));
+  const height = 0.12 + 0.88 * (g * g * (3 - 2 * g));
+  crops.rows.forEach((row, i) => {
+    row.visible = i < rowsLeft;
+    row.scale.set(1, height, 1);
+  });
+  crops.material.color.copy(SPROUT).lerp(RIPE, Math.max(0, (g - 0.55) / 0.45));
+}
+
+/** Material for a crop that ripens as one (a field, or all the Commons' plots). */
+export function cropMaterial(): THREE.MeshLambertMaterial {
+  return new THREE.MeshLambertMaterial({ color: '#86b84e', vertexColors: true, flatShading: true });
+}
+
+/** Tilled rows of crop on a ~3×3 plot centred at (x, z) under `parent`, swaying in the wind. */
+export function cropPlot(m: BuildingModel, parent: THREE.Object3D, material: THREE.Material, x: number, z: number, seed: number): THREE.Mesh[] {
+  const ridge = mat('#8d6a45', { flat: true });
+  const rows: THREE.Mesh[] = [];
+  for (let i = 0; i < ROWS; i++) {
+    const rz = z - 1.1 + (i / (ROWS - 1)) * 2.2;
+    box(parent, 2.5, 0.07, 0.22, ridge, x, 0.08, rz);
+    const row = new THREE.Mesh(cropRowGeometry(97 + i * 31 + seed * 7), material);
+    row.position.set(x, 0.1, rz);
+    parent.add(row);
+    rows.push(row);
+    m.wavers.push({ obj: row, amp: 0.035, speed: 1.1 + i * 0.23 + seed * 0.1, base: 0 });
+  }
+  return rows;
+}
 
 /** One row of grain stalks with ears, standing on y = 0 (so scaling y grows it). */
 function cropRowGeometry(seed: number): THREE.BufferGeometry {
@@ -53,14 +90,8 @@ function cropRowGeometry(seed: number): THREE.BufferGeometry {
 export function fieldModel(variant: number): BuildingModel {
   const m = emptyModel();
   const r = m.root;
-  // Tilled soil with raised furrows.
+  // Tilled soil.
   box(r, 2.86, 0.06, 2.86, mat('#7a5a3a'), 0, 0.03, 0);
-  const ridge = mat('#8d6a45', { flat: true });
-  for (let i = 0; i < ROWS; i++) {
-    const z = -1.1 + (i / (ROWS - 1)) * 2.2;
-    const furrow = box(r, 2.5, 0.07, 0.22, ridge, 0, 0.08, z);
-    furrow.scale.y = 1;
-  }
   // Low split-rail fence on three sides; the front stays open for the farmers.
   const rail = mat(PALETTE.woodLight);
   const post = mat(PALETTE.woodDark);
@@ -71,16 +102,8 @@ export function fieldModel(variant: number): BuildingModel {
   for (const [x, z] of [[-1.43, -1.43], [0, -1.43], [1.43, -1.43], [-1.43, 0], [1.43, 0], [-1.43, 1.43], [1.43, 1.43]]) box(r, 0.08, 0.42, 0.08, post, x, 0.21, z);
 
   // The crop: per-field material so each field ripens on its own.
-  const material = new THREE.MeshLambertMaterial({ color: '#86b84e', vertexColors: true, flatShading: true });
-  const rows: THREE.Mesh[] = [];
-  for (let i = 0; i < ROWS; i++) {
-    const row = new THREE.Mesh(cropRowGeometry(97 + i * 31 + variant * 7), material);
-    row.position.set(0, 0.1, -1.1 + (i / (ROWS - 1)) * 2.2);
-    r.add(row);
-    rows.push(row);
-    m.wavers.push({ obj: row, amp: 0.035, speed: 1.1 + i * 0.23, base: 0 });
-  }
-  m.crops = { rows, material };
+  const material = cropMaterial();
+  m.crops = { rows: cropPlot(m, r, material, 0, 0, variant), material };
 
   // A scarecrow in the back corner, and a basket by the gate.
   const crow = new THREE.Group();

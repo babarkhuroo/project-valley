@@ -1,6 +1,6 @@
 import { CHAT_BALANCE, VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
 import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
-import { activeMembers, postChat, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
+import { activeMembers, postChat, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, contributeSowing, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
 import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
 
 /**
@@ -334,6 +334,21 @@ export class ValleyService {
       const now = this.clock();
       advanceValley(v, now);
       const out = contributeFestival(v, playerId, festivalId, resources, opId);
+      await this.commit(v);
+      return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
+    });
+  }
+
+  /** A member's seed for the Goldfurrow round. */
+  async sowing(playerId: string, round: number, grain: number, opId: string): Promise<(ContributeOutcome & { view?: ValleyView }) | null> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return null;
+      const now = this.clock();
+      advanceValley(v, now);
+      const out = contributeSowing(v, playerId, round, grain, opId);
       await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });

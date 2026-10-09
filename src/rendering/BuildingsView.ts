@@ -7,7 +7,7 @@ import { constructionFraction } from '../sim/selectors';
 import type { BuildingInstance, GameState } from '../sim/types';
 import { jobTypeOf } from '../sim/villagerAI';
 import { fieldYield, growthFraction } from '../sim/farming';
-import type { CropRows } from './models/farmModels';
+import { paintCrops, type CropRows } from './models/farmModels';
 import type { Terrain } from '../world/terrain';
 import { PALETTE, mat } from './materials';
 import { createBuildingModel, type BuildingModel } from './models/buildingModels';
@@ -46,8 +46,6 @@ const hitMaterial = new THREE.MeshBasicMaterial({ visible: false });
 /** Decorations farther than this from the camera are not drawn. */
 const DECOR_LOD_DISTANCE = 60;
 const scratch = new THREE.Vector3();
-const SPROUT = new THREE.Color('#86b84e');
-const RIPE = new THREE.Color('#e2b54a');
 
 /** Chimney smoke intensity for a lit hearth, and for the cookhouse while someone cooks. */
 const SMOKE_IDLE = 1;
@@ -386,16 +384,10 @@ export class BuildingsView {
   private growCrops(state: GameState, b: BuildingInstance, crops: CropRows): void {
     const f = b.field;
     const stage = f?.stage ?? 'fallow';
-    const g = growthFraction(state, b);
     let rowsLeft = crops.rows.length;
     if (stage === 'fallow') rowsLeft = 0;
+    // Harvesters work from the open front (+z) towards the back.
     else if (stage === 'ripe' && f) rowsLeft = Math.ceil((f.stock / Math.max(1, fieldYield(state, this.terrain.map, b))) * crops.rows.length - 1e-6);
-    const height = 0.12 + 0.88 * (g * g * (3 - 2 * g));
-    crops.rows.forEach((row, i) => {
-      // Harvesters work from the open front (+z) towards the back.
-      row.visible = i < rowsLeft;
-      row.scale.set(1, height, 1);
-    });
-    crops.material.color.copy(SPROUT).lerp(RIPE, Math.max(0, (g - 0.55) / 0.45));
+    paintCrops(crops, growthFraction(state, b), rowsLeft);
   }
 }

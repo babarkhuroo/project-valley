@@ -1,4 +1,6 @@
 import { VALLEY_RESOURCES, type ValleyBuildingId } from '../config/valley';
+import { RESOURCE_ORDER } from '../config/resources';
+import { SOWING } from '../config/sowing';
 import type { ResourceId } from '../config/resources';
 import type { CommandResult } from './commands';
 import { bumpStat } from './economy';
@@ -63,6 +65,22 @@ function queueDelivery(state: GameState, target: ValleyTarget, allowed: readonly
   return { ok: true };
 }
 
+/** Sows grain into the Goldfurrow round. `room` is what the village may still sow this round, as last seen. */
+export function sendToSowing(state: GameState, round: number, grain: number, opId: string, sink: EventSink, room: number = SOWING.maxSeed): CommandResult {
+  return queueDelivery(state, { kind: 'sowing', round }, ['grain'], { grain }, opId, sink, { grain: room });
+}
+
+/** Takes the village's share of a Goldfurrow harvest home (once per round). It's piled by the Granary, even past the cap. */
+export function claimHarvest(state: GameState, round: number, grain: number, mult: number, sink: EventSink): boolean {
+  if (grain <= 0 || state.trade.harvestsClaimed.includes(round)) return false;
+  state.trade.harvestsClaimed.push(round);
+  if (state.trade.harvestsClaimed.length > 20) state.trade.harvestsClaimed.shift();
+  state.resources.grain += grain;
+  bumpStat(state, 'valley.harvest', grain);
+  sink.push({ type: 'harvestShare', round, grain, mult });
+  return true;
+}
+
 /** Collects a won festival's rewards (once per festival). */
 export function claimFestival(state: GameState, festivalId: number, kind: FestivalId, rewardMult: number, sink: EventSink): boolean {
   if (state.trade.festivalsClaimed.includes(festivalId)) return false;
@@ -102,7 +120,7 @@ export function settleValleyOp(state: GameState, opId: string, accepted: Resourc
   if (i < 0) return false;
   const op = state.valley.outbox[i];
   state.valley.outbox.splice(i, 1);
-  for (const r of [...VALLEY_RESOURCES, 'stew' as const]) {
+  for (const r of RESOURCE_ORDER) {
     const back = returned[r] ?? 0;
     // Returned parcels go straight back into store, even past the cap — nothing is lost.
     if (back > 0) state.resources[r] += back;
@@ -115,6 +133,7 @@ export function settleValleyOp(state: GameState, opId: string, accepted: Resourc
   state.valley.reputation += reputation;
   if (op.target.kind === 'building') sink.push({ type: 'valleyAccepted', building: op.target.id, accepted, returned, reputation });
   else if (op.target.kind === 'festival') sink.push({ type: 'festivalAccepted', accepted, returned, reputation });
+  else if (op.target.kind === 'sowing') sink.push({ type: 'sowingAccepted', accepted: accepted.grain ?? 0, returned: returned.grain ?? 0, reputation });
   else bumpStat(state, 'valley.knowledge', op.knowledge ?? 0);
   return true;
 }

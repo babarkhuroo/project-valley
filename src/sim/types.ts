@@ -226,6 +226,8 @@ export interface ValleyBonuses {
   /** Millrace Workshop level (0 = no shifts yet) and its output multiplier. */
   workshopLevel: number;
   workshopYield: number;
+  /** Goldfurrow Commons: Grain Field yield multiplier. */
+  fieldYieldMult: number;
 }
 
 export interface MerchantCrate {
@@ -276,10 +278,12 @@ export interface TradeState {
   unlockedDecor: BuildingId[];
   /** Valley festivals whose rewards this village has collected (by festival id). */
   festivalsClaimed: number[];
+  /** Goldfurrow harvests whose share this village has taken home (by round id). */
+  harvestsClaimed: number[];
 }
 
 /** What a Valley op is for: a building project, or Valley Knowledge for shared research. */
-export type ValleyTarget = { kind: 'building'; id: ValleyBuildingId } | { kind: 'knowledge' } | { kind: 'festival'; festivalId: number };
+export type ValleyTarget = { kind: 'building'; id: ValleyBuildingId } | { kind: 'knowledge' } | { kind: 'festival'; festivalId: number } | { kind: 'sowing'; round: number };
 
 /** A delivery to the Valley that has left the village but isn't confirmed by the server yet. */
 export interface ValleyOp {

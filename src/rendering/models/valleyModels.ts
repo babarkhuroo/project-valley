@@ -3,6 +3,7 @@ import type { ValleyBuildingDef } from '../../config/valley';
 import { createRng } from '../../world/noise';
 import { PALETTE, mat } from '../materials';
 import { box, cyl, door, emptyModel, gableRoof, levelPennant, mergeStatic, windowPane, type BuildingModel } from './buildingModels';
+import { cropMaterial, cropPlot } from './farmModels';
 
 /**
  * Procedural models for the Valley's communal buildings. Same conventions as village
@@ -21,6 +22,7 @@ export const VALLEY_MODEL_SIZE: Record<ValleyBuildingDef['model'], { hx: number;
   library: { hx: 3.3, hz: 2.7, height: 6.4 },
   grounds: { hx: 3.6, hz: 3.0, height: 5.2 },
   mill: { hx: 2.8, hz: 2.2, height: 5.0 },
+  commons: { hx: 4.2, hz: 3.6, height: 5.0 },
 };
 
 /** Length of the Trading Post's pier, out from its front wall. */
@@ -527,6 +529,80 @@ function mill(def: ValleyBuildingDef, level: number): BuildingModel {
 // ---------------------------------------------------------------------------
 
 /** Tumbledown walls, fallen beams and rubble on the old foundations, plus a call-for-help sign. */
+// ---------------------------------------------------------------------------
+// Goldfurrow Commons
+// ---------------------------------------------------------------------------
+
+function commons(def: ValleyBuildingDef, level: number): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const { hx, hz } = VALLEY_MODEL_SIZE.commons;
+  // Tilled ground with a grass verge rather than a stone plinth.
+  box(r, hx * 2 + 0.2, 1.0, hz * 2 + 0.2, mat('#6f8f4a', { flat: true }), 0, -0.4, 0);
+  box(r, hx * 2, 0.12, hz * 2, mat('#7a5a3a'), 0, 0.06, 0);
+  // The great barn across the back.
+  const wood = mat('#a5683f');
+  const trim = mat(PALETTE.woodDark);
+  box(r, 4.4, 2.0, 2.2, wood, -1.2, 1.1, -2.3);
+  for (const x of [-3.35, -1.2, 0.95]) box(r, 0.14, 2.05, 2.24, trim, x, 1.1, -2.3);
+  gableRoof(r, 2.9, 1.7, 4.8, mat(PALETTE.thatch, { flat: true }), 2.1, true, -1.2, -2.3);
+  box(r, 4.9, 0.12, 0.14, mat(PALETTE.thatchDark), -1.2, 3.82, -2.3);
+  // Big double doors in the Valley colour, and a hayloft hatch above.
+  box(r, 1.5, 1.45, 0.06, mat(def.color), -1.2, 0.85, -1.17);
+  box(r, 0.05, 1.45, 0.08, trim, -1.2, 0.85, -1.15);
+  for (const y of [0.45, 1.25]) {
+    const brace = box(r, 1.55, 0.08, 0.08, trim, -1.2, y, -1.13);
+    brace.rotation.z = y < 1 ? 0.55 : -0.55;
+  }
+  box(r, 0.6, 0.5, 0.06, trim, -1.2, 2.55, -1.17);
+  // Hay bales by the door.
+  for (const [x, z, y] of [[0.6, -0.9, 0.3], [1.15, -0.95, 0.3], [0.85, -0.95, 0.75]] as const) {
+    const bale = cyl(r, 0.28, 0.28, 0.5, mat(PALETTE.thatch, { flat: true }), x, y, z, 10);
+    bale.rotation.z = Math.PI / 2;
+  }
+  // Two shared plots out front. One material ripens them together.
+  const material = cropMaterial();
+  const rows = [...cropPlot(m, r, material, -2.2, 1.7, 3), ...cropPlot(m, r, material, 1.6, 1.7, 5)];
+  m.crops = { rows, material };
+  // A path between them and a split-rail fence along the road.
+  box(r, 0.7, 0.03, 3.2, mat(PALETTE.dirt), -0.3, 0.13, 1.7);
+  const rail = mat(PALETTE.woodLight);
+  for (const z of [hz - 0.05]) {
+    box(r, hx * 2, 0.06, 0.06, rail, 0, 0.42, z);
+    box(r, hx * 2, 0.06, 0.06, rail, 0, 0.22, z);
+  }
+  for (let i = 0; i <= 8; i++) box(r, 0.09, 0.55, 0.09, trim, -hx + (i / 8) * hx * 2, 0.28, hz - 0.05);
+  banner(m, def.color, 3.6, 2.2, -1.4);
+  cyl(r, 0.06, 0.07, 2.4, trim, 3.6, 1.2, -1.45, 6);
+  if (level >= 2) {
+    // A stone grain silo with a cone roof beside the barn.
+    cyl(r, 0.7, 0.75, 2.8, mat(PALETTE.stone, { flat: true }), 2.5, 1.4, -2.4, 12);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.9, 12), mat(PALETTE.terracotta, { flat: true }));
+    cap.position.set(2.5, 3.25, -2.4);
+    r.add(cap);
+    levelPennant(m, level, -hx + 0.3, -hz + 0.3, 3.4);
+  }
+  if (level >= 3) {
+    // A windmill on the barn's far end, sails turning.
+    cyl(r, 0.55, 0.75, 3.2, mat('#f3e5c8', { flat: true }), -3.6, 1.6, -0.6, 10);
+    const top = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.8, 10), mat(PALETTE.thatchDark, { flat: true }));
+    top.position.set(-3.6, 3.6, -0.6);
+    r.add(top);
+    const sails = new THREE.Group();
+    sails.position.set(-3.6, 3.0, 0.05);
+    for (let i = 0; i < 4; i++) {
+      const arm = new THREE.Group();
+      arm.rotation.z = (i / 4) * Math.PI * 2;
+      box(arm, 0.08, 1.6, 0.05, trim, 0, 0.8, 0);
+      box(arm, 0.42, 1.2, 0.02, mat('#fff8ea', { side: THREE.DoubleSide }), 0.24, 0.95, 0.03);
+      sails.add(arm);
+    }
+    r.add(sails);
+    m.spinners.push({ obj: sails, axis: 'z', speed: 0.7 });
+  }
+  return m;
+}
+
 function ruin(def: ValleyBuildingDef): BuildingModel {
   const m = emptyModel();
   const r = m.root;
@@ -639,6 +715,7 @@ export function createValleyModel(def: ValleyBuildingDef, level: number, deckY =
   else if (def.model === 'library') model = library(def, level);
   else if (def.model === 'grounds') model = grounds(def, level);
   else if (def.model === 'mill') model = mill(def, level);
+  else if (def.model === 'commons') model = commons(def, level);
   else model = guild(def, level);
   mergeStatic(model);
   model.root.traverse((o) => {

@@ -5,7 +5,8 @@ import type { ValleyBonuses } from '../sim/types';
 import { newValleyBonuses } from '../sim/save';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER, type ValleyResearchId } from '../config/valleyResearch';
 import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../config/festivals';
-import type { ChatMessage, ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestival, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleyState } from './types';
+import { SOWING } from '../config/sowing';
+import type { ChatMessage, ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestival, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleySowing, ValleyState } from './types';
 
 /**
  * The shared Valley as a deterministic, discrete-event simulation over wall-clock
@@ -14,7 +15,7 @@ import type { ChatMessage, ContributionResult, ResourceBag, ValleyBuildingState,
  * same Valley advanced in one step or in many ends up identical.
  */
 
-export const VALLEY_SCHEMA = 6;
+export const VALLEY_SCHEMA = 7;
 /** Real players a Valley can hold. */
 export const MAX_PLAYERS = 10;
 /** Neighbours keep the Valley at least this busy until enough players arrive. */
@@ -136,6 +137,77 @@ function finishBuilding(v: ValleyState, b: ValleyBuildingState, at: number): voi
   if (b.id === 'festivalGrounds' && b.level === 1 && v.nextFestivalAt === null && v.festival === null) {
     v.nextFestivalAt = at + FESTIVAL_BALANCE.firstDelayHours * HOUR;
   }
+  // A restored Commons: the first sowing opens soon.
+  if (b.id === 'goldfurrowCommons' && b.level === 1 && v.nextSowingAt === null && v.sowing === null) {
+    v.nextSowingAt = at + SOWING.gapHours * HOUR;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Goldfurrow sowing
+// ---------------------------------------------------------------------------
+
+function sowingReturnMult(v: ValleyState): number {
+  let mult = 1;
+  for (let l = 0; l < (v.buildings.goldfurrowCommons?.level ?? 0); l++) {
+    for (const e of VALLEY_BUILDINGS.goldfurrowCommons.levels[l].effects) if (e.type === 'sowing') mult *= e.returnMult;
+  }
+  return mult;
+}
+
+/** Villages that have sown in this round. */
+export function sowers(s: ValleySowing): number {
+  return Object.values(s.seed).filter((n) => n > 0).length;
+}
+
+/** What each grain sown comes back as, if the round ripened now. */
+export function harvestMult(s: ValleySowing): number {
+  return Math.min(SOWING.maxMult, SOWING.baseMult + SOWING.perVillage * sowers(s)) * s.returnMult;
+}
+
+export function sowingOpen(s: ValleySowing | null, now: number): boolean {
+  return !!s && now >= s.opensAt && now < s.closesAt;
+}
+
+function openSowing(v: ValleyState, at: number): void {
+  v.sowing = {
+    id: v.nextLogId,
+    opensAt: at,
+    closesAt: at + SOWING.windowHours * HOUR,
+    ripeAt: at + (SOWING.windowHours + SOWING.growHours) * HOUR,
+    seed: {},
+    returnMult: sowingReturnMult(v),
+  };
+  v.nextSowingAt = null;
+  log(v, { at, kind: 'sowingOpened', round: v.sowing.id });
+  neighbourSays(v, at, 'sowing', {});
+}
+
+function ripenSowing(v: ValleyState, at: number): void {
+  const s = v.sowing!;
+  const mult = harvestMult(s);
+  const yields: Record<string, number> = {};
+  for (const [member, seed] of Object.entries(s.seed)) if (seed > 0) yields[member] = Math.floor(seed * mult);
+  v.harvests.push({ id: s.id, at, mult, yields });
+  if (v.harvests.length > SOWING.harvestsKept) v.harvests.splice(0, v.harvests.length - SOWING.harvestsKept);
+  log(v, { at, kind: 'harvested', round: s.id, villages: sowers(s), mult: Math.round(mult * 100) / 100 });
+  if (sowers(s) > 0) neighbourSays(v, at, 'harvest', {});
+  v.sowing = null;
+  v.nextSowingAt = at + SOWING.gapHours * HOUR;
+}
+
+/** Sows grain into the open round (up to the per-village cap); the rest comes home. */
+function sow(v: ValleyState, member: ValleyMember, grain: number, at: number): { accepted: number; returned: number } {
+  const s = v.sowing;
+  const amount = Math.max(0, Math.floor(grain));
+  if (!s || !sowingOpen(s, at)) return { accepted: 0, returned: amount };
+  const take = Math.min(amount, Math.max(0, SOWING.maxSeed - (s.seed[member.id] ?? 0)));
+  if (take > 0) {
+    s.seed[member.id] = (s.seed[member.id] ?? 0) + take;
+    member.lifetimeValue += take * (VALLEY_BALANCE.value.grain ?? 1);
+    log(v, { at, kind: 'sown', member: member.id, round: s.id, grain: take });
+  }
+  return { accepted: take, returned: amount - take };
 }
 
 // ---------------------------------------------------------------------------
@@ -385,6 +457,13 @@ function weightedPick<T>(v: ValleyState, items: T[], weight: (t: T) => number): 
 
 function neighbourVisit(v: ValleyState, m: ValleyMember, at: number): void {
   const def = NEIGHBOURS[m.neighbour!];
+  // While Goldfurrow is open for sowing, neighbours bring a sack of seed (once a round).
+  if (v.sowing && sowingOpen(v.sowing, at) && !(v.sowing.seed[m.id] > 0) && rand(v) < SOWING.neighbourChance) {
+    const { min, max } = SOWING.neighbourSeed;
+    sow(v, m, (min + rand(v) * (max - min)) * def.generosity, at);
+    scheduleVisit(v, m, at);
+    return;
+  }
   const f = v.festival;
   if (f && f.outcome === 'running' && rand(v) < FESTIVAL_BALANCE.neighbourShare) {
     const remaining = festivalRemaining(f);
@@ -505,6 +584,9 @@ export function createValley(id: string, seed: number, now: number, player: Foun
     research: newResearchState(),
     festival: null,
     nextFestivalAt: null,
+    sowing: null,
+    nextSowingAt: null,
+    harvests: [],
     chat: [],
     ops: {},
   };
@@ -581,6 +663,12 @@ export function upgradeValley(v: ValleyState, now: number): boolean {
     v.chat = [];
     changed = true;
   }
+  if (v.harvests === undefined) {
+    v.sowing = null;
+    v.nextSowingAt = null;
+    v.harvests = [];
+    changed = true;
+  }
   if (v.code === undefined) {
     v.code = inviteCode(v.seed);
     v.open = false;
@@ -646,7 +734,7 @@ export function neighboursAwake(v: ValleyState | ValleySnapshot, now: number): s
   return v.members.filter((m) => m.kind === 'simulated' && m.leftAt === null && hoursIntoNight(m, now) < 0).map((m) => m.id);
 }
 
-/** Processes every neighbour visit and finished build up to `now`, in time order. */
+/** Processes every neighbour visit, finished build, festival and sowing round up to `now`, in time order. */
 export function advanceValley(v: ValleyState, now: number): void {
   for (let guard = 0; guard < MAX_EVENTS_PER_ADVANCE; guard++) {
     let at = Infinity;
@@ -676,8 +764,21 @@ export function advanceValley(v: ValleyState, now: number): void {
       at = v.festival.endsAt;
       festival = 'end';
     }
+    let sowing: 'open' | 'ripen' | null = null;
+    if (v.nextSowingAt !== null && v.nextSowingAt < at) {
+      at = v.nextSowingAt;
+      sowing = 'open';
+      festival = null;
+    }
+    if (v.sowing && v.sowing.ripeAt < at) {
+      at = v.sowing.ripeAt;
+      sowing = 'ripen';
+      festival = null;
+    }
     if (at > now) break;
-    if (festival === 'start') startFestival(v, at);
+    if (sowing === 'open') openSowing(v, at);
+    else if (sowing === 'ripen') ripenSowing(v, at);
+    else if (festival === 'start') startFestival(v, at);
     else if (festival === 'end') endFestival(v, at);
     else if (site) finishBuilding(v, site, at);
     else if (visitor) neighbourVisit(v, visitor, at);
@@ -761,6 +862,28 @@ export function contributeFestival(v: ValleyState, memberId: string, festivalId:
   return { ok: true, result };
 }
 
+/** A member's seed for the Goldfurrow round. Idempotent per `opId`; seed for a closed round comes home. */
+export function contributeSowing(v: ValleyState, memberId: string, round: number, grain: number, opId: string): ContributeOutcome {
+  const member = v.members.find((m) => m.id === memberId && m.leftAt === null);
+  if (!member) return { ok: false, reason: 'Not a member of this Valley' };
+  const seen = v.ops[memberId]?.[opId];
+  if (seen) return { ok: true, result: seen };
+  const amount = Math.max(0, Math.floor(grain));
+  const d = v.sowing?.id === round ? sow(v, member, amount, v.time) : { accepted: 0, returned: amount };
+  const value = d.accepted * (VALLEY_BALANCE.value.grain ?? 1);
+  const result: ContributionResult = {
+    accepted: d.accepted > 0 ? { grain: d.accepted } : {},
+    returned: d.returned > 0 ? { grain: d.returned } : {},
+    value,
+    reputation: reputationFor(value),
+  };
+  const ops = (v.ops[memberId] ??= {});
+  ops[opId] = result;
+  const keys = Object.keys(ops);
+  for (let i = 0; i < keys.length - OPS_KEPT; i++) delete ops[keys[i]];
+  return { ok: true, result };
+}
+
 export function snapshotOf(v: ValleyState): ValleySnapshot {
   const snapshot: Partial<ValleyState> = structuredClone(v);
   delete snapshot.ops;
@@ -785,7 +908,7 @@ export function valleyBonuses(v: ValleySnapshot | null): ValleyBonuses {
         else if (e.type === 'workshop') {
           out.workshopLevel += 1;
           out.workshopYield *= e.yieldMult;
-        }
+        } else if (e.type === 'fieldYield') out.fieldYieldMult *= e.mult;
       }
     }
   }
@@ -821,4 +944,11 @@ export function ageValley(v: ValleyState, ms: number): void {
     if (b.doneAt !== null) b.doneAt -= ms;
   }
   for (const e of v.log) e.at -= ms;
+  if (v.nextSowingAt !== null) v.nextSowingAt -= ms;
+  if (v.sowing) {
+    v.sowing.opensAt -= ms;
+    v.sowing.closesAt -= ms;
+    v.sowing.ripeAt -= ms;
+  }
+  for (const h of v.harvests) h.at -= ms;
 }

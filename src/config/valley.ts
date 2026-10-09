@@ -61,7 +61,11 @@ export type ValleyEffect =
   /** Festivals run at Market Green; their rewards are multiplied by this. */
   | { type: 'festival'; rewardMult: number }
   /** Millrace shifts are open; their output is multiplied by this. */
-  | { type: 'workshop'; yieldMult: number };
+  | { type: 'workshop'; yieldMult: number }
+  /** Communal sowing at the Goldfurrow Commons; harvest returns are multiplied by this. */
+  | { type: 'sowing'; returnMult: number }
+  /** Grain Fields in every member village yield this much more. */
+  | { type: 'fieldYield'; mult: number };
 
 export interface ValleyLevelDef {
   /** Total resources the whole Valley must bring. */
@@ -73,9 +77,9 @@ export interface ValleyLevelDef {
   summary: string;
 }
 
-export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'festivalGrounds' | 'millraceWorkshop' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
+export type ValleyBuildingId = 'hearthHall' | 'tradingPost' | 'greatLibrary' | 'festivalGrounds' | 'millraceWorkshop' | 'goldfurrowCommons' | 'forestersLodge' | 'minersGuild' | 'farmersGuild' | 'scholarsGuild' | 'buildersGuild' | 'craftersGuild';
 
-export type ValleyModel = 'hall' | 'guild' | 'post' | 'library' | 'grounds' | 'mill';
+export type ValleyModel = 'hall' | 'guild' | 'post' | 'library' | 'grounds' | 'mill' | 'commons';
 
 export interface ValleyBuildingDef {
   id: ValleyBuildingId;
@@ -241,6 +245,24 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
       { cost: { timber: 9000, stone: 3500, planks: 2000, bricks: 2000 }, buildHours: 12, effects: [{ type: 'workshop', yieldMult: 1.15 }], summary: 'The great kiln: shift output +32% in all' },
     ],
   },
+  goldfurrowCommons: {
+    id: 'goldfurrowCommons',
+    name: 'Goldfurrow Commons',
+    district: 'farmland',
+    description: 'Shared fields and a great barn on the southern road. Every village sows grain together; the harvest comes home bigger, and bigger still the more villages join in.',
+    model: 'commons',
+    color: '#d9a83a',
+    x: 101,
+    z: 104,
+    radius: 3.4,
+    facing: -0.5,
+    requires: { building: 'farmersGuild', level: 1 },
+    levels: [
+      { cost: { timber: 3500, clay: 1500, planks: 600 }, buildHours: 3, effects: [{ type: 'sowing', returnMult: 1 }], summary: 'Communal sowing: grain in together, more grain home' },
+      { cost: { timber: 6000, stone: 2000, planks: 1500 }, buildHours: 6, effects: [{ type: 'sowing', returnMult: 1.2 }, { type: 'fieldYield', mult: 1.1 }], summary: 'Harvests +20%; every village’s Grain Fields yield +10%' },
+      { cost: { timber: 9000, stone: 3000, planks: 2000, bricks: 2000 }, buildHours: 12, effects: [{ type: 'sowing', returnMult: 1.25 }, { type: 'fieldYield', mult: 1.1 }], summary: 'Harvests +50% in all; Grain Fields +21%' },
+    ],
+  },
   forestersLodge: {
     id: 'forestersLodge',
     name: "Foresters' Lodge",
@@ -333,7 +355,7 @@ export const VALLEY_BUILDINGS: Record<ValleyBuildingId, ValleyBuildingDef> = {
   },
 };
 
-export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'festivalGrounds', 'millraceWorkshop', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
+export const VALLEY_BUILDING_ORDER: ValleyBuildingId[] = ['hearthHall', 'tradingPost', 'greatLibrary', 'festivalGrounds', 'millraceWorkshop', 'goldfurrowCommons', 'forestersLodge', 'minersGuild', 'farmersGuild', 'scholarsGuild', 'buildersGuild', 'craftersGuild'];
 
 /** Resources the Valley accepts, in display order. */
 export const VALLEY_RESOURCES: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks'];
@@ -412,7 +434,7 @@ export const NEIGHBOURS: NeighbourDef[] = [
 
 export const VALLEY_BALANCE = {
   /** Relative worth of each resource, for reputation and neighbours' parcel sizes. */
-  value: { timber: 1, clay: 1, stone: 1.5, planks: 2.5, bricks: 3, stew: 1.2 } as Partial<Record<ResourceId, number>>,
+  value: { timber: 1, clay: 1, stone: 1.5, planks: 2.5, bricks: 3, stew: 1.2, grain: 1.1 } as Partial<Record<ResourceId, number>>,
   /** Reputation earned per point of contributed value. */
   reputationPerValue: 0.1,
   neighbours: {
@@ -440,6 +462,8 @@ export const NEIGHBOUR_LINES = {
   finished: ['The {building} looks wonderful!', 'Look at the {building}! Worth every log.', 'Well done, everyone — the {building} is done.', 'Three cheers for the {building}!'],
   festival: ['The {festival} is on! Bring what you can spare.', 'Who’s coming to the {festival}?', 'I’ve saved a whole pot for the {festival}.'],
   won: ['What a {festival}! Thank you all.', 'We did it — best {festival} yet!', 'My feet hurt from dancing. Great {festival}, everyone.'],
+  sowing: ['The Goldfurrow fields are ploughed — bring your seed!', 'Sowing’s open at the Commons. The more of us, the better the harvest.', 'I’ve a sack of seed for Goldfurrow. Who else?'],
+  harvest: ['The Goldfurrow harvest is in — come and take your share!', 'What a crop at the Commons this time.', 'Grain for everyone who sowed. Well done, all.'],
 };
 
 export const CHAT_BALANCE = {

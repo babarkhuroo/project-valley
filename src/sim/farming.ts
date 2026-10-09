@@ -33,7 +33,7 @@ export function isFertile(map: VillageMapDef, b: Pick<BuildingInstance, 'defId' 
 
 /** Grain a ripe crop on this field holds. */
 export function fieldYield(state: GameState, map: VillageMapDef, b: BuildingInstance): number {
-  return Math.round(FARMING.yield * (isFertile(map, b) ? FARMING.fertileMult : 1) * getModifiers(state).fieldYieldMult);
+  return Math.round(FARMING.yield * (isFertile(map, b) ? FARMING.fertileMult : 1) * getModifiers(state).fieldYieldMult * state.valley.bonuses.fieldYieldMult);
 }
 
 /** 0..1 how grown the crop is (1 when ripe, 0 when fallow). For visuals and the panel. */

@@ -13,6 +13,7 @@ import { agoText, describeLog } from './format';
 import { GuildTrainingSection, MerchantSection, roadProgress } from './TradeUi';
 import { ValleyResearchSection, ValleyResearchSummary } from './ResearchUi';
 import { FestivalCard, FestivalSection } from './FestivalUi';
+import { SowingCard, SowingSection } from './SowingUi';
 import { DeliveryForm, MemberShares } from './Delivery';
 import { MillraceSection } from './MillraceUi';
 import { MembersSection } from './MembersUi';
@@ -84,6 +85,7 @@ export function ValleySidebar() {
         {road.next !== null ? <Bar value={(state.valley.reputation - road.prev) / (road.next - road.prev)} tone="red" thin /> : null}
       </button>
       <FestivalCard snapshot={snapshot} serverNow={serverNow} />
+      <SowingCard snapshot={snapshot} serverNow={serverNow} />
       <ValleyResearchSummary snapshot={snapshot} />
       <Section title="Projects">
         <ul className="vs-projects">
@@ -148,7 +150,7 @@ export function ValleyProjectPanel() {
     <div className="selection-panel valley-panel panel pop-in">
       <header className="sp-header">
         <div className="sp-icon" style={{ borderColor: def.color }}>
-          <Icon name={def.model === 'hall' ? 'valley' : 'home'} size={42} />
+          <Icon name={def.model === 'hall' ? 'valley' : def.model === 'commons' ? 'grain' : 'home'} size={42} />
         </div>
         <div className="sp-title">
           <h3>{def.name}</h3>
@@ -175,6 +177,7 @@ export function ValleyProjectPanel() {
       {id === 'greatLibrary' ? <ValleyResearchSection snapshot={snapshot} /> : null}
       {id === 'festivalGrounds' && b.level > 0 ? <FestivalSection snapshot={snapshot} serverNow={serverNow} /> : null}
       {id === 'millraceWorkshop' && b.level > 0 ? <MillraceSection snapshot={snapshot} serverNow={serverNow} /> : null}
+      {id === 'goldfurrowCommons' && b.level > 0 ? <SowingSection snapshot={snapshot} serverNow={serverNow} /> : null}
       {b.status === 'locked' ? (
         <p className="vp-note">
           <Icon name="lock" size={18} /> {statusText(b, serverNow)}.

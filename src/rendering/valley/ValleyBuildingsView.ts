@@ -3,6 +3,8 @@ import { VALLEY_BUILDING_ORDER, VALLEY_BUILDINGS, type ValleyBuildingId } from '
 import type { ValleyBuildingState, ValleySnapshot } from '../../valley/types';
 import { WATER_LEVEL, type Terrain } from '../../world/terrain';
 import type { BuildingModel } from '../models/buildingModels';
+import { paintCrops } from '../models/farmModels';
+import { now } from '../../game/clock';
 import { VALLEY_MODEL_SIZE, createScaffold, createValleyModel } from '../models/valleyModels';
 import type { SmokeSystem } from '../SmokeSystem';
 
@@ -63,6 +65,7 @@ export class ValleyBuildingsView {
   }
 
   sync(snapshot: ValleySnapshot | null): void {
+    this.sowing = snapshot?.sowing ?? null;
     for (const id of VALLEY_BUILDING_ORDER) {
       const b: Pick<ValleyBuildingState, 'level' | 'status'> = snapshot?.buildings[id] ?? { level: 0, status: 'locked' };
       const key = `${b.level}|${b.status}`;
@@ -100,6 +103,7 @@ export class ValleyBuildingsView {
 
   private remove(v: Visual): void {
     for (const h of v.smokeHandles) this.smoke.removeEmitter(h);
+    v.model.crops?.material.dispose();
     this.group.remove(v.group);
     v.group.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -107,9 +111,28 @@ export class ValleyBuildingsView {
     });
   }
 
+  private sowing: ValleySnapshot['sowing'] = null;
+
+  /**
+   * The Commons' plots follow the sowing round: bare between rounds, seedlings once
+   * someone has sown, growing green to gold until the harvest.
+   */
+  private growCommons(m: BuildingModel, now: number): void {
+    if (!m.crops) return;
+    const s = this.sowing;
+    if (!s || Object.keys(s.seed).length === 0) {
+      paintCrops(m.crops, 0, 0);
+      return;
+    }
+    const g = now < s.closesAt ? 0.06 : (now - s.closesAt) / Math.max(1, s.ripeAt - s.closesAt);
+    paintCrops(m.crops, g, m.crops.rows.length);
+  }
+
   update(dt: number, realTime: number): void {
+    const t = now();
     for (const v of this.visuals.values()) {
       const m = v.model;
+      if (v.id === 'goldfurrowCommons' && v.level > 0) this.growCommons(m, t);
       for (const sp of m.spinners) sp.obj.rotation[sp.axis] += sp.speed * dt;
       for (const w of m.wavers) w.obj.rotation.x = w.base + Math.sin(realTime * w.speed) * w.amp;
       for (const fl of m.flames) fl.scale.setScalar(1 + Math.sin(realTime * 9 + fl.position.x * 5) * 0.06);

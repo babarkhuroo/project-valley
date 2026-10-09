@@ -1,9 +1,10 @@
 import type { ValleyBuildingId } from '../config/valley';
 import type { ValleyResearchId } from '../config/valleyResearch';
 import { isValleyUnlocked } from '../sim/modifiers';
-import { claimFestival, joinValley, leaveValley, returnValleyOp, sendToFestival, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
+import { claimFestival, claimHarvest, joinValley, leaveValley, returnValleyOp, sendToFestival, sendToSowing, sendToValley, setValleyBonuses, settleValleyOp, type ResourceAmounts } from '../sim/valley';
+import { SOWING } from '../config/sowing';
 import type { ChatMessage, ContributionResult, ValleyLogEntry, ValleySnapshot } from '../valley/types';
-import { festivalRemaining, remainingFor, valleyBonuses } from '../valley/valleySim';
+import { festivalRemaining, remainingFor, sowingOpen, valleyBonuses } from '../valley/valleySim';
 import { now } from './clock';
 import type { Game } from './Game';
 import { playerId } from './persistence';
@@ -141,6 +142,8 @@ export class ValleyClient {
       setValleyBonuses(state, valleyBonuses(view.valley));
       // A festival the village helped win: collect the rewards (once).
       if (f && f.outcome === 'won' && (f.shares[view.memberId] ?? 0) > 0) claimFestival(state, f.id, f.kind, f.rewardMult, sink);
+      // Goldfurrow harvests the village sowed into: its share comes home (once each).
+      for (const h of view.valley.harvests ?? []) claimHarvest(state, h.id, h.yields[view.memberId] ?? 0, h.mult, sink);
     });
     const chat = this.lastChatId === null ? [] : (view.valley.chat ?? []).filter((m) => m.id > this.lastChatId!);
     this.lastChatId = (view.valley.chat ?? []).reduce((m, c) => Math.max(m, c.id), this.lastChatId ?? 0);
@@ -305,6 +308,25 @@ export class ValleyClient {
     if (!f || f.outcome !== 'running') return 'No festival is running right now';
     const opId = `${now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const result = this.game.run((state, _world, sink) => sendToFestival(state, f.id, resources, opId, sink, festivalRemaining(f)));
+    if (!result.ok) return result.error;
+    void this.flush();
+    return null;
+  }
+
+  /** Server time now, extrapolated from the last snapshot. */
+  serverNow(): number {
+    return this.view.fetchedAt + (Date.now() - this.view.receivedAt);
+  }
+
+  /** Sows grain at Goldfurrow. Returns a refusal reason, or null. */
+  contributeSowing(grain: number): string | null {
+    const s = this.view.snapshot?.sowing ?? null;
+    if (!s || !sowingOpen(s, this.serverNow())) return 'Sowing isn’t open at Goldfurrow right now';
+    const pending = this.game.state.valley.outbox.filter((o) => o.target.kind === 'sowing' && o.target.round === s.id).reduce((n, o) => n + (o.resources.grain ?? 0), 0);
+    const room = SOWING.maxSeed - (s.seed[playerId()] ?? 0) - pending;
+    if (room <= 0) return `Your village has sown all it can this round (${SOWING.maxSeed})`;
+    const opId = `${now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const result = this.game.run((state, _world, sink) => sendToSowing(state, s.id, grain, opId, sink, room));
     if (!result.ok) return result.error;
     void this.flush();
     return null;

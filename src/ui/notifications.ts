@@ -141,6 +141,14 @@ export function attachNotifications(game: Game): () => void {
         case 'festivalAccepted':
           if (e.reputation > 0) ui.toast({ kind: 'success', title: 'Delivered to the festival', body: `+${e.reputation} reputation${bagText(e.returned) ? ` · ${bagText(e.returned)} came home` : ''}`, icon: 'gift' }, 3500);
           break;
+        case 'sowingAccepted':
+          if (e.accepted > 0) ui.toast({ kind: 'success', title: `Sowed ${e.accepted} Grain at Goldfurrow`, body: `+${e.reputation} reputation${e.returned > 0 ? ` · ${e.returned} Grain came home` : ''}`, icon: 'grain' }, 3500);
+          else if (e.returned > 0) ui.toast({ kind: 'info', title: 'The sowing had closed', body: `${e.returned} Grain came back home.`, icon: 'grain' });
+          break;
+        case 'harvestShare':
+          ui.toast({ kind: 'success', title: `Your Goldfurrow harvest came home: +${e.grain} Grain`, body: `Every grain sown came back ×${Math.round(e.mult * 100) / 100}.`, icon: 'grain' }, 6000);
+          runtime.audio.play('complete');
+          break;
         case 'festivalReward':
           ui.toast({ kind: 'success', title: `Festival rewards from the ${FESTIVALS[e.festival].name}`, body: `+${e.coins} coins, +${e.reputation} reputation${e.decor ? ' — and Festival Lanterns to build!' : ''}`, icon: 'gift' }, 7000);
           runtime.audio.play('levelUp');

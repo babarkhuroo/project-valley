@@ -215,6 +215,9 @@ Shared projects restored by every member. Costs are Valley-wide totals. Reputati
 | Millrace Workshop | 1 | 4000 Timber, 1500 Clay, 1500 Stone | 3h | Opens shifts: materials in, more goods out for a Valley project | Research: Millrace Works |
 |  | 2 | 6000 Timber, 2500 Stone, 1500 Planks | 6h | A second wheel: shift output +15% |  |
 |  | 3 | 9000 Timber, 3500 Stone, 2000 Planks, 2000 Bricks | 12h | The great kiln: shift output +32% in all |  |
+| Goldfurrow Commons | 1 | 3500 Timber, 1500 Clay, 600 Planks | 3h | Communal sowing: grain in together, more grain home | Cooks' Guild 1 |
+|  | 2 | 6000 Timber, 2000 Stone, 1500 Planks | 6h | Harvests +20%; every village’s Grain Fields yield +10% |  |
+|  | 3 | 9000 Timber, 3000 Stone, 2000 Planks, 2000 Bricks | 12h | Harvests +50% in all; Grain Fields +21% |  |
 | Foresters' Lodge | 1 | 2400 Timber, 1200 Clay | 2h | Woodcutting +5% for every member; trains skills up to level 4 | Hearth Hall 1 |
 |  | 2 | 5000 Timber, 2000 Stone, 800 Planks | 6h | Woodcutting ×1.10 in all; trains up to level 5 |  |
 |  | 3 | 9000 Timber, 4000 Stone, 1500 Planks, 1500 Bricks | 12h | Woodcutting ×1.16 in all; trains up to level 6 |  |
@@ -244,35 +247,38 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | 1.3 days | Trading Post → level 1 |
 | 1.5 days | Builders' Guild → level 1 |
 | 1.5 days | Cooks' Guild → level 1 |
-| 2.1 days | Miners' Guild → level 1 |
+| 2.2 days | Miners' Guild → level 1 |
 | 2.2 days | Scholars' Guild → level 1 |
 | 2.3 days | Foresters' Lodge → level 1 |
 | 2.9 days | Craftsfolk's Guild → level 1 |
-| 3.2 days | Great Library → level 1 |
-| 5.6 days | Trading Post → level 2 |
-| 6.0 days | Hearth Hall → level 2 |
-| 6.0 days | Builders' Guild → level 2 |
-| 6.6 days | Scholars' Guild → level 2 |
-| 7.2 days | Miners' Guild → level 2 |
-| 7.2 days | Cooks' Guild → level 2 |
-| 7.4 days | Foresters' Lodge → level 2 |
-| 7.5 days | Craftsfolk's Guild → level 2 |
-| 8.2 days | Great Library → level 2 |
-| 11.6 days | Trading Post → level 3 |
-| 12.6 days | Festival Grounds → level 1 |
-| 13.1 days | Millrace Workshop → level 1 |
-| 15.7 days | Miners' Guild → level 3 |
-| 15.7 days | Foresters' Lodge → level 3 |
-| 16.7 days | Scholars' Guild → level 3 |
-| 16.8 days | Builders' Guild → level 3 |
-| 17.0 days | Cooks' Guild → level 3 |
-| 17.4 days | Craftsfolk's Guild → level 3 |
-| 18.1 days | Great Library → level 3 |
-| 18.5 days | Festival Grounds → level 2 |
+| 3.3 days | Great Library → level 1 |
+| 5.0 days | Goldfurrow Commons → level 1 |
+| 5.2 days | Trading Post → level 2 |
+| 7.0 days | Hearth Hall → level 2 |
+| 7.0 days | Scholars' Guild → level 2 |
+| 7.0 days | Builders' Guild → level 2 |
+| 7.5 days | Cooks' Guild → level 2 |
+| 7.6 days | Foresters' Lodge → level 2 |
+| 7.8 days | Miners' Guild → level 2 |
+| 8.3 days | Craftsfolk's Guild → level 2 |
+| 9.1 days | Great Library → level 2 |
+| 11.0 days | Goldfurrow Commons → level 2 |
+| 12.3 days | Millrace Workshop → level 1 |
+| 13.5 days | Festival Grounds → level 1 |
+| 13.9 days | Trading Post → level 3 |
+| 16.5 days | Scholars' Guild → level 3 |
+| 16.6 days | Builders' Guild → level 3 |
+| 18.4 days | Cooks' Guild → level 3 |
 | 18.5 days | Millrace Workshop → level 2 |
-| 18.6 days | Hearth Hall → level 3 |
-| 20.6 days | Festival Grounds → level 3 |
-| 20.7 days | Millrace Workshop → level 3 |
+| 18.8 days | Miners' Guild → level 3 |
+| 19.4 days | Foresters' Lodge → level 3 |
+| 19.6 days | Festival Grounds → level 2 |
+| 20.5 days | Craftsfolk's Guild → level 3 |
+| 20.6 days | Great Library → level 3 |
+| 20.8 days | Goldfurrow Commons → level 3 |
+| 20.9 days | Hearth Hall → level 3 |
+| 22.8 days | Millrace Workshop → level 3 |
+| 22.8 days | Festival Grounds → level 3 |
 
 ## Valley research
 
@@ -299,6 +305,18 @@ Once the Festival Grounds are restored (after the Festival Charter research), a 
 | Great Construction Project | 5000 Timber, 2500 Stone | 220 coins, 50 reputation | 200 | — |
 | Expedition Supplies | 1200 Planks, 1500 Stew | 250 coins, 50 reputation | 220 | — |
 | Lantern Fair | 2500 Clay, 900 Bricks | 240 coins, 50 reputation | 200 | Festival Lanterns |
+
+## Goldfurrow sowing
+
+Once the Goldfurrow Commons is restored (after the Cooks' Guild), a sowing round opens 1h later: sowing is open for 8h, the crop grows for 12h, and the next round opens 1h after each harvest (one round every 21h). A village sows up to 300 Grain a round. At the harvest each grain comes back × min(2.6, 1.5 + 0.1 × villages that sowed) × the Commons' level bonus (1 / 1.2 / 1.5); shares are collected automatically. Neighbours sow 40–120 Grain (× generosity) on 50% of their visits while sowing is open. Commons levels 2 and 3 also make every member's Grain Fields yield +10% each.
+
+| Villages that sowed | Return (level 1) | Level 2 | Level 3 | A full 300 Grain at level 1 brings home |
+| --- | --- | --- | --- | --- |
+| 1 | ×1.60 | ×1.92 | ×2.40 | 480 |
+| 3 | ×1.80 | ×2.16 | ×2.70 | 540 |
+| 5 | ×2 | ×2.40 | ×3 | 600 |
+| 8 | ×2.30 | ×2.76 | ×3.45 | 690 |
+| 10 | ×2.50 | ×3 | ×3.75 | 750 |
 
 ## Millrace shifts
 

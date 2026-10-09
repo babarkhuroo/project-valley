@@ -245,6 +245,19 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
       else sendJson(res, 200, { result: out.result, ...out.view });
       return;
     }
+    if (target.kind === 'sowing') {
+      const round = (target as { round?: unknown }).round;
+      const grain = (resources as { grain?: unknown } | undefined)?.grain;
+      if (typeof round !== 'number' || typeof grain !== 'number' || !Number.isFinite(grain)) {
+        sendJson(res, 400, { error: 'malformed contribution' });
+        return;
+      }
+      const out = await valleys.sowing(playerId, round, Math.min(100_000, Math.max(0, grain)), opId);
+      if (!out) sendJson(res, 404, { error: 'not in a valley' });
+      else if (!out.ok) sendJson(res, 422, { error: out.reason });
+      else sendJson(res, 200, { result: out.result, ...out.view });
+      return;
+    }
     if (target.kind === 'festival') {
       if (typeof (target as { festivalId?: unknown }).festivalId !== 'number' || !resources || typeof resources !== 'object') {
         sendJson(res, 400, { error: 'malformed contribution' });

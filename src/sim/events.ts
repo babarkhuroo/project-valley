@@ -41,6 +41,8 @@ export type SimEvent =
   | { type: 'autoContinue'; villagerId: number; nodeId: number }
   | { type: 'valleySent'; target: ValleyTarget; resources: Partial<Record<ResourceId, number>> }
   | { type: 'festivalAccepted'; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number }
+  | { type: 'sowingAccepted'; accepted: number; returned: number; reputation: number }
+  | { type: 'harvestShare'; round: number; grain: number; mult: number }
   | { type: 'festivalReward'; festival: FestivalId; coins: number; reputation: number; decor: BuildingId | null }
   | { type: 'shiftStarted'; villagerId: number; recipe: CoopRecipeId; project: ValleyBuildingId }
   | { type: 'shiftDone'; villagerId: number; recipe: CoopRecipeId; project: ValleyBuildingId; resource: ResourceId; amount: number }

@@ -10,7 +10,7 @@ export function memberName(snapshot: ValleySnapshot, id: string, me: string | nu
 }
 
 export function bagText(bag: ResourceBag): string {
-  return [...VALLEY_RESOURCES, 'stew' as const].filter((r) => (bag[r] ?? 0) > 0)
+  return [...VALLEY_RESOURCES, 'stew' as const, 'grain' as const].filter((r) => (bag[r] ?? 0) > 0)
     .map((r) => `${bag[r]} ${RESOURCES[r].name}`)
     .join(' + ');
 }
@@ -46,6 +46,12 @@ export function describeLog(e: ValleyLogEntry, snapshot: ValleySnapshot, me: str
       return `The ${FESTIVALS[e.festival].name} was a triumph!`;
     case 'festivalLost':
       return `The ${FESTIVALS[e.festival].name} ended before the goal was met`;
+    case 'sowingOpened':
+      return 'Sowing is open at the Goldfurrow Commons';
+    case 'sown':
+      return `${memberName(snapshot, e.member, me)} sowed ${e.grain} Grain at Goldfurrow`;
+    case 'harvested':
+      return e.villages > 0 ? `The Goldfurrow harvest is in: ${e.villages} ${e.villages === 1 ? 'village' : 'villages'} sowed, every grain came back ×${e.mult}` : 'Nobody sowed at Goldfurrow this time';
   }
 }
 
