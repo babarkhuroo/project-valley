@@ -24,6 +24,11 @@ export interface BuildingModel {
   busy: { obj: THREE.Object3D; axis: 'x' | 'y' | 'z'; speed: number }[];
   /** A field's crop rows, grown and harvested by the view. */
   crops?: CropRows;
+  /**
+   * Custom motion for several parts at once. `busy` eases between 0 (nobody working
+   * here) and 1; `objects` stay out of static merging.
+   */
+  animate: { objects: THREE.Object3D[]; fn: (time: number, busy: number) => void }[];
 }
 
 export function box(parent: THREE.Object3D, w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
@@ -84,7 +89,7 @@ export function barrel(parent: THREE.Object3D, x: number, z: number, y = 0): voi
 }
 
 export function emptyModel(): BuildingModel {
-  return { root: new THREE.Group(), smoke: [], steam: [], spinners: [], wavers: [], flames: [], fills: [], busy: [] };
+  return { root: new THREE.Group(), smoke: [], steam: [], spinners: [], wavers: [], flames: [], fills: [], busy: [], animate: [] };
 }
 
 function cookhouse(): BuildingModel {
@@ -656,6 +661,47 @@ function clayPit(): BuildingModel {
   heap.position.set(0.55, 0.18, 0.6);
   r.add(heap);
   box(r, 0.7, 0.05, 0.16, mat(PALETTE.wood), -0.55, 0.26, -0.6);
+  // A windlass over the pit: the crank turns and a bucket of clay rides up and down while someone digs.
+  const post = mat(PALETTE.woodDark);
+  for (const x of [-0.42, 0.42]) {
+    const p = box(r, 0.07, 0.8, 0.07, post, x, 0.42, -0.05);
+    p.rotation.z = x > 0 ? -0.08 : 0.08;
+  }
+  const axle = new THREE.Group();
+  axle.position.set(0, 0.78, -0.05);
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.8, 8), mat(PALETTE.wood));
+  drum.rotation.z = Math.PI / 2;
+  axle.add(drum);
+  const crank = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.03), post);
+  crank.position.set(0.46, -0.07, 0);
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.1, 5), mat(PALETTE.woodLight));
+  grip.rotation.z = Math.PI / 2;
+  grip.position.set(0.51, -0.14, 0);
+  axle.add(crank, grip);
+  r.add(axle);
+  const ropeLen = 0.5;
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 1, 4).translate(0, -0.5, 0), mat('#c9b48a'));
+  rope.position.set(0, 0.72, -0.05);
+  r.add(rope);
+  const bucket = new THREE.Group();
+  const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.12, 8), mat(PALETTE.wood));
+  const load = new THREE.Mesh(new THREE.SphereGeometry(0.075, 7, 5, 0, Math.PI * 2, 0, Math.PI / 2), mat(PALETTE.clay, { flat: true }));
+  load.position.y = 0.04;
+  bucket.add(pail, load);
+  r.add(bucket);
+  m.animate.push({
+    objects: [axle, rope, bucket],
+    fn: (time, busy) => {
+      // Down empty, up full: the crank turns with the rope, the clay shows on the way up.
+      const cycle = (time * 0.35) % 1;
+      const depth = busy * (cycle < 0.5 ? cycle * 2 : 2 - cycle * 2);
+      const y = 0.72 - 0.12 - ropeLen * 0.4 - depth * 0.3;
+      bucket.position.set(0, y, -0.05);
+      rope.scale.y = 0.72 - y - 0.06;
+      axle.rotation.x = -depth * 9;
+      load.visible = cycle > 0.5 || busy < 0.5;
+    },
+  });
   return m;
 }
 
@@ -925,6 +971,7 @@ export function mergeStatic(model: BuildingModel): void {
   model.fills.forEach((f) => f.items.forEach(keep));
   model.busy.forEach((b) => keep(b.obj));
   model.crops?.rows.forEach(keep);
+  model.animate.forEach((a) => a.objects.forEach(keep));
   const root = model.root;
   root.updateMatrixWorld(true);
   const inverse = new THREE.Matrix4().copy(root.matrixWorld).invert();

@@ -12,6 +12,7 @@ import { constructionFraction, villagerTask } from '../sim/selectors';
 import { findBuilding, findNode, findVillager, villagerPosition } from '../sim/villagerAI';
 import { ICONS } from '../ui/icons';
 import { AmbientLife } from './AmbientLife';
+import { Hens } from './Hens';
 import { BuildingsView } from './BuildingsView';
 import { createBridges } from './BridgeView';
 import { ChunkGrid, type CullingSettings } from './culling/ChunkGrid';
@@ -87,6 +88,7 @@ export class GameRenderer {
   readonly particles = new Particles();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
+  private readonly hens: Hens;
   private readonly fireflies: Fireflies;
   private readonly selection: SelectionView;
   private readonly overlay: WorldOverlay;
@@ -197,6 +199,11 @@ export class GameRenderer {
     this.scene.add(this.particles.group);
     this.ambient = new AmbientLife(world.terrain, map);
     this.scene.add(this.ambient.group);
+    this.hens = new Hens(world);
+    this.hens.onScatter = (p) => {
+      if (this.cameraCtl.distance < 24 && Math.hypot(p.x - this.cameraCtl.target.x, p.z - this.cameraCtl.target.z) < 12) this.audio.playAt('cluck', p);
+    };
+    this.scene.add(this.hens.group);
     this.fireflies = new Fireflies(world.terrain, map);
     this.scene.add(this.fireflies.mesh);
     this.selection = new SelectionView(world.terrain);
@@ -355,6 +362,7 @@ export class GameRenderer {
             this.overlay.float(p, `<span class="ico">${ICONS[e.resource]}</span>+${Math.round(e.amount)}`, `wo-float res-${e.resource}`);
             this.particles.emit('dust', p.clone().setY(p.y - 1.4), 2, 0.5);
             this.audio.playAt('deposit', p);
+            this.buildings.nudge(e.buildingId);
           }
           break;
         }
@@ -480,8 +488,10 @@ export class GameRenderer {
     this.buildings.update(state, dt, this.realTime, eye, lod);
     this.nature.update(state, this.realTime);
     this.nature.sync();
+    this.villagers.night = this.dayCycle.night;
     this.villagers.update(state, dt, this.realTime, this.game.speed, eye, lod);
     this.ambient.update(this.realTime, this.dayCycle.night);
+    this.hens.update(state, dt, this.realTime, this.dayCycle.night);
     this.fireflies.update(this.realTime, this.dayCycle.night);
     this.particles.update(dt);
 

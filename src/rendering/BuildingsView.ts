@@ -37,6 +37,8 @@ interface Visual {
   steamLevel: number;
   sparkleClock: number;
   level: number;
+  /** 0..1, eased: how busy the building looks (someone working there). */
+  busy: number;
 }
 
 const hitMaterial = new THREE.MeshBasicMaterial({ visible: false });
@@ -148,6 +150,7 @@ export class BuildingsView {
       steamLevel: 0,
       sparkleClock: Math.random(),
       level: b.level,
+      busy: 0,
     };
   }
 
@@ -287,6 +290,12 @@ export class BuildingsView {
     });
   }
 
+  /** A small hop when a load is delivered, so storage reacts to the work. */
+  nudge(id: number): void {
+    const v = this.visuals.get(id);
+    if (v && v.bounce < 0.3) v.bounce = 0.3;
+  }
+
   worldPosition(id: number, out = new THREE.Vector3()): THREE.Vector3 | null {
     const v = this.visuals.get(id);
     if (!v) return null;
@@ -367,6 +376,8 @@ export class BuildingsView {
         }
       }
       if (activeJob) for (const bz of model.busy) bz.obj.rotation[bz.axis] += bz.speed * dt;
+      v.busy += ((activeJob ? 1 : 0) - v.busy) * Math.min(1, dt * 2);
+      for (const a of model.animate) a.fn(realTime, v.busy);
       if (model.crops) this.growCrops(state, b, model.crops);
     }
   }

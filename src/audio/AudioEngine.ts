@@ -9,6 +9,7 @@ export type SoundId =
   | 'hoe'
   | 'sickle'
   | 'seeds'
+  | 'cluck'
   | 'bubble'
   | 'deposit'
   | 'treeFall'
@@ -212,6 +213,13 @@ export class AudioEngine {
         // Swish through dry stalks.
         this.noiseBurst(out, now, 0.18, 3400, 'bandpass', 0.22, 1.4);
         this.noiseBurst(out, now + 0.04, 0.12, 5200, 'highpass', 0.08, 0.7);
+        break;
+      case 'cluck':
+        // Two quick, indignant buk-buks.
+        for (const [dt, f] of [[0, 620], [0.11, 540]] as const) {
+          this.tone(out, now + dt, 'square', f, f * 0.7, 0.07, 0.035);
+          this.noiseBurst(out, now + dt, 0.05, 1800, 'bandpass', 0.06, 3);
+        }
         break;
       case 'seeds':
         // A light patter of seed landing.

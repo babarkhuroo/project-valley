@@ -269,6 +269,7 @@ export class ValleyRenderer {
     const snap = this.snapshot;
     this.folk.update(this.realTime, ValleyFolk.openProjects((id) => snap?.buildings[id]?.status));
     this.folk.syncTrainees(this.game.state.villagers, this.game.state.player.villageName);
+    this.folkView.night = this.dayCycle.night;
     this.folkView.update(this.valley.scenery, dt, this.realTime, 1, eye, lod);
     this.ambient.update(this.realTime, this.dayCycle.night);
     this.fireflies.update(this.realTime, this.dayCycle.night);
