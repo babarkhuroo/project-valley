@@ -42,6 +42,10 @@ To move an existing file-backed server's data across (safe to re-run):
 DATABASE_URL=postgres:///project_valley npx tsx scripts/import-to-postgres.ts
 ```
 
+### Deploying
+
+The server is one long-running Node process (it holds WebSocket connections for live Valley updates), so it needs a host that runs servers rather than serverless functions. `render.yaml` sets this up on [Render](https://render.com): a web service built with `npm ci && npm run build` and started with `npm run serve`, plus a Postgres database wired in as `DATABASE_URL` (the schema is created on first start). In Render choose **New → Blueprint**, pick this repository, and apply. On the free plan the service sleeps after a while without visitors (the first visit after that takes a minute to wake it), and free databases are time-limited, so move to paid plans before relying on it.
+
 Other scripts:
 
 | Command | What it does |
