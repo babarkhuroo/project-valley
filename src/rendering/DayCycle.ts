@@ -58,8 +58,11 @@ export class DayCycle {
   /** 0 by day … 1 at night; for ambience that reacts (fireflies, crickets). */
   night = 0;
   readonly sky = new THREE.Color();
+  /** 0..1 cloud cover (Weather): greys the sky, dims the sun, hides the stars. */
+  overcast = 0;
   private readonly stars: THREE.Points;
   private lastHour = -1;
+  private lastOvercast = -1;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -97,8 +100,10 @@ export class DayCycle {
   update(focus: THREE.Vector3): void {
     this.stars.position.set(focus.x, 0, focus.z);
     const h = ((this.hour() % 24) + 24) % 24;
-    if (Math.abs(h - this.lastHour) < 0.002) return;
+    if (Math.abs(h - this.lastHour) < 0.002 && Math.abs(this.overcast - this.lastOvercast) < 0.005) return;
     this.lastHour = h;
+    this.lastOvercast = this.overcast;
+    const o = this.overcast;
     let i = 0;
     while (i < KEYS.length - 2 && KEYS[i + 1].hour <= h) i++;
     const a = KEYS[i];
@@ -106,22 +111,26 @@ export class DayCycle {
     const t = (h - a.hour) / Math.max(0.0001, b.hour - a.hour);
     const k = t * t * (3 - 2 * t);
     lerpColor(a.sky, b.sky, k, this.sky);
+    // Cloud: a soft grey by day, a deeper slate at night.
+    c1.copy(this.sky);
+    this.sky.lerp(c2.set('#8f9aa6').lerp(c1.clone().multiplyScalar(0.7), Math.min(1, a.glow * (1 - k) + b.glow * k)), o * 0.6);
     this.scene.background = this.sky;
     this.renderer.setClearColor(this.sky);
     (this.scene.fog as THREE.Fog).color.copy(this.sky);
     lerpColor(a.sun, b.sun, k, this.sun.color);
-    this.sun.intensity = a.sunIntensity + (b.sunIntensity - a.sunIntensity) * k;
+    this.sun.intensity = (a.sunIntensity + (b.sunIntensity - a.sunIntensity) * k) * (1 - o * 0.62);
     lerpColor(a.hemiSky, b.hemiSky, k, this.hemi.color);
     lerpColor(a.hemiGround, b.hemiGround, k, this.hemi.groundColor);
-    this.hemi.intensity = a.hemiIntensity + (b.hemiIntensity - a.hemiIntensity) * k;
+    this.hemi.intensity = (a.hemiIntensity + (b.hemiIntensity - a.hemiIntensity) * k) * (1 + o * 0.08);
+    this.hemi.color.lerp(c1.set('#c9d3dd'), o * 0.5);
     this.ambient.intensity = a.ambient + (b.ambient - a.ambient) * k;
-    this.renderer.toneMappingExposure = a.exposure + (b.exposure - a.exposure) * k;
+    this.renderer.toneMappingExposure = (a.exposure + (b.exposure - a.exposure) * k) * (1 - o * 0.12);
     const glow = a.glow + (b.glow - a.glow) * k;
     this.night = glow;
     setNightGlow(glow);
     lerpColor(a.tint, b.tint, k, sharedUniforms.uDayTint.value);
-    (this.stars.material as THREE.PointsMaterial).opacity = Math.max(0, glow - 0.35) * 1.4;
-    this.stars.visible = glow > 0.36;
+    (this.stars.material as THREE.PointsMaterial).opacity = Math.max(0, glow - 0.35) * 1.4 * (1 - o);
+    this.stars.visible = glow > 0.36 && o < 0.95;
   }
 
   /**

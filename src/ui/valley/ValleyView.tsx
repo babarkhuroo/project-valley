@@ -31,6 +31,9 @@ export function ValleyView() {
       r.selected = s.valleySelection;
       r.dayCycle.mode = s.prefs.timeOfDay;
       r.quality.preset = s.prefs.quality;
+      r.post.miniature = s.prefs.miniature;
+      r.weather.enabled = s.prefs.weather;
+      r.weather.amount = reducedMotion(s.prefs) ? 0.35 : 1;
       r.particles.amount = reducedMotion(s.prefs) ? 0.3 : 1;
       r.hovered = s.valleyHover;
       if (s.travelling) ui.set({ travelling: false });

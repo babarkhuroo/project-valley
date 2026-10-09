@@ -10,6 +10,8 @@ export type SoundId =
   | 'sickle'
   | 'seeds'
   | 'cluck'
+  | 'launch'
+  | 'pop'
   | 'bubble'
   | 'deposit'
   | 'treeFall'
@@ -103,6 +105,9 @@ export class AudioEngine {
   private night = 0;
   private waterBed: GainNode | null = null;
   private windBed: GainNode | null = null;
+  private rainBed: GainNode | null = null;
+  private rain = 0;
+  private rainLevel = -1;
   private cricketTimer = 0;
   private scene = { night: -1, water: -1 };
 
@@ -213,6 +218,17 @@ export class AudioEngine {
         // Swish through dry stalks.
         this.noiseBurst(out, now, 0.18, 3400, 'bandpass', 0.22, 1.4);
         this.noiseBurst(out, now + 0.04, 0.12, 5200, 'highpass', 0.08, 0.7);
+        break;
+      case 'launch':
+        // A rising whistle.
+        this.tone(out, now, 'sine', 600, 1900, 0.9, 0.05);
+        this.noiseBurst(out, now, 0.5, 2400, 'bandpass', 0.05, 2);
+        break;
+      case 'pop':
+        // A soft bang and a scatter of crackles.
+        this.noiseBurst(out, now, 0.35, 380, 'lowpass', 0.45, 0.8);
+        this.tone(out, now, 'sine', 140, 60, 0.3, 0.3);
+        for (let i = 0; i < 7; i++) this.noiseBurst(out, now + 0.15 + Math.random() * 0.6, 0.03, 3500 + Math.random() * 2500, 'highpass', 0.07, 1);
         break;
       case 'cluck':
         // Two quick, indignant buk-buks.
@@ -403,6 +419,26 @@ export class AudioEngine {
     };
     this.windBed = makeBed(420, 'lowpass', 0.22, 0.07); // wind through leaves
     this.waterBed = makeBed(1600, 'bandpass', 0.05, 0.23); // running water, louder near the creek
+    // Rain: a soft hiss over a duller patter, silent until a shower.
+    this.rainBed = makeBed(2600, 'bandpass', 0.16, 0.11);
+    const patter = makeBed(700, 'lowpass', 0.12, 0.31);
+    const both = ctx.createGain();
+    both.gain.value = 0;
+    this.rainBed.disconnect();
+    patter.disconnect();
+    this.rainBed.connect(both);
+    patter.connect(both);
+    both.connect(this.ambienceBus);
+    this.rainBed = both;
+  }
+
+  /** 0..1 how hard it's raining: the rain bed swells and the birds take shelter. */
+  setRain(rain: number): void {
+    this.rain = rain;
+    const ctx = this.ctx;
+    if (!ctx || !this.rainBed || Math.abs(rain - this.rainLevel) < 0.02) return;
+    this.rainLevel = rain;
+    this.rainBed.gain.setTargetAtTime(rain * 1.4, ctx.currentTime, 1.2);
   }
 
   /**
@@ -442,7 +478,7 @@ export class AudioEngine {
   private maybeBird(): void {
     const ctx = this.ctx;
     // Birds sing by day; at night only the odd sleepy chirp.
-    if (!ctx || Math.random() > 0.45 * (1 - this.night * 0.9)) return;
+    if (!ctx || Math.random() > 0.45 * (1 - this.night * 0.9) * (1 - this.rain * 0.85)) return;
     const out = ctx.createGain();
     out.gain.value = 0.18 + Math.random() * 0.15;
     out.connect(this.ambienceBus);

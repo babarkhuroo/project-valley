@@ -133,6 +133,7 @@ function RenderingSection() {
       {toggle('lod')}
       {toggle('occlusion')}
       <TimeOfDay />
+      <WeatherControl />
     </section>
   );
 }
@@ -178,5 +179,30 @@ function TimeOfDay() {
         Live
       </button>
     </label>
+  );
+}
+
+/** Force a shower or clear skies (dev only); "Live" returns to the schedule. */
+function WeatherControl() {
+  useGameState();
+  const all = [runtime.renderer?.weather, runtime.valleyRenderer?.weather].filter((w) => !!w);
+  const current = all[0];
+  if (!current) return null;
+  const set = (f: 'rain' | 'clear' | null) => {
+    for (const w of all) w.force = f;
+  };
+  return (
+    <div className="row-buttons">
+      <span className="small">Weather: {current.rain > 0.05 ? `rain ${Math.round(current.rain * 100)}%` : current.overcast > 0.1 ? 'clearing' : 'fine'}</span>
+      <button className="btn small ghost" onClick={() => set('rain')}>
+        Rain
+      </button>
+      <button className="btn small ghost" onClick={() => set('clear')}>
+        Clear
+      </button>
+      <button className="btn small ghost" onClick={() => set(null)}>
+        Live
+      </button>
+    </div>
   );
 }

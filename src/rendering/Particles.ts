@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type ParticleKind = 'smoke' | 'steam' | 'dust' | 'sparkle' | 'chips' | 'clods' | 'rubble' | 'confetti' | 'leaves' | 'knowledge' | 'seeds' | 'soil' | 'chaff';
+export type ParticleKind = 'smoke' | 'steam' | 'dust' | 'sparkle' | 'chips' | 'clods' | 'rubble' | 'confetti' | 'leaves' | 'knowledge' | 'seeds' | 'soil' | 'chaff' | 'splash' | 'spark' | 'glint' | 'flare';
 
 interface Particle {
   alive: boolean;
@@ -37,19 +37,29 @@ const COLORS: Record<ParticleKind, string[]> = {
   seeds: ['#e6c25a', '#c9a040', '#f0d27a'],
   soil: ['#7a5a3a', '#8d6a45', '#5f4630'],
   chaff: ['#e2c26a', '#f0dc94', '#c8a24a'],
+  splash: ['#dfeaf3', '#c9d9e6'],
+  // Glowing kinds: colours are multiplied past 1 so the bloom catches them.
+  spark: ['#ffd36b', '#ff8fa8', '#8fd6ff', '#b6ff8a', '#e2a6ff'],
+  glint: ['#ffe08a', '#fff2c2'],
+  flare: ['#ffe2a8'],
 };
+
+/** Additive, unlit kinds: fireworks, golden glints, rocket trails. */
+const GLOW_KINDS = new Set<ParticleKind>(['spark', 'glint', 'flare']);
 
 const PUFF_KINDS = new Set<ParticleKind>(['smoke', 'steam', 'dust']);
 
 /**
- * Pooled, instanced particles in two shapes: soft low-poly puffs (smoke, steam, dust)
- * and small bits (chips, sparkles, confetti). Fading is done by shrinking, which suits
- * the chunky art style and keeps everything in two opaque draw calls.
+ * Pooled, instanced particles in three kinds of pool: soft low-poly puffs (smoke,
+ * steam, dust), small bits (chips, sparkles, confetti), and additive glowing specks
+ * (fireworks, glints) bright enough for the bloom to pick up. Fading is done by
+ * shrinking, which suits the chunky art style: three draw calls in all.
  */
 export class Particles {
   readonly group = new THREE.Group();
   private puffs: Pool;
   private bits: Pool;
+  private glow: Pool;
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
   private readonly e = new THREE.Euler();
@@ -58,10 +68,12 @@ export class Particles {
   constructor(capacity = 420) {
     this.puffs = this.makePool(new THREE.IcosahedronGeometry(0.5, 1), capacity, false);
     this.bits = this.makePool(new THREE.BoxGeometry(0.1, 0.1, 0.1), capacity, true);
+    // Fireworks need room: a show is several bursts of ~100 stars.
+    this.glow = this.makePool(new THREE.IcosahedronGeometry(0.06, 0), capacity * 2.5, true, new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false }));
   }
 
-  private makePool(geo: THREE.BufferGeometry, n: number, flat: boolean): Pool {
-    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ flatShading: flat }), n);
+  private makePool(geo: THREE.BufferGeometry, n: number, flat: boolean, material?: THREE.Material): Pool {
+    const mesh = new THREE.InstancedMesh(geo, material ?? new THREE.MeshLambertMaterial({ flatShading: flat }), n);
     mesh.frustumCulled = false;
     for (let i = 0; i < n; i++) mesh.setColorAt(i, new THREE.Color('#ffffff'));
     mesh.count = 0;
@@ -88,7 +100,7 @@ export class Particles {
 
   emit(kind: ParticleKind, at: THREE.Vector3, requested = 1, spread = 0.15): void {
     const count = requested <= 2 ? requested : Math.max(1, Math.round(requested * this.amount));
-    const pool = PUFF_KINDS.has(kind) ? this.puffs : this.bits;
+    const pool = PUFF_KINDS.has(kind) ? this.puffs : GLOW_KINDS.has(kind) ? this.glow : this.bits;
     const palette = COLORS[kind];
     for (let n = 0; n < count; n++) {
       const i = pool.cursor;
@@ -146,6 +158,47 @@ export class Particles {
           p.drag = 1.1;
           break;
         }
+        case 'spark': {
+          // A firework star: flung out evenly in every direction, drooping as it fades.
+          const u = Math.random() * 2 - 1;
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.sqrt(1 - u * u);
+          const sp = spread * (0.85 + Math.random() * 0.3);
+          // Here `spread` is the burst's speed; every star starts at the centre.
+          p.pos.copy(at);
+          p.vel.set(Math.cos(a) * r * sp, u * sp, Math.sin(a) * r * sp);
+          p.life = 1.1 + Math.random() * 0.7;
+          p.size = 0.7;
+          p.grow = 0;
+          p.gravity = 1.6;
+          p.drag = 1.4;
+          break;
+        }
+        case 'glint':
+          p.vel.set((Math.random() - 0.5) * 0.4, 0.6 + Math.random() * 0.9, (Math.random() - 0.5) * 0.4);
+          p.life = 1.2 + Math.random() * 0.8;
+          p.size = 1.1;
+          p.grow = 0;
+          p.gravity = -0.15;
+          p.drag = 0.8;
+          break;
+        case 'flare':
+          p.vel.set((Math.random() - 0.5) * 0.2, -0.3, (Math.random() - 0.5) * 0.2);
+          p.life = 0.3 + Math.random() * 0.2;
+          p.size = 0.9;
+          p.grow = 0;
+          p.gravity = 0;
+          p.drag = 2;
+          break;
+        case 'splash':
+          // A raindrop's little crown: a quick hop of droplets.
+          p.vel.set((Math.random() - 0.5) * 0.8, 0.9 + Math.random() * 0.5, (Math.random() - 0.5) * 0.8);
+          p.life = 0.22 + Math.random() * 0.1;
+          p.size = 0.35;
+          p.grow = 0;
+          p.gravity = 7;
+          p.drag = 0.5;
+          break;
         case 'leaves':
         case 'chaff':
           p.vel.set((Math.random() - 0.5) * 0.8, 0.2 + Math.random() * 0.4, (Math.random() - 0.5) * 0.8);
@@ -167,12 +220,22 @@ export class Particles {
         }
       }
       p.color.set(palette[Math.floor(Math.random() * palette.length)]);
+      if (GLOW_KINDS.has(kind)) p.color.multiplyScalar(2.2);
     }
   }
 
   update(dt: number): void {
     this.step(this.puffs, dt, true);
     this.step(this.bits, dt, false);
+    this.step(this.glow, dt, false);
+  }
+
+  /** Emits one glowing particle of an exact colour (a firework burst is all one colour). */
+  emitColored(kind: 'spark' | 'glint' | 'flare', at: THREE.Vector3, color: THREE.Color, count: number, spread: number): void {
+    const before = this.glow.cursor;
+    this.emit(kind, at, count, spread);
+    const n = this.glow.items.length;
+    for (let i = before; i !== this.glow.cursor; i = (i + 1) % n) this.glow.items[i].color.copy(color).multiplyScalar(2.2);
   }
 
   private step(pool: Pool, dt: number, puff: boolean): void {

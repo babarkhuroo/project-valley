@@ -46,10 +46,14 @@ export interface Prefs {
   reduceMotion: 'system' | 'on' | 'off';
   highContrast: boolean;
   quality: 'auto' | 'high' | 'balanced' | 'low';
+  /** Tilt-shift "model village" blur at the top and bottom of the view. */
+  miniature: boolean;
+  /** Passing showers and rainbows (purely cosmetic). */
+  weather: boolean;
 }
 
 const PREFS_KEY = 'project-valley:prefs';
-const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock', uiScale: 1, reduceMotion: 'system', highContrast: false, quality: 'auto' };
+const DEFAULT_PREFS: Prefs = { timeOfDay: 'clock', uiScale: 1, reduceMotion: 'system', highContrast: false, quality: 'auto', miniature: true, weather: true };
 
 function loadPrefs(): Prefs {
   try {

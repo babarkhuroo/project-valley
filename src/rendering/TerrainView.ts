@@ -23,6 +23,8 @@ export class TerrainView {
   readonly gridOverlay: THREE.Mesh;
   private readonly gridTexture: THREE.DataTexture;
   private readonly gridData: Uint8Array;
+  private groundMaterial!: THREE.MeshLambertMaterial;
+  private wet = -1;
 
   constructor(private readonly terrain: Terrain, private readonly grid: NavGrid) {
     this.mesh = this.buildGround();
@@ -32,6 +34,13 @@ export class TerrainView {
     this.gridData = data;
   }
 
+  /** Rain darkens the ground a little (0 = dry, 1 = soaked). */
+  setWetness(w: number): void {
+    if (Math.abs(w - this.wet) < 0.01) return;
+    this.wet = w;
+    this.groundMaterial.color.setScalar(1 - w * 0.17);
+  }
+
   private buildGround(): THREE.Group {
     const { map } = this.terrain;
     const sizeX = map.width + map.margin * 2;
@@ -39,6 +48,7 @@ export class TerrainView {
     const group = new THREE.Group();
     group.name = 'terrain';
     const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+    this.groundMaterial = material;
     const tileX = sizeX / TILES;
     const tileZ = sizeZ / TILES;
     for (let tz = 0; tz < TILES; tz++) {

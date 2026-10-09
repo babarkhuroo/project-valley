@@ -20,6 +20,9 @@ import { OcclusionQueries } from './culling/OcclusionQueries';
 import { CameraController } from './CameraController';
 import { DayCycle } from './DayCycle';
 import { waterNearby } from './waterNearby';
+import { Weather } from './Weather';
+import { Effects } from './Effects';
+import { PostFX } from './PostFX';
 import { QualityGovernor } from './Quality';
 import { Fireflies } from './Fireflies';
 import { InputController, type InteractionHandler, type PickResult, type PickTarget } from './InputController';
@@ -77,6 +80,12 @@ export class GameRenderer {
   readonly dayCycle: DayCycle;
   /** Resolution/shadow quality (fixed preset or automatic). */
   readonly quality: QualityGovernor;
+  /** Bloom, miniature blur and colour grade over the 3D view. */
+  readonly post: PostFX;
+  /** Showers, rainbows and sunlit motes (cosmetic). */
+  readonly weather: Weather;
+  /** Rings, light beams and fireworks for the big moments. */
+  readonly effects: Effects;
   /** Spatial partition driving frustum culling, LOD and occlusion for instanced layers. */
   readonly chunks: ChunkGrid;
   private readonly occlusion: OcclusionQueries;
@@ -142,6 +151,8 @@ export class GameRenderer {
     this.sun.shadow.radius = 3;
     this.scene.add(this.sun, this.sun.target, fill);
     this.dayCycle = new DayCycle(this.scene, this.renderer, this.sun, hemi, fill);
+    this.post = new PostFX(this.renderer);
+    this.renderer.info.autoReset = false;
     this.quality = new QualityGovernor(this.renderer, this.sun, () => this.resize());
 
     this.terrainView = new TerrainView(world.terrain, world.grid);
@@ -197,6 +208,11 @@ export class GameRenderer {
     };
     this.scene.add(this.villagers.group);
     this.scene.add(this.particles.group);
+    this.weather = new Weather(world.terrain, this.particles);
+    this.scene.add(this.weather.group);
+    this.effects = new Effects(this.particles);
+    this.effects.onFirework = (kind, at) => this.audio.playAt(kind === 'launch' ? 'launch' : 'pop', at);
+    this.scene.add(this.effects.group);
     this.ambient = new AmbientLife(world.terrain, map);
     this.scene.add(this.ambient.group);
     this.hens = new Hens(world);
@@ -235,6 +251,7 @@ export class GameRenderer {
     this.resizeObserver.disconnect();
     this.smoke.dispose();
     this.occlusion.dispose();
+    this.post.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -248,6 +265,7 @@ export class GameRenderer {
     this.camera.fov = w < h ? 52 : 38;
     this.camera.updateProjectionMatrix();
     this.overlay.resize();
+    this.post.resize();
   }
 
   // -------------------------------------------------------------------------
@@ -395,6 +413,12 @@ export class GameRenderer {
           if (p && BUILDINGS[e.defId].category !== 'decor') {
             this.particles.emit('confetti', p.clone().setY(p.y + BUILDINGS[e.defId].height), 40, 1);
             this.particles.emit('dust', p.clone().setY(p.y + 0.2), 14, 2);
+            const fp = BUILDINGS[e.defId].footprint;
+            const reach = Math.max(fp.w, fp.d);
+            if (e.type === 'upgradeComplete') {
+              this.effects.ring(p, '#ffd36b', reach * 1.9);
+              this.effects.glints(p.clone().setY(p.y + 0.4), reach * 0.8);
+            } else this.effects.ring(p, '#fff1c9', reach * 1.6);
             this.audio.play('complete');
             const near = state.villagers.filter((v) => {
               const vp = villagerPosition(v, state.time);
@@ -409,14 +433,20 @@ export class GameRenderer {
           if (academy) {
             const p = this.positionOf({ kind: 'building', id: academy.id })!;
             this.particles.emit('knowledge', p.clone().setY(p.y + 4), 30, 1.5);
+            this.effects.beam(p.clone().setY(p.y + 0.2), '#9fb6ff', 11);
           }
           this.audio.play('research');
           break;
         }
-        case 'levelUp':
+        case 'levelUp': {
           this.villagers.celebrate('all', this.realTime, 3);
           this.audio.play('levelUp');
+          // Fireworks over the heart of the village.
+          const kitchen = state.buildings.find((b) => b.defId === 'cookhouse');
+          const at = kitchen ? this.positionOf({ kind: 'building', id: kitchen.id }) : null;
+          this.effects.fireworks(at ?? this.cameraCtl.target.clone(), 7, 7);
           break;
+        }
         case 'nodeDepleted': {
           const n = findNode(state, e.nodeId);
           if (n && n.kind === 'tree') {
@@ -478,6 +508,9 @@ export class GameRenderer {
     const fog = this.scene.fog as THREE.Fog;
     fog.near = this.cameraCtl.distance * 1.3 + 18;
     fog.far = this.cameraCtl.distance * 2.6 + 70;
+    // Rain closes the distance in.
+    fog.near *= 1 - this.weather.overcast * 0.3;
+    fog.far *= 1 - this.weather.overcast * 0.2;
     this.chunks.maxDistance = fog.far + 6;
     this.chunks.update(this.camera);
     this.occlusion.update();
@@ -494,6 +527,7 @@ export class GameRenderer {
     this.hens.update(state, dt, this.realTime, this.dayCycle.night);
     this.fireflies.update(this.realTime, this.dayCycle.night);
     this.particles.update(dt);
+    this.effects.update(dt);
 
     // Selection, hover and placement ghost.
     const sel = this.view.selection;
@@ -520,6 +554,11 @@ export class GameRenderer {
     const texel = (span * 2) / this.sun.shadow.mapSize.x;
     const sx = Math.round(target.x / texel) * texel;
     const sz = Math.round(target.z / texel) * texel;
+    // Weather first: cloud cover feeds the sky and light below.
+    this.weather.update(dt, this.realTime, Date.now(), target, this.camera, this.dayCycle.night);
+    this.dayCycle.overcast = this.weather.overcast;
+    this.terrainView.setWetness(Math.min(1, this.weather.rain * 0.7 + this.weather.overcast * 0.45));
+    this.audio.setRain(this.weather.rain);
     this.dayCycle.update(target);
     const light = this.dayCycle.lightOffset();
     this.sun.position.set(sx + light.x, light.y, sz + light.z);
@@ -528,7 +567,14 @@ export class GameRenderer {
 
     this.audio.setListener(target, this.cameraCtl.distance);
     this.audio.setScene(this.dayCycle.night, waterNearby(this.game.world.terrain, target, this.cameraCtl.distance), false);
-    this.renderer.render(this.scene, this.camera);
+    // The miniature look grows as the camera pulls back.
+    const zoom = (this.cameraCtl.distance - this.cameraCtl.minDistance) / (this.cameraCtl.maxDistance - this.cameraCtl.minDistance);
+    this.post.level = this.quality.effects;
+    this.post.night = this.dayCycle.night;
+    this.post.overcast = this.weather.overcast;
+    this.post.tilt = 0.35 + Math.max(0, Math.min(1, zoom)) * 0.5;
+    this.renderer.info.reset();
+    this.post.render(this.scene, this.camera);
     this.lastInfo.calls = this.renderer.info.render.calls;
     this.lastInfo.triangles = this.renderer.info.render.triangles;
     this.lastResources = { ...state.resources };

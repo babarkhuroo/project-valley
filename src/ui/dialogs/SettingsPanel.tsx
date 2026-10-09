@@ -109,6 +109,12 @@ export function SettingsPanel() {
           </select>
         </label>
         <p className="small muted">Automatic lowers the resolution when frames run slow and raises it again when there’s room.</p>
+        <label className="toggle">
+          <input type="checkbox" checked={prefs.miniature} onChange={(e) => ui.setPrefs({ miniature: e.target.checked })} /> Miniature look (soft focus at the top and bottom)
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={prefs.weather} onChange={(e) => ui.setPrefs({ weather: e.target.checked })} /> Weather (passing showers, rainbows)
+        </label>
       </section>
       <section>
         <h4>Tutorial</h4>

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { EffectsLevel } from './PostFX';
 
 export type QualityPreset = 'auto' | 'high' | 'balanced' | 'low';
 
@@ -63,6 +64,24 @@ export class QualityGovernor {
       this.sun.shadow.map = null;
     }
     this.onResize();
+  }
+
+  /**
+   * Post-processing for this preset: everything on High, no tilt-shift blur on
+   * Balanced, none on Low. Automatic steps down with the resolution it is already
+   * trading away, and drops post-processing entirely before it drops shadows.
+   */
+  get effects(): EffectsLevel {
+    switch (this.preset) {
+      case 'high':
+        return 'full';
+      case 'balanced':
+        return 'light';
+      case 'low':
+        return 'off';
+      default:
+        return this.shadowsOff || this.scale <= MIN_SCALE + 0.01 ? 'off' : this.scale < 0.9 ? 'light' : 'full';
+    }
   }
 
   /** Call once per frame with the real frame time (seconds). */

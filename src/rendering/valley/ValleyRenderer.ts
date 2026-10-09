@@ -12,6 +12,9 @@ import { CameraController } from '../CameraController';
 import { ChunkGrid } from '../culling/ChunkGrid';
 import { DayCycle } from '../DayCycle';
 import { waterNearby } from '../waterNearby';
+import { Weather } from '../Weather';
+import { Effects } from '../Effects';
+import { PostFX } from '../PostFX';
 import { QualityGovernor } from '../Quality';
 import { Fireflies } from '../Fireflies';
 import { InputController, type PickResult } from '../InputController';
@@ -53,6 +56,11 @@ export class ValleyRenderer {
   readonly dayCycle: DayCycle;
   /** Resolution/shadow quality (fixed preset or automatic). */
   readonly quality: QualityGovernor;
+  /** Bloom, miniature blur and colour grade over the 3D view. */
+  readonly post: PostFX;
+  /** Showers, rainbows and sunlit motes (cosmetic). */
+  readonly weather: Weather;
+  private readonly effects: Effects;
   hovered: ValleyBuildingId | null = null;
   onFrame: ((realTime: number) => void) | null = null;
 
@@ -63,6 +71,7 @@ export class ValleyRenderer {
   private readonly folk: ValleyFolk;
   private readonly folkView: VillagersView;
   readonly particles = new Particles();
+  private readonly terrainView: TerrainView;
   private readonly ship = new ShipView();
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
@@ -128,10 +137,12 @@ export class ValleyRenderer {
     this.sun.shadow.radius = 3;
     this.scene.add(this.sun, this.sun.target, fill);
     this.dayCycle = new DayCycle(this.scene, this.renderer, this.sun, hemi, fill);
+    this.post = new PostFX(this.renderer);
+    this.renderer.info.autoReset = false;
     this.quality = new QualityGovernor(this.renderer, this.sun, () => this.resize());
 
-    const terrainView = new TerrainView(world.terrain, world.grid);
-    this.scene.add(terrainView.mesh, createWater(world.terrain));
+    this.terrainView = new TerrainView(world.terrain, world.grid);
+    this.scene.add(this.terrainView.mesh, createWater(world.terrain));
     const bridges = createBridges(world.terrain);
     if (bridges) this.scene.add(bridges);
     this.chunks = new ChunkGrid(-map.margin, -map.margin, map.width + map.margin, map.height + map.margin, 16);
@@ -144,6 +155,10 @@ export class ValleyRenderer {
       this.particles.emit('confetti', at, 60, 2);
       this.particles.emit('dust', at.clone().setY(at.y - 3), 20, 3);
       this.audio.play('complete');
+      // A restored Valley building is a shared triumph: a ring and fireworks.
+      const ground = at.clone().setY(at.y - 3);
+      this.effects.ring(ground, '#ffd36b', 14, 1.8);
+      this.effects.fireworks(ground, 5, 6);
     };
     this.scene.add(this.buildings.group, this.smoke.mesh, this.ship.group);
 
@@ -153,6 +168,11 @@ export class ValleyRenderer {
       if (e.anim === 'build') this.particles.emit('dust', e.position.clone().setY(e.position.y + 0.3), 1, 0.3);
     };
     this.scene.add(this.folkView.group, this.particles.group);
+    this.weather = new Weather(world.terrain, this.particles);
+    this.scene.add(this.weather.group);
+    this.effects = new Effects(this.particles);
+    this.effects.onFirework = (kind, at) => this.audio.playAt(kind === 'launch' ? 'launch' : 'pop', at);
+    this.scene.add(this.effects.group);
     this.ambient = new AmbientLife(world.terrain, map);
     this.scene.add(this.ambient.group);
     this.fireflies = new Fireflies(world.terrain, map);
@@ -204,6 +224,7 @@ export class ValleyRenderer {
     this.resizeObserver.disconnect();
     this.buildings.dispose();
     this.smoke.dispose();
+    this.post.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -222,6 +243,7 @@ export class ValleyRenderer {
     this.camera.fov = w < h ? 52 : 38;
     this.camera.updateProjectionMatrix();
     this.overlay.resize();
+    this.post.resize();
   }
 
   private groundAt(ndc: THREE.Vector2): THREE.Vector3 | null {
@@ -258,6 +280,9 @@ export class ValleyRenderer {
     const fog = this.scene.fog as THREE.Fog;
     fog.near = this.cameraCtl.distance * 1.4 + 26;
     fog.far = this.cameraCtl.distance * 2.8 + 100;
+    // Rain closes the distance in.
+    fog.near *= 1 - this.weather.overcast * 0.3;
+    fog.far *= 1 - this.weather.overcast * 0.2;
     this.chunks.maxDistance = fog.far + 6;
     this.chunks.update(this.camera);
     const eye = this.camera.position;
@@ -274,6 +299,7 @@ export class ValleyRenderer {
     this.ambient.update(this.realTime, this.dayCycle.night);
     this.fireflies.update(this.realTime, this.dayCycle.night);
     this.particles.update(dt);
+    this.effects.update(dt);
 
     const sel = this.selected;
     const posOf = (id: ValleyBuildingId) => {
@@ -298,6 +324,11 @@ export class ValleyRenderer {
     const texel = (span * 2) / this.sun.shadow.mapSize.x;
     const sx = Math.round(target.x / texel) * texel;
     const sz = Math.round(target.z / texel) * texel;
+    // Weather first: cloud cover feeds the sky and light below.
+    this.weather.update(dt, this.realTime, Date.now(), target, this.camera, this.dayCycle.night);
+    this.dayCycle.overcast = this.weather.overcast;
+    this.terrainView.setWetness(Math.min(1, this.weather.rain * 0.7 + this.weather.overcast * 0.45));
+    this.audio.setRain(this.weather.rain);
     this.dayCycle.update(target);
     const light = this.dayCycle.lightOffset();
     this.sun.position.set(sx + light.x, light.y + 6, sz + light.z + 4);
@@ -306,7 +337,14 @@ export class ValleyRenderer {
 
     this.audio.setListener(target, this.cameraCtl.distance);
     this.audio.setScene(this.dayCycle.night, waterNearby(this.valley.world.terrain, target, this.cameraCtl.distance), true);
-    this.renderer.render(this.scene, this.camera);
+    // The miniature look grows as the camera pulls back.
+    const zoom = (this.cameraCtl.distance - this.cameraCtl.minDistance) / (this.cameraCtl.maxDistance - this.cameraCtl.minDistance);
+    this.post.level = this.quality.effects;
+    this.post.night = this.dayCycle.night;
+    this.post.overcast = this.weather.overcast;
+    this.post.tilt = 0.35 + Math.max(0, Math.min(1, zoom)) * 0.5;
+    this.renderer.info.reset();
+    this.post.render(this.scene, this.camera);
     this.onFrame?.(this.realTime);
   }
 
