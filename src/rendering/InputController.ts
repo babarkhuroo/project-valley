@@ -27,24 +27,48 @@ interface PointerInfo {
   startX: number;
   startY: number;
   button: number;
+  touch: boolean;
+}
+
+/** What the fingers are holding: a ground point that stays under them, plus pinch and twist. */
+interface Gesture {
+  anchor: THREE.Vector3;
+  /** Ground distance between the two fingers when this hold began (pinch zoom keeps it). */
+  groundSpread: number;
+  /** Finger spread and camera distance when this hold began. */
+  spread: number;
+  distance: number;
+  /** Finger angle and camera yaw when twisting began (two-finger rotate). */
+  angle: number;
+  yaw: number;
+  twisting: boolean;
+  fingers: number;
 }
 
 const CLICK_SLOP = 7;
+const TOUCH_SLOP = 10;
+/** A two-finger twist past this angle (radians) starts rotating the view. */
+const TWIST_START = 0.22;
 
 /**
  * Turns mouse, touch and keyboard input into camera motion and world clicks.
  * Drag = pan (the grabbed ground point stays under the finger), wheel/pinch = zoom
- * towards the cursor, right-drag or Q/E = rotate, WASD/arrows = pan.
+ * towards the cursor, two-finger twist / right-drag / Q/E = rotate, WASD/arrows = pan.
+ *
+ * Pointer events only record where the fingers are; the camera is solved once per
+ * frame (`update`) from those positions, so several move events between frames — touch
+ * screens often sample at 120 Hz+ — can't pile up pans computed from a stale camera.
  */
 export class InputController {
   private readonly pointers = new Map<number, PointerInfo>();
   private dragging = false;
-  private anchor: THREE.Vector3 | null = null;
-  private pinchDistance = 0;
-  private pinchAnchor: THREE.Vector3 | null = null;
+  private gesture: Gesture | null = null;
+  private moved = false;
   private readonly keys = new Set<string>();
-  private readonly recent: { t: number; x: number; z: number }[] = [];
+  /** Recent camera targets while dragging, for the fling on release. */
+  private readonly trail: { t: number; x: number; z: number }[] = [];
   private hoverPending: { x: number; y: number } | null = null;
+  private rect: DOMRect | null = null;
   private readonly ndc = new THREE.Vector2();
   private readonly listeners: [EventTarget, string, EventListener, AddEventListenerOptions?][] = [];
 
@@ -58,14 +82,15 @@ export class InputController {
     this.listen(canvas, 'pointermove', (e) => this.onMove(e as PointerEvent));
     this.listen(canvas, 'pointerup', (e) => this.onUp(e as PointerEvent));
     this.listen(canvas, 'pointercancel', (e) => this.onUp(e as PointerEvent, true));
-    this.listen(canvas, 'pointerleave', () => {
-      if (this.pointers.size === 0) this.handler.onHover(null);
+    this.listen(canvas, 'pointerleave', (e) => {
+      if (this.pointers.size === 0 && (e as PointerEvent).pointerType !== 'touch') this.handler.onHover(null);
     });
     this.listen(canvas, 'wheel', (e) => this.onWheel(e as WheelEvent), { passive: false });
     this.listen(canvas, 'contextmenu', (e) => e.preventDefault());
     this.listen(window, 'keydown', (e) => this.onKey(e as KeyboardEvent, true));
     this.listen(window, 'keyup', (e) => this.onKey(e as KeyboardEvent, false));
     this.listen(window, 'blur', () => this.keys.clear());
+    this.listen(window, 'resize', () => (this.rect = null));
   }
 
   private listen(target: EventTarget, type: string, fn: EventListener, opts?: AddEventListenerOptions): void {
@@ -73,105 +98,157 @@ export class InputController {
     this.listeners.push([target, type, fn, opts]);
   }
 
+  /** Whether a finger or the mouse is moving the view right now. */
+  get active(): boolean {
+    return this.dragging;
+  }
+
   dispose(): void {
     for (const [t, type, fn, opts] of this.listeners) t.removeEventListener(type, fn, opts);
   }
 
   private toNdc(x: number, y: number): THREE.Vector2 {
-    const r = this.canvas.getBoundingClientRect();
+    // Reading layout on every move forces style recalculation; the canvas only moves on resize.
+    const r = (this.rect ??= this.canvas.getBoundingClientRect());
     return this.ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1).clone();
+  }
+
+  /** Centre, spread and angle of the first two fingers (or the one finger). */
+  private fingers(): { x: number; y: number; spread: number; angle: number; count: number; a: PointerInfo; b: PointerInfo | undefined } {
+    const [a, b] = this.pointers.values();
+    if (!b) return { x: a.x, y: a.y, spread: 0, angle: 0, count: 1, a, b };
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, spread: Math.hypot(a.x - b.x, a.y - b.y), angle: Math.atan2(b.y - a.y, b.x - a.x), count: 2, a, b };
+  }
+
+  /** Ground distance between two screen points with the camera as it is now. */
+  private groundSpread(a: PointerInfo, b: PointerInfo): number {
+    const pa = this.camera.groundAt(this.toNdc(a.x, a.y));
+    const pb = this.camera.groundAt(this.toNdc(b.x, b.y));
+    return pa && pb ? Math.hypot(pa.x - pb.x, pa.z - pb.z) : 0;
+  }
+
+  /** (Re)starts holding whatever ground is under the fingers now — on drag start and whenever a finger joins or leaves. */
+  private hold(useStart = false): void {
+    const f = this.fingers();
+    let { x, y } = f;
+    if (useStart && f.count === 1) {
+      // The drag starts where the finger went down, not where it crossed the slop.
+      const [p] = this.pointers.values();
+      x = p.startX;
+      y = p.startY;
+    }
+    this.camera.beginHold();
+    const anchor = this.camera.groundAt(this.toNdc(x, y));
+    this.gesture = anchor
+      ? { anchor, groundSpread: f.b ? this.groundSpread(f.a, f.b) : 0, spread: f.spread, distance: this.camera.distance, angle: f.angle, yaw: this.camera.yaw, twisting: false, fingers: f.count }
+      : null;
+    this.trail.length = 0;
+    this.moved = true;
   }
 
   private onDown(e: PointerEvent): void {
     this.canvas.setPointerCapture(e.pointerId);
-    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, button: e.button });
+    this.rect = null;
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, button: e.button, touch: e.pointerType === 'touch' });
     this.camera.setVelocity(0, 0);
-    this.recent.length = 0;
     if (this.pointers.size === 1) {
       this.dragging = false;
-      this.anchor = this.camera.groundAt(this.toNdc(e.clientX, e.clientY));
-    } else if (this.pointers.size === 2) {
-      const [a, b] = [...this.pointers.values()];
-      this.pinchDistance = Math.hypot(a.x - b.x, a.y - b.y);
-      this.pinchAnchor = this.camera.groundAt(this.toNdc((a.x + b.x) / 2, (a.y + b.y) / 2));
+      this.gesture = null;
+    } else {
       this.dragging = true;
+      this.hold();
     }
   }
 
   private onMove(e: PointerEvent): void {
     const p = this.pointers.get(e.pointerId);
     if (!p) {
-      this.hoverPending = { x: e.clientX, y: e.clientY };
+      if (e.pointerType !== 'touch') this.hoverPending = { x: e.clientX, y: e.clientY };
       return;
     }
     const prevX = p.x;
     p.x = e.clientX;
     p.y = e.clientY;
-    if (this.pointers.size === 2) {
-      this.handlePinch();
-      return;
-    }
-    if (!this.dragging && Math.hypot(p.x - p.startX, p.y - p.startY) > CLICK_SLOP) {
+    if (!this.dragging && Math.hypot(p.x - p.startX, p.y - p.startY) > (p.touch ? TOUCH_SLOP : CLICK_SLOP)) {
       this.dragging = true;
-      this.camera.dragging = true;
+      if (p.button !== 2) this.hold(true);
     }
     if (!this.dragging) {
-      this.hoverPending = { x: e.clientX, y: e.clientY };
+      if (!p.touch) this.hoverPending = { x: e.clientX, y: e.clientY };
       return;
     }
-    if (p.button === 2) {
+    if (p.button === 2 && this.pointers.size === 1) {
       this.camera.rotateBy(-(p.x - prevX) * 0.006);
       return;
     }
-    if (this.anchor) {
-      const now = this.camera.groundAt(this.toNdc(p.x, p.y));
-      if (now) {
-        const dx = this.anchor.x - now.x;
-        const dz = this.anchor.z - now.z;
-        this.camera.panBy(dx, dz);
-        this.recent.push({ t: performance.now(), x: dx, z: dz });
-        if (this.recent.length > 6) this.recent.shift();
-      }
-    }
+    this.moved = true;
   }
 
-  private handlePinch(): void {
-    const [a, b] = [...this.pointers.values()];
-    const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    if (this.pinchDistance > 0 && dist > 0) this.camera.zoomBy(this.pinchDistance / dist, this.pinchAnchor);
-    this.pinchDistance = dist;
-    if (this.pinchAnchor) {
-      const mid = this.camera.groundAt(this.toNdc((a.x + b.x) / 2, (a.y + b.y) / 2));
-      if (mid) this.camera.panBy(this.pinchAnchor.x - mid.x, this.pinchAnchor.z - mid.z);
+  /** Solves the camera for the fingers' current positions (once per frame). */
+  private applyGesture(): void {
+    const g = this.gesture;
+    if (!g || !this.moved) return;
+    this.moved = false;
+    const f = this.fingers();
+    if (f.count !== g.fingers) return;
+    if (f.count === 2 && g.spread > 0 && f.spread > 0) {
+      let yaw = this.camera.yaw;
+      let turn = Math.atan2(Math.sin(f.angle - g.angle), Math.cos(f.angle - g.angle));
+      if (!g.twisting && Math.abs(turn) > TWIST_START) {
+        g.twisting = true;
+        g.angle = f.angle;
+        g.yaw = this.camera.yaw;
+        turn = 0;
+      }
+      if (g.twisting) yaw = g.yaw + turn;
+      // Zoom so the ground under both fingers stays under them: start from the spread
+      // ratio, then correct for the pitch easing with distance.
+      let distance = g.distance * (g.spread / f.spread);
+      for (let i = 0; i < 3; i++) {
+        this.camera.setPose(distance, yaw);
+        this.camera.sync();
+        const now = g.groundSpread > 0 ? this.groundSpread(f.a, f.b!) : 0;
+        if (now <= 0 || Math.abs(now - g.groundSpread) < 1e-3 * g.groundSpread) break;
+        distance *= g.groundSpread / now;
+      }
     }
+    this.camera.holdUnder(g.anchor, this.toNdc(f.x, f.y));
+    const t = this.camera.target;
+    this.trail.push({ t: performance.now(), x: t.x, z: t.z });
+    if (this.trail.length > 10) this.trail.shift();
   }
 
   private onUp(e: PointerEvent, cancelled = false): void {
     const p = this.pointers.get(e.pointerId);
     if (!p) return;
+    this.applyGesture();
     this.pointers.delete(e.pointerId);
     if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
     if (this.pointers.size > 0) {
-      // Finishing a pinch: re-anchor the remaining finger so the pan continues smoothly.
-      const rest = [...this.pointers.values()][0];
-      this.anchor = this.camera.groundAt(this.toNdc(rest.x, rest.y));
+      // A finger left a pinch: keep holding the ground under the ones still down.
+      if (this.dragging) this.hold();
       return;
     }
-    this.camera.dragging = false;
     if (this.dragging) {
-      const now = performance.now();
-      const recent = this.recent.filter((r) => now - r.t < 90);
-      if (recent.length > 1) {
-        const span = Math.max(16, now - recent[0].t) / 1000;
-        const vx = recent.reduce((s, r) => s + r.x, 0) / span;
-        const vz = recent.reduce((s, r) => s + r.z, 0) / span;
-        this.camera.setVelocity(vx * 0.6, vz * 0.6);
-      }
+      this.camera.endHold();
+      if (this.gesture?.fingers === 1) this.fling();
     } else if (!cancelled && p.button !== 2) {
-      this.handler.onClick(this.picker.pick(this.toNdc(e.clientX, e.clientY)), e.pointerType === 'touch');
+      this.handler.onClick(this.picker.pick(this.toNdc(e.clientX, e.clientY)), p.touch);
     }
     this.dragging = false;
-    this.anchor = null;
+    this.gesture = null;
+  }
+
+  /** Lets the view glide on after a quick swipe. */
+  private fling(): void {
+    const now = performance.now();
+    const last = this.trail[this.trail.length - 1];
+    // A finger that paused before lifting shouldn't throw the view.
+    if (!last || now - last.t > 60) return;
+    const first = this.trail.find((s) => now - s.t < 110);
+    if (!first || first === last) return;
+    const span = Math.max(0.016, (last.t - first.t) / 1000);
+    this.camera.setVelocity(((last.x - first.x) / span) * 0.85, ((last.z - first.z) / span) * 0.85);
   }
 
   private onWheel(e: WheelEvent): void {
@@ -198,8 +275,9 @@ export class InputController {
     }
   }
 
-  /** Per-frame work: keyboard panning and throttled hover picking. */
+  /** Per-frame work, before the camera updates: the touch/drag gesture, keyboard panning and throttled hover picking. */
   update(dt: number): void {
+    if (this.dragging) this.applyGesture();
     let fx = 0;
     let fz = 0;
     if (this.keys.has('w') || this.keys.has('arrowup')) fz -= 1;

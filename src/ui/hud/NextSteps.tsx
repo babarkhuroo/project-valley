@@ -3,7 +3,9 @@ import { currentStep } from '../../game/tutorial';
 import { openHarbour, openValleyBuilding, selectAndFocus, travelToValley } from '../actions';
 import { FESTIVALS } from '../../config/festivals';
 import { Icon } from '../common/Icon';
+import { useState } from 'react';
 import { useGameState, useValley } from '../hooks';
+import { useCompact } from '../layout';
 import { ui, useUI } from '../store';
 
 function run(s: Suggestion): void {
@@ -42,6 +44,9 @@ export function NextSteps() {
   const state = useGameState();
   const mode = useUI((s) => s.mode.kind);
   const { snapshot } = useValley();
+  const compact = useCompact();
+  // Phones show the first tip and fold the rest away, so the village stays visible.
+  const [open, setOpen] = useState(false);
   if (currentStep(state) !== null || mode !== 'normal') return null;
   const tips = nextSteps(state);
   // Festivals live in the Valley snapshot, which the village simulation never sees.
@@ -51,13 +56,20 @@ export function NextSteps() {
     tips.splice(4);
   }
   if (tips.length === 0) return null;
+  const folded = compact && !open;
+  const more = tips.length - 1;
   return (
     <div className="next-steps panel">
       <h4>
         <Icon name="compass" size={18} /> Next steps
+        {compact && more > 0 ? (
+          <button className="ns-more" onClick={() => setOpen(!open)} aria-expanded={open}>
+            {open ? 'Less' : `+${more} more`}
+          </button>
+        ) : null}
       </h4>
       <ul>
-        {tips.map((t) => (
+        {(folded ? tips.slice(0, 1) : tips).map((t) => (
           <li key={t.id}>
             <button className={`tip tip-${t.kind}`} onClick={() => run(t)} disabled={!t.action}>
               <span className="dot" />

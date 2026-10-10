@@ -8,6 +8,7 @@ import type { SaveSource } from '../game/persistence';
 import type { PickTarget } from '../rendering/InputController';
 import type { Rotation } from '../sim/types';
 import type { IconName } from './icons';
+import { screenScale } from './layout';
 
 export type Mode =
   | { kind: 'normal' }
@@ -182,7 +183,7 @@ export function reducedMotion(prefs: Prefs): boolean {
 /** Puts display preferences into effect on the page (scale, motion, contrast). */
 export function applyPrefs(prefs: Prefs): void {
   const root = document.documentElement;
-  root.style.setProperty('--ui-scale', String(Math.min(1.4, Math.max(0.8, prefs.uiScale))));
+  root.style.setProperty('--ui-scale', String(Math.min(1.4, Math.max(0.8, prefs.uiScale)) * screenScale()));
   root.classList.toggle('reduce-motion', reducedMotion(prefs));
   root.classList.toggle('high-contrast', prefs.highContrast);
 }

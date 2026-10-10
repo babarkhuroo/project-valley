@@ -38,7 +38,11 @@ describe('quality governor', () => {
     expect(renderer.shadowMap.enabled).toBe(false);
     frames(10, 90 * 4);
     expect(renderer.shadowMap.enabled).toBe(true);
+    // Resolution that just ran slow stays off limits for a while, so `auto` doesn't
+    // bounce between scales (each change re-allocates render targets: a visible hitch).
     frames(10, 90 * 4 * 5);
+    expect(q.scale).toBeCloseTo(0.6);
+    frames(10, 90 * 4 * 10);
     expect(q.scale).toBeCloseTo(1);
   });
 });

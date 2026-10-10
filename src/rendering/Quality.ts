@@ -35,6 +35,13 @@ export class QualityGovernor {
   private window: number[] = [];
   private calm = 0;
   private shadowsOff = false;
+  /**
+   * The lowest scale that has run too slow, and for how many more windows it stays off
+   * limits — so `auto` doesn't climb back into it and re-allocate its render targets
+   * every few seconds (each change is a visible hitch on phones).
+   */
+  private ceiling = 1;
+  private ceilingWindows = 0;
 
   constructor(
     private readonly renderer: THREE.WebGLRenderer,
@@ -92,14 +99,17 @@ export class QualityGovernor {
         const sorted = [...this.window].sort((a, b) => a - b);
         const typical = sorted[Math.floor(sorted.length * 0.5)];
         this.window = [];
+        if (this.ceilingWindows > 0 && --this.ceilingWindows === 0) this.ceiling = 1;
         if (typical > SLOW_MS) {
           this.calm = 0;
+          this.ceiling = Math.min(this.ceiling, this.scale - 0.01);
+          this.ceilingWindows = 40;
           if (this.scale > MIN_SCALE + 0.01) this.scale = Math.max(MIN_SCALE, this.scale - 0.15);
           else this.shadowsOff = true;
         } else if (typical < FAST_MS && ++this.calm >= 4) {
           this.calm = 0;
           if (this.shadowsOff) this.shadowsOff = false;
-          else this.scale = Math.min(1, this.scale + 0.1);
+          else if (this.scale + 0.1 <= this.ceiling) this.scale = Math.min(1, this.scale + 0.1);
         }
       }
     }

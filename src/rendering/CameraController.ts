@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 
+/** How much of the screen the HUD covers on each side, as fractions of its width/height. */
+export interface Insets {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 /**
  * Three-quarter strategy camera: orbits a ground target at a pitch that eases from
  * ~34° (close, to watch villagers) to ~56° (far, to read the whole village).
@@ -18,8 +26,14 @@ export class CameraController {
   private readonly bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   private readonly plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly ray = new THREE.Raycaster();
-  /** Set while the user drags so inertia and focus animations don't fight them. */
-  dragging = false;
+  /**
+   * Where on screen focused points land, in NDC (0,0 = centre). Phones move it while a
+   * selection sheet covers part of the view.
+   */
+  readonly focusAt = new THREE.Vector2();
+  private scratch: THREE.PerspectiveCamera | null = null;
+  /** Set while fingers or the mouse hold the ground, so inertia and focus animations don't fight them. */
+  private holding = false;
 
   constructor(
     readonly camera: THREE.PerspectiveCamera,
@@ -80,10 +94,93 @@ export class CameraController {
   }
 
   focusOn(point: THREE.Vector3, distance?: number): void {
-    this.goalTarget.set(point.x, 0, point.z);
-    this.clampGoal();
     if (distance !== undefined) this.goalDistance = THREE.MathUtils.clamp(distance, this.minDistance, this.maxDistance);
+    this.goalTarget.set(point.x, 0, point.z);
+    if (this.focusAt.lengthSq() > 0) this.goalTarget.sub(this.groundOffset(this.focusAt));
+    this.clampGoal();
     this.velocity.set(0, 0);
+  }
+
+  /**
+   * Keeps `point` in the part of the screen the HUD leaves open (`open` says how much is
+   * covered on each side; null: nothing) — on phones a selection sheet covers part of the
+   * view. Later focuses aim at the open area's middle too.
+   */
+  reveal(point: THREE.Vector3, open: Insets | null): void {
+    const x0 = open ? -1 + 2 * open.left : -1;
+    const x1 = open ? 1 - 2 * open.right : 1;
+    const y0 = open ? -1 + 2 * open.bottom : -1;
+    const y1 = open ? 1 - 2 * open.top : 1;
+    this.focusAt.set((x0 + x1) / 2, (y0 + y1) / 2);
+    if (!open) return;
+    const v = point.clone().project(this.camera);
+    const m = 0.08;
+    // Mid-focus (e.g. picked from a list) or covered: re-aim with the sheet in mind.
+    if (!this.settled || v.x < x0 + m || v.x > x1 - m || v.y < y0 + m || v.y > y1 - m) this.focusOn(point);
+  }
+
+  /** Whether the camera has come to rest (no glide or focus animation running). */
+  get settled(): boolean {
+    return this.velocity.lengthSq() < 1e-3 && Math.hypot(this.goalTarget.x - this.target.x, this.goalTarget.z - this.target.z) < 0.05;
+  }
+
+  /** Ground offset from the target to the point at `ndc` on screen, once the camera reaches its goal. */
+  private groundOffset(ndc: THREE.Vector2): THREE.Vector3 {
+    const cam = (this.scratch ??= this.camera.clone());
+    cam.copy(this.camera);
+    const pitch = this.pitchFor(this.goalDistance);
+    const h = Math.cos(pitch) * this.goalDistance;
+    cam.position.set(Math.sin(this.goalYaw) * h, Math.sin(pitch) * this.goalDistance, Math.cos(this.goalYaw) * h);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    this.ray.setFromCamera(ndc, cam);
+    this.plane.constant = 0;
+    return this.ray.ray.intersectPlane(this.plane, new THREE.Vector3()) ?? new THREE.Vector3();
+  }
+
+  /** Starts a direct-manipulation hold: animations stop where they are. */
+  beginHold(): void {
+    this.holding = true;
+    this.velocity.set(0, 0);
+    this.goalTarget.copy(this.target);
+    this.goalDistance = this.distance;
+    this.goalYaw = this.yaw;
+  }
+
+  endHold(): void {
+    this.holding = false;
+    this.goalTarget.copy(this.target);
+  }
+
+  /** Sets zoom and rotation immediately (pinch and twist follow the fingers, not an easing). */
+  setPose(distance: number, yaw: number): void {
+    this.distance = this.goalDistance = THREE.MathUtils.clamp(distance, this.minDistance, this.maxDistance);
+    this.yaw = this.goalYaw = yaw;
+  }
+
+  /** Places the camera for the current target/distance/yaw right away (for projections mid-frame). */
+  sync(): void {
+    this.apply();
+  }
+
+  /**
+   * Moves the camera so the ground point `world` sits under `ndc`. A few passes because
+   * lifting the camera over hills nudges the projection.
+   */
+  holdUnder(world: THREE.Vector3, ndc: THREE.Vector2): void {
+    for (let i = 0; i < 3; i++) {
+      this.apply();
+      const p = this.groundAt(ndc);
+      if (!p) break;
+      const dx = world.x - p.x;
+      const dz = world.z - p.z;
+      this.target.x += dx;
+      this.target.z += dz;
+      this.clampTarget();
+      if (dx * dx + dz * dz < 1e-6) break;
+    }
+    this.goalTarget.copy(this.target);
+    this.apply();
   }
 
   private clampGoal(): void {
@@ -97,12 +194,12 @@ export class CameraController {
   }
 
   update(dt: number): void {
-    if (!this.dragging && this.velocity.lengthSq() > 1e-4) {
+    if (!this.holding && this.velocity.lengthSq() > 1e-4) {
       this.panBy(this.velocity.x * dt, this.velocity.y * dt);
       this.velocity.multiplyScalar(Math.exp(-dt * 4.5));
     }
     const k = 1 - Math.exp(-dt * 8);
-    if (!this.dragging) this.target.lerp(this.goalTarget, k);
+    if (!this.holding) this.target.lerp(this.goalTarget, k);
     else this.goalTarget.copy(this.target);
     this.distance += (this.goalDistance - this.distance) * k;
     this.yaw += (this.goalYaw - this.yaw) * k;

@@ -10,8 +10,10 @@ import { App } from './ui/App';
 import { attachNotifications, attachValleyNotifications } from './ui/notifications';
 import { attachProgressReporter } from './game/playtest';
 import { applyPrefs, ui } from './ui/store';
+import { onScreenChange } from './ui/layout';
 
 applyPrefs(ui.get().prefs);
+onScreenChange(() => applyPrefs(ui.get().prefs));
 import './styles/global.css';
 
 document.title = IDENTITY.gameTitle;
@@ -36,7 +38,7 @@ bootGame()
     runtime.valley.start();
     startAutosave(game, (saveStatus) => ui.set({ saveStatus }));
     ui.set({ booted: true, saveSource: source, away: away && summaryIsInteresting(away) ? away : null });
-    if (import.meta.env.DEV) (window as unknown as { valley: typeof runtime }).valley = runtime;
+    if (import.meta.env.DEV) Object.assign(window, { valley: runtime, ui });
   })
   .catch((err: unknown) => {
     console.error(err);

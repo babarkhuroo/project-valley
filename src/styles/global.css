@@ -541,9 +541,10 @@ h4 {
 .worker-list {
   position: absolute;
   left: 12px;
-  top: 88px;
+  /* Hangs from the top bar's measured bottom edge, down to the cards in the left stack. */
+  top: calc(var(--hud-top, 76px) + 12px);
   width: 290px;
-  max-height: calc(var(--ui-vh) - 330px);
+  max-height: max(58px, min(calc(var(--ui-vh) - 200px), calc(var(--left-stack-top, var(--ui-vh)) - var(--hud-top, 76px) - 24px)));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -710,6 +711,8 @@ h4 {
 
 .next-steps {
   padding: 10px 12px;
+  /* Last in the stack's priority order (phones show only the first card), but on top here. */
+  order: -1;
 }
 
 .next-steps h4 {
@@ -892,9 +895,9 @@ h4 {
 .selection-panel {
   position: absolute;
   right: 12px;
-  top: 88px;
+  top: calc(var(--hud-top, 76px) + 12px);
   width: 370px;
-  max-height: calc(var(--ui-vh) - 200px);
+  max-height: calc(var(--ui-vh) - var(--hud-top, 76px) - 124px);
   overflow-y: auto;
   padding: 12px 14px 14px;
 }
@@ -1340,7 +1343,7 @@ h4 {
 
 .toasts {
   position: absolute;
-  top: 92px;
+  top: calc(var(--hud-top, 76px) + 16px);
   left: 50%;
   transform: translateX(-50%);
   width: min(380px, calc(var(--ui-vw) - 24px));
@@ -2802,9 +2805,9 @@ h4 {
 .valley-side {
   position: absolute;
   left: 12px;
-  top: 88px;
+  top: calc(var(--hud-top, 76px) + 12px);
   width: 310px;
-  max-height: calc(var(--ui-vh) - 210px);
+  max-height: calc(var(--ui-vh) - var(--hud-top, 76px) - 134px);
   overflow-y: auto;
   padding: 12px 14px;
 }
@@ -4048,4 +4051,252 @@ h4 {
   color: var(--ink);
   resize: vertical;
   margin-bottom: 8px;
+}
+
+/* Short laptop and tablet screens: at most two cards (the most urgent) on the left. */
+@media (max-height: 900px) {
+  .left-stack > :nth-child(n + 3) {
+    display: none;
+  }
+}
+
+/* ---------- Phones: compact HUD ----------
+   Portrait phones (≤720px wide) and phones on their side (≤520px tall, where the
+   interface also scales down — see ui/layout.ts). Matches `useCompact()`. Panels below
+   the top bar hang from --hud-top, its measured bottom edge. */
+
+.ns-more {
+  margin-left: auto;
+  padding: 1px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--edge);
+  background: var(--paper);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 720px), (max-height: 520px) {
+  .res-chip {
+    flex: none;
+    min-width: 0;
+    gap: 4px;
+    padding: 3px 8px 3px 3px;
+    border-width: 2px;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 rgba(59, 47, 42, 0.2), 0 8px 16px rgba(59, 47, 42, 0.16);
+  }
+  .res-chip .icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .res-vals {
+    line-height: 1;
+  }
+  .res-amt {
+    font-size: 15px;
+  }
+  /* The cap goes under the amount so four-digit stores still fit. */
+  .res-amt small {
+    display: block;
+    font-size: 10px;
+    color: var(--ink-faint);
+  }
+  .res-chip .res-sub {
+    display: none;
+  }
+  .top-buttons {
+    gap: 5px;
+  }
+  .round-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .round-btn .icon {
+    width: 21px !important;
+    height: 21px !important;
+  }
+  .worker-list {
+    top: calc(var(--hud-top, 88px) + 8px);
+  }
+  .toasts {
+    top: calc(var(--hud-top, 88px) + 8px);
+    width: min(340px, calc(var(--ui-vw) - 16px));
+    gap: 6px;
+  }
+  .toast {
+    gap: 8px;
+    padding: 6px 10px;
+    border-width: 2px;
+    border-radius: 14px;
+  }
+  .toast .icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .toast strong {
+    font-size: 14px;
+  }
+  .toast small {
+    font-size: 12px;
+  }
+  /* Only the two newest; the rest are in the bell. */
+  .toasts > .toast:nth-last-child(n + 3) {
+    display: none;
+  }
+  /* One card at a time (the stack is ordered most urgent first), and none while a sheet is up. */
+  .left-stack > :not(:first-child),
+  .has-sheet .left-stack,
+  .workers-open .left-stack {
+    display: none;
+  }
+  .left-stack > * {
+    max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 190px);
+    overflow-y: auto;
+  }
+  .coach,
+  .intro-card,
+  .next-steps {
+    padding: 9px 12px;
+  }
+  .coach p,
+  .intro-card p {
+    margin: 4px 0 6px;
+    font-size: 13px;
+  }
+  .intro-head strong {
+    font-size: 16px;
+  }
+  .intro-head .icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .tip {
+    padding: 4px;
+  }
+  .notif-panel,
+  .settings,
+  .side-panel,
+  .dev-panel {
+    top: calc(var(--hud-top, 76px) + 6px);
+    max-height: calc(var(--ui-vh) - var(--hud-top, 76px) - 14px);
+  }
+}
+
+@media (max-width: 720px) {
+  .resource-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 5px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .valley-side {
+    top: calc(var(--hud-top, 124px) + 8px);
+  }
+  .selection-panel {
+    max-height: calc(var(--ui-vh) * 0.5);
+    padding: 10px 12px 12px;
+  }
+  .left-stack {
+    bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .topbar {
+    top: max(6px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    gap: 8px;
+  }
+  .level-text {
+    display: none;
+  }
+  .level-badge {
+    padding-right: 4px;
+  }
+  .level-ring,
+  .level-num {
+    width: 46px;
+    height: 46px;
+  }
+  .level-num {
+    font-size: 20px;
+  }
+  .resource-bar {
+    flex: 1 1 0;
+    justify-content: flex-start;
+    gap: 5px;
+  }
+  .worker-list {
+    left: max(8px, env(safe-area-inset-left));
+    max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 20px);
+  }
+  .worker-list ul {
+    display: none;
+  }
+  .worker-list.open ul {
+    display: block;
+  }
+  .left-stack {
+    left: max(8px, env(safe-area-inset-left));
+    bottom: 10px;
+    width: 300px;
+  }
+  .left-stack > * {
+    max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 80px);
+  }
+  /* The buttons move to the bottom-right corner, clear of the cards on the left. */
+  .action-bar,
+  .mode-bar {
+    left: auto;
+    right: max(10px, env(safe-area-inset-right));
+    bottom: 10px;
+    transform: none;
+  }
+  .action-bar {
+    gap: 10px;
+  }
+  .big-btn {
+    width: 74px;
+    height: 64px;
+    font-size: 14px;
+    border-radius: 18px;
+  }
+  .has-sheet .action-bar {
+    display: none;
+  }
+  .selection-panel {
+    left: auto;
+    right: max(8px, env(safe-area-inset-right));
+    top: calc(var(--hud-top, 88px) + 8px);
+    bottom: auto;
+    width: 340px;
+    max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 16px);
+    z-index: 12;
+  }
+  .valley-side {
+    top: calc(var(--hud-top, 88px) + 8px);
+    max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 90px);
+  }
+  .build-menu {
+    bottom: 0;
+    border-radius: 20px 20px 0 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .build-card {
+    width: 140px;
+  }
+}
+
+/* Narrow phones: the Valley adds chat and trade buttons; keep them on one row. */
+@media (max-width: 400px) {
+  .top-buttons {
+    gap: 4px;
+  }
+  .round-btn {
+    width: 38px;
+    height: 38px;
+  }
 }

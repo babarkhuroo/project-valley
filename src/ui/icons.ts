@@ -185,6 +185,7 @@ export const ICONS = {
     `<circle cx="12" cy="12" r="9" fill="#fff6e0" stroke="${O}" stroke-width="1.4"/><path d="M12 7v5l3.5 2" stroke="${O}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
   ),
   plus: svg(`<path d="M12 5v14M5 12h14" stroke="${O}" stroke-width="2.6" stroke-linecap="round"/>`),
+  minus: svg(`<path d="M5 12h14" stroke="${O}" stroke-width="2.6" stroke-linecap="round"/>`),
   info: svg(
     `<circle cx="12" cy="12" r="9.5" fill="#e5ebff" stroke="${O}" stroke-width="1.4"/><path d="M12 11v6" stroke="${O}" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.4" fill="${O}"/>`,
   ),

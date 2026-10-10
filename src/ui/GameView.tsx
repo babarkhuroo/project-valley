@@ -4,7 +4,9 @@ import { summarizeAway, summaryIsInteresting } from '../game/offline';
 import { GameRenderer } from '../rendering/GameRenderer';
 import type { ResourceId } from '../config/resources';
 import { interaction } from './interaction';
-import { reducedMotion, ui } from './store';
+import type { PickTarget } from '../rendering/InputController';
+import { openArea } from './layout';
+import { reducedMotion, sameTarget, ui } from './store';
 
 /** Mounts the 3D world and keeps renderer view state in step with the UI store. */
 export function GameView() {
@@ -15,8 +17,17 @@ export function GameView() {
     const r = new GameRenderer(container.current!, overlay.current!, g, runtime.audio, interaction);
     runtime.renderer = r;
     let lastTick = 0;
+    let lastSelection: PickTarget | null = null;
+    let revealIn = 0;
     r.onFrame = (t) => {
       const s = ui.get();
+      // Once the selection sheet has rendered, make sure the selection isn't under it.
+      if (s.selection ? !sameTarget(s.selection, lastSelection) : lastSelection !== null) {
+        lastSelection = s.selection;
+        revealIn = 2;
+        if (!s.selection) r.cameraCtl.focusAt.set(0, 0);
+      }
+      if (revealIn > 0 && --revealIn === 0 && s.selection) r.reveal(s.selection, openArea());
       r.view.selection = s.selection;
       r.view.hover = s.mode.kind === 'place' || s.mode.kind === 'move' ? null : s.hover;
       r.view.showNames = s.showNames;
@@ -34,7 +45,8 @@ export function GameView() {
       r.view.movingBuildingId = s.mode.kind === 'move' ? s.mode.buildingId : null;
       r.view.showGrid = placing;
       if (s.travelling) ui.set({ travelling: false });
-      if (t - lastTick > 0.15) {
+      // HUD re-renders cost frame time; while a finger moves the view, the view comes first.
+      if (t - lastTick > (r.interacting ? 1 : 0.15)) {
         lastTick = t;
         ui.set({ tick: s.tick + 1 });
       }

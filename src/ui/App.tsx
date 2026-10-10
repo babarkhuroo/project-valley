@@ -11,6 +11,7 @@ import { TopBar } from './hud/TopBar';
 import { WorkerList } from './hud/WorkerList';
 import { SelectionPanel } from './panels/SelectionPanel';
 import { ResearchScreen } from './research/ResearchScreen';
+import { useEdgeVar } from './layout';
 import { useUI } from './store';
 import { TutorialCoach } from './tutorial/TutorialCoach';
 import { IntroCard } from './tutorial/IntroCard';
@@ -40,10 +41,15 @@ export function App() {
   const booted = useUI((s) => s.booted);
   const error = useUI((s) => s.bootError);
   const scene = useUI((s) => s.scene);
+  // Something fills the bottom of a phone screen (a selection sheet or a panel).
+  const sheet = useUI((s) => (s.scene === 'village' ? s.selection !== null : s.valleySelection !== null) || (s.panel !== null && s.panel !== 'workers'));
+  const workers = useUI((s) => s.panel === 'workers');
+  // The villager list makes room for the cards below it.
+  const stack = useEdgeVar<HTMLDivElement>('--left-stack-top', 'top');
   if (!booted) return <LoadingScreen error={error} />;
   const village = scene === 'village';
   return (
-    <div className={`app scene-${scene}`}>
+    <div className={`app scene-${scene} ${sheet ? 'has-sheet' : ''} ${workers ? 'workers-open' : ''}`}>
       {village ? <GameView /> : <ValleyView />}
       {/* Everything but the world lives in one layer that the interface-size setting scales. */}
       <div className="ui-layer">
@@ -52,11 +58,12 @@ export function App() {
         {village ? (
           <>
             <WorkerList />
-            <div className="left-stack">
-              <NextSteps />
+            {/* Most urgent first: phones show only the first card (see .left-stack in global.css). */}
+            <div className="left-stack" ref={stack}>
               <TutorialCoach />
-              <IntroCard />
               <ProgressConsent />
+              <IntroCard />
+              <NextSteps />
             </div>
             <SelectionPanel />
             <ActionBar />

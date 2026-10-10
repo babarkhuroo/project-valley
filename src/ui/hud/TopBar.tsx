@@ -8,6 +8,7 @@ import { Icon } from '../common/Icon';
 import { CoinsChip, TradeButtons } from '../valley/TradeUi';
 import { ChatButton } from '../valley/ChatUi';
 import { formatNumber, useGameState } from '../hooks';
+import { useEdgeVar } from '../layout';
 import { ui, useUI } from '../store';
 
 function LevelBadge() {
@@ -74,10 +75,12 @@ function ResourceChip({ id, rate }: { id: ResourceId; rate: { gain: number; use:
 export function TopBar() {
   const state = useGameState();
   const unread = useUI((s) => s.unread);
+  // Panels below the top bar hang from its bottom edge, however many rows it wraps to.
+  const ref = useEdgeVar<HTMLElement>('--hud-top', 'bottom');
   const g = game();
   const rates = productionSummary(state, g.world);
   return (
-    <header className="topbar">
+    <header className="topbar" ref={ref}>
       <LevelBadge />
       <div className="resource-bar">
         {RESOURCE_ORDER.filter((r) => RESOURCES[r].hud).map((r) => (

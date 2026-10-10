@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { game, runtime } from '../../game/runtime';
 import { ValleyRenderer } from '../../rendering/valley/ValleyRenderer';
+import { openArea } from '../layout';
 import { reducedMotion, ui } from '../store';
 import { playerId } from '../../game/persistence';
 
@@ -26,8 +27,17 @@ export function ValleyView() {
     r.setSnapshot(client?.current.snapshot ?? null);
     const unsubscribe = client?.subscribe(() => r.setSnapshot(client.current.snapshot));
     let lastTick = 0;
+    let lastSelection: string | null = null;
+    let revealIn = 0;
     r.onFrame = (t) => {
       const s = ui.get();
+      // Once the project sheet has rendered, make sure its building isn't under it.
+      if (s.valleySelection !== lastSelection) {
+        lastSelection = s.valleySelection;
+        revealIn = 2;
+        if (!s.valleySelection) r.cameraCtl.focusAt.set(0, 0);
+      }
+      if (revealIn > 0 && --revealIn === 0 && s.valleySelection) r.reveal(s.valleySelection, openArea());
       r.selected = s.valleySelection;
       r.dayCycle.mode = s.prefs.timeOfDay;
       r.quality.preset = s.prefs.quality;
@@ -37,7 +47,8 @@ export function ValleyView() {
       r.particles.amount = reducedMotion(s.prefs) ? 0.3 : 1;
       r.hovered = s.valleyHover;
       if (s.travelling) ui.set({ travelling: false });
-      if (t - lastTick > 0.15) {
+      // HUD re-renders cost frame time; while a finger moves the view, the view comes first.
+      if (t - lastTick > (r.interacting ? 1 : 0.15)) {
         lastTick = t;
         ui.set({ tick: s.tick + 1 });
       }

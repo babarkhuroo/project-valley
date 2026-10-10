@@ -8,7 +8,7 @@ import { deliveredFraction } from '../../valley/valleySim';
 import { ICONS } from '../../ui/icons';
 import { AmbientLife } from '../AmbientLife';
 import { createBridges } from '../BridgeView';
-import { CameraController } from '../CameraController';
+import { CameraController, type Insets } from '../CameraController';
 import { ChunkGrid } from '../culling/ChunkGrid';
 import { DayCycle } from '../DayCycle';
 import { waterNearby } from '../waterNearby';
@@ -218,6 +218,11 @@ export class ValleyRenderer {
     this.frameHandle = requestAnimationFrame(loop);
   }
 
+  /** True while the player drags or pinches the view (the HUD refreshes less meanwhile). */
+  get interacting(): boolean {
+    return this.input.active;
+  }
+
   dispose(): void {
     cancelAnimationFrame(this.frameHandle);
     this.input.dispose();
@@ -227,6 +232,13 @@ export class ValleyRenderer {
     this.post.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+  }
+
+  /** Keeps a selected building out from under the phone HUD (see `CameraController.reveal`). */
+  reveal(id: ValleyBuildingId, open: Insets | null): void {
+    const def = VALLEY_BUILDINGS[id];
+    const at = def.view ?? def;
+    this.cameraCtl.reveal(new THREE.Vector3(at.x, this.buildings.groundY(id), at.z), open);
   }
 
   focusOn(id: ValleyBuildingId, distance = 26): void {

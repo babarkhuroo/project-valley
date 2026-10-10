@@ -17,7 +17,7 @@ import { BuildingsView } from './BuildingsView';
 import { createBridges } from './BridgeView';
 import { ChunkGrid, type CullingSettings } from './culling/ChunkGrid';
 import { OcclusionQueries } from './culling/OcclusionQueries';
-import { CameraController } from './CameraController';
+import { CameraController, type Insets } from './CameraController';
 import { DayCycle } from './DayCycle';
 import { waterNearby } from './waterNearby';
 import { Weather } from './Weather';
@@ -353,6 +353,12 @@ export class GameRenderer {
     if (p) this.cameraCtl.focusOn(p, distance);
   }
 
+  /** Keeps a selected thing out from under the phone HUD (see `CameraController.reveal`). */
+  reveal(target: PickTarget, open: Insets | null): void {
+    const p = this.positionOf(target);
+    if (p) this.cameraCtl.reveal(p, open);
+  }
+
   /** Screen position (CSS px) of a world point, or null when off-screen. */
   screenOf(p: THREE.Vector3): { x: number; y: number } | null {
     const v = p.clone().project(this.camera);
@@ -579,6 +585,11 @@ export class GameRenderer {
     this.lastInfo.triangles = this.renderer.info.render.triangles;
     this.lastResources = { ...state.resources };
     this.onFrame?.(this.realTime);
+  }
+
+  /** True while the player drags or pinches the view (the HUD refreshes less meanwhile). */
+  get interacting(): boolean {
+    return this.input.active;
   }
 
   /** Culling switches (dev panel). */
