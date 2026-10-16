@@ -41,6 +41,26 @@ export function screenScale(): number {
   return shortQuery?.matches ? 0.8 : 1;
 }
 
+/**
+ * Keeps `--app-w` / `--app-h` at the size of the part of the page the browser actually
+ * shows. CSS `100vh` on phones is the height with the address bar and toolbars hidden,
+ * so a HUD sized by it puts its bottom buttons behind Safari's bottom bar or Chrome's
+ * toolbar; `innerHeight` follows the bars as they appear and go.
+ */
+export function watchViewport(): void {
+  const root = document.documentElement;
+  const publish = () => {
+    root.style.setProperty('--app-w', `${window.innerWidth}px`);
+    root.style.setProperty('--app-h', `${window.innerHeight}px`);
+    // A phone browser can scroll the page a little when its bars move; keep it pinned.
+    if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+  };
+  publish();
+  window.addEventListener('resize', publish);
+  window.addEventListener('orientationchange', () => setTimeout(publish, 250));
+  window.visualViewport?.addEventListener('resize', publish);
+}
+
 /** Calls `fn` when the screen class changes (rotating a phone). */
 export function onScreenChange(fn: () => void): void {
   shortQuery?.addEventListener('change', fn);

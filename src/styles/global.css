@@ -5,8 +5,9 @@
 :root {
   /* Interface size (Settings → Accessibility); the UI layer is laid out in these units. */
   --ui-scale: 1;
-  --ui-vw: calc(100vw / var(--ui-scale));
-  --ui-vh: calc(100vh / var(--ui-scale));
+  /* The visible page (measured: see watchViewport in ui/layout.ts), in interface units. */
+  --ui-vw: calc(var(--app-w, 100vw) / var(--ui-scale));
+  --ui-vh: calc(var(--app-h, 100dvh) / var(--ui-scale));
   --ink: #3b2f2a;
   --ink-soft: #6b5a4f;
   --ink-faint: #9a8878;
@@ -101,7 +102,11 @@ h4 {
 
 .app {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: var(--app-w, 100%);
+  height: var(--app-h, 100%);
+  overflow: hidden;
 }
 
 .world {
@@ -4298,5 +4303,41 @@ h4 {
   .round-btn {
     width: 38px;
     height: 38px;
+  }
+}
+
+/* Phones: keep bottom- and top-anchored pieces clear of the home indicator, notch and
+   rounded corners (the page draws edge to edge: viewport-fit=cover). */
+@media (max-width: 720px), (max-height: 520px) {
+  .mode-bar {
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .build-menu {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .rs-header {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .rs-detail {
+    margin-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 720px) {
+  .selection-panel {
+    bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .action-bar,
+  .mode-bar,
+  .left-stack {
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .selection-panel {
+    max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 16px - env(safe-area-inset-bottom));
   }
 }

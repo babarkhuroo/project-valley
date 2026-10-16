@@ -10,10 +10,11 @@ import { App } from './ui/App';
 import { attachNotifications, attachValleyNotifications } from './ui/notifications';
 import { attachProgressReporter } from './game/playtest';
 import { applyPrefs, ui } from './ui/store';
-import { onScreenChange } from './ui/layout';
+import { onScreenChange, watchViewport } from './ui/layout';
 
 applyPrefs(ui.get().prefs);
 onScreenChange(() => applyPrefs(ui.get().prefs));
+watchViewport();
 import './styles/global.css';
 
 document.title = IDENTITY.gameTitle;
