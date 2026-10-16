@@ -17,6 +17,14 @@ import { rainAt, sinceShower } from './weatherSchedule';
 const STREAKS = 2600;
 const BOX = new THREE.Vector3(38, 22, 38);
 const MOTES = 70;
+/** Motes fill a box this wide (world units) round the camera's focus. */
+const MOTE_BOX = 20;
+
+/** The copy of world coordinate `v` (repeating every MOTE_BOX) within half a box of `centre`. */
+function nearestCopy(v: number, centre: number): number {
+  const lo = centre - MOTE_BOX / 2;
+  return lo + ((((v - lo) % MOTE_BOX) + MOTE_BOX) % MOTE_BOX);
+}
 
 const RAIN_VS = /* glsl */ `
 attribute vec3 aSeed;
@@ -221,13 +229,15 @@ export class Weather {
       for (let i = 0; i < MOTES; i++) {
         const w = 0.05 + hash(i * 2.3) * 0.1;
         const u = time * w + hash(i) * 50;
-        // Drift on slow loops inside a box round the focus, wrapping at the edges.
-        const bx = ((((hash(i * 9.1) * 20 + Math.sin(u) * 1.5 + time * 0.12) % 20) + 20) % 20) - 10;
-        const bz = ((((hash(i * 4.7) * 20 + Math.cos(u * 0.8) * 1.5 + time * 0.07) % 20) + 20) % 20) - 10;
-        const x = focus.x + bx;
-        const z = focus.z + bz;
+        // Each mote has a place in the world (drifting on slow loops), repeated every
+        // MOTE_BOX units and shown in the copy nearest the focus — so panning moves past
+        // them like everything else instead of carrying them along.
+        const x = nearestCopy(hash(i * 9.1) * MOTE_BOX + Math.sin(u) * 1.5 + time * 0.12, focus.x);
+        const z = nearestCopy(hash(i * 4.7) * MOTE_BOX + Math.cos(u * 0.8) * 1.5 + time * 0.07, focus.z);
         const y = this.terrain.groundHeightAt(x, z) + 0.4 + hash(i * 6.1) * 2.2 + Math.sin(u * 1.3) * 0.25;
-        const twinkle = 0.6 + 0.4 * Math.sin(time * (1 + hash(i) * 2) + i);
+        // Shrink away near the box's edge, where a mote wraps to the far side.
+        const edge = Math.min(1, (MOTE_BOX / 2 - Math.max(Math.abs(x - focus.x), Math.abs(z - focus.z))) / 2.5);
+        const twinkle = (0.6 + 0.4 * Math.sin(time * (1 + hash(i) * 2) + i)) * edge;
         this.motes.setMatrixAt(i, this.m.compose(this.v.set(x, y, z), this.q, this.s.setScalar(twinkle)));
       }
       this.motes.instanceMatrix.needsUpdate = true;
