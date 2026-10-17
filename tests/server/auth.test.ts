@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { createApiMiddleware } from '../../server/api.ts';
 import { AuthService, MemoryAuthStore } from '../../server/auth.ts';
 import { MemorySaveStore } from '../../server/saveStore.ts';
+import { RateLimiter, clientIp } from '../../server/rateLimit.ts';
 
 /** Drives the middleware with an in-memory request/response pair. */
 async function call(api: ReturnType<typeof createApiMiddleware>, method: string, url: string, body?: unknown, token?: string): Promise<{ status: number; body: Record<string, unknown> }> {
@@ -116,5 +117,37 @@ describe('API authorisation', () => {
     expect(bad.status).toBe(401);
     const good = await call(api, 'POST', '/api/account/login', { username: 'hollis', password: 'patient otter' });
     expect(good.body.playerId).toBe(s.body.playerId);
+  });
+});
+
+describe('request limits', () => {
+  it('counts per key and window', () => {
+    let now = 0;
+    const limit = new RateLimiter(2, 1000, () => now);
+    expect([limit.take('a'), limit.take('a'), limit.take('a'), limit.take('b')]).toEqual([true, true, false, true]);
+    now = 1000;
+    expect(limit.take('a')).toBe(true);
+  });
+
+  it('trusts the address the proxy appended, not what the client claimed', () => {
+    const req = { headers: { 'x-forwarded-for': '6.6.6.6, 203.0.113.9' }, socket: { remoteAddress: '10.0.0.1' } } as unknown as IncomingMessage;
+    expect(clientIp(req)).toBe('203.0.113.9');
+    expect(clientIp({ headers: {}, socket: { remoteAddress: '10.0.0.1' } } as unknown as IncomingMessage)).toBe('10.0.0.1');
+  });
+
+  it('turns away a flood of new guest villages and malformed bodies politely', async () => {
+    const limits = { session: new RateLimiter(2, 60_000), login: new RateLimiter(5, 60_000), register: new RateLimiter(5, 60_000), join: new RateLimiter(5, 60_000), progress: new RateLimiter(5, 60_000) };
+    const api = createApiMiddleware(new MemorySaveStore(), undefined, { auth: new AuthService(new MemoryAuthStore()), limits });
+    expect((await call(api, 'POST', '/api/session', {})).status).toBe(200);
+    expect((await call(api, 'POST', '/api/session', {})).status).toBe(200);
+    expect((await call(api, 'POST', '/api/session', {})).status).toBe(429);
+    const req = Readable.from([Buffer.from('{not json')]) as unknown as IncomingMessage;
+    Object.assign(req, { method: 'POST', url: '/api/account/login', headers: {} });
+    let status = 0;
+    let text = '';
+    const res = { set statusCode(v: number) { status = v; }, setHeader() {}, end(t: string) { text = t; } } as unknown as ServerResponse;
+    await api(req, res, () => {});
+    expect(status).toBe(400);
+    expect(JSON.parse(text)).toEqual({ error: 'malformed JSON' });
   });
 });

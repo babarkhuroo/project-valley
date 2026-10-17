@@ -7,7 +7,8 @@ import type { ValleyService } from './valleyService.ts';
 import { acceptWebSocket, type WsConnection } from './ws.ts';
 
 /**
- * Live Valley updates over WebSockets (`/api/live?token=…`). Server → client only:
+ * Live Valley updates over WebSockets (`/api/live`, the session token in an `Authorization: Bearer`
+ * header or, from browsers, `?token=…`). Server → client only:
  * every change to a Valley (anyone's delivery, a vote, chat, a neighbour's visit
  * while members are connected) is pushed as a fresh snapshot to every connected
  * member, along with who is connected right now. Client actions keep using the HTTP
@@ -70,7 +71,10 @@ export class LiveHub {
 
   async handleUpgrade(req: IncomingMessage, socket: Duplex): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const me = await this.auth.authenticate(url.searchParams.get('token'));
+    // Apps send the token as a header, where it stays out of request logs; browsers can't set
+    // headers on a WebSocket, so they still put it in the query.
+    const header = req.headers.authorization;
+    const me = await this.auth.authenticate(header?.startsWith('Bearer ') ? header.slice(7).trim() : url.searchParams.get('token'));
     if (!me) {
       socket.end('HTTP/1.1 401 Unauthorized\r\n\r\n');
       return;

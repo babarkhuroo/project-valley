@@ -29,17 +29,34 @@ const MIME: Record<string, string> = {
 
 const server = createServer((req, res) => {
   void api(req, res, async () => {
-    const url = new URL(req.url ?? '/', 'http://localhost');
-    const requested = path.normalize(path.join(distDir, decodeURIComponent(url.pathname)));
-    const file = requested.startsWith(distDir) ? requested : path.join(distDir, 'index.html');
+    // Everything in here is caught: an unhandled rejection would take the whole process down
+    // (one request with a malformed %-escape used to do exactly that).
     try {
-      const stat = await fs.stat(file);
-      const target = stat.isDirectory() ? path.join(file, 'index.html') : file;
-      res.setHeader('Content-Type', MIME[path.extname(target)] ?? 'application/octet-stream');
-      res.end(await fs.readFile(target));
-    } catch {
-      res.setHeader('Content-Type', MIME['.html']);
-      res.end(await fs.readFile(path.join(distDir, 'index.html')));
+      const url = new URL(req.url ?? '/', 'http://localhost');
+      let decoded: string;
+      try {
+        decoded = decodeURIComponent(url.pathname);
+      } catch {
+        res.statusCode = 400;
+        res.end();
+        return;
+      }
+      const requested = path.normalize(path.join(distDir, decoded));
+      // Inside dist/ only (the separator keeps a sibling like dist-old/ out).
+      const file = requested.startsWith(distDir + path.sep) ? requested : path.join(distDir, 'index.html');
+      try {
+        const stat = await fs.stat(file);
+        const target = stat.isDirectory() ? path.join(file, 'index.html') : file;
+        res.setHeader('Content-Type', MIME[path.extname(target)] ?? 'application/octet-stream');
+        res.end(await fs.readFile(target));
+      } catch {
+        res.setHeader('Content-Type', MIME['.html']);
+        res.end(await fs.readFile(path.join(distDir, 'index.html')));
+      }
+    } catch (err) {
+      console.error('static', err);
+      if (!res.headersSent) res.statusCode = 500;
+      res.end();
     }
   });
 })
@@ -50,6 +67,9 @@ const server = createServer((req, res) => {
   .listen(port, () => {
     console.log(`Project Valley server listening on http://localhost:${port} (${backend.kind} storage)`);
   });
+
+// A last line of defence: log a stray rejection instead of letting it end the process.
+process.on('unhandledRejection', (err) => console.error('unhandled rejection', err));
 
 // Close sockets, the bus and the database cleanly so a rolling restart drops nothing mid-write.
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

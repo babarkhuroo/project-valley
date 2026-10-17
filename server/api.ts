@@ -4,6 +4,7 @@ import type { ResourceBag } from '../src/valley/types.ts';
 import type { JoinOutcome, ValleyService } from './valleyService.ts';
 import type { AuthResult, AuthService } from './auth.ts';
 import { isAdmin, playtestReport, receiveFeedback, receiveProgress, type PlaytestStore } from './playtest.ts';
+import { RateLimiter, clientIp } from './rateLimit.ts';
 
 const PLAYER_ID = /^[a-z0-9-]{8,64}$/;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -64,6 +65,8 @@ export interface ApiOptions {
   playtest?: PlaytestStore;
   /** Bearer token for `GET /api/admin/playtest` (unset: the report is unavailable). */
   adminToken?: string;
+  /** Request limits (tests pass their own). */
+  limits?: Record<'session' | 'login' | 'register' | 'join' | 'progress', RateLimiter>;
 }
 
 function bearer(req: IncomingMessage): string | null {
@@ -76,8 +79,19 @@ function sendAuth(res: ServerResponse, out: AuthResult): void {
   else sendJson(res, out.status, { error: out.error });
 }
 
+/** Over the limit: slow down. */
+const TOO_MANY = { error: 'Too many requests — wait a little and try again' };
+
 export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, options: ApiOptions = {}) {
   const auth = options.auth;
+  // Per address: new guest villages, sign-ins, new accounts. Per player: invite-code joins, progress batches.
+  const limits = options.limits ?? {
+    session: new RateLimiter(30, 3_600_000),
+    login: new RateLimiter(20, 600_000),
+    register: new RateLimiter(10, 3_600_000),
+    join: new RateLimiter(20, 600_000),
+    progress: new RateLimiter(30, 600_000),
+  };
   return async (req: IncomingMessage, res: ServerResponse, next: Next): Promise<void> => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (!url.pathname.startsWith('/api/')) {
@@ -92,6 +106,13 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
       const raw = req.method === 'POST' || req.method === 'PUT' ? await readBody(req) : '';
       const json = (): Record<string, unknown> => (raw ? (JSON.parse(raw) as Record<string, unknown>) : {});
       const token = bearer(req);
+      if (req.method === 'POST') {
+        const perIp = url.pathname === '/api/session' ? limits.session : url.pathname === '/api/account/login' ? limits.login : url.pathname === '/api/account/register' ? limits.register : null;
+        if (perIp && !perIp.take(clientIp(req))) {
+          sendJson(res, 429, TOO_MANY);
+          return;
+        }
+      }
       if (auth && (url.pathname === '/api/session' || url.pathname === '/api/me' || url.pathname.startsWith('/api/account/'))) {
         await handleAuth(req, res, auth, url.pathname, token, json());
         return;
@@ -103,6 +124,10 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         const me = auth ? await auth.authenticate(token ?? (typeof body.token === 'string' ? body.token : null)) : null;
         if (!me) {
           sendJson(res, 401, { error: 'Not signed in' });
+          return;
+        }
+        if (url.pathname === '/api/progress' && !limits.progress.take(me.playerId)) {
+          sendJson(res, 429, TOO_MANY);
           return;
         }
         const out = url.pathname === '/api/feedback' ? await receiveFeedback(playtest, me.playerId, body) : await receiveProgress(playtest, me.playerId, body);
@@ -137,6 +162,11 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
       }
       const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|create|leave|settings|contribute|vote|profile|chat|dev-skip))?$/.exec(url.pathname);
       if (valleyMatch && valleys) {
+        // Joining by code is the only way to reach an invite-only Valley: no scanning for codes.
+        if (valleyMatch[2] === 'join' && !limits.join.take(valleyMatch[1])) {
+          sendJson(res, 429, TOO_MANY);
+          return;
+        }
         await handleValley(req, res, valleys, valleyMatch[1], valleyMatch[2] ?? null, options.dev ?? false, json());
         return;
       }
@@ -185,7 +215,13 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
           sendJson(res, 405, { error: 'method not allowed' });
       }
     } catch (err) {
-      sendJson(res, 500, { error: err instanceof Error ? err.message : 'server error' });
+      // Say what the caller got wrong; keep the server's own failures (database errors and the like) in the log.
+      if (err instanceof Error && err.message === 'payload too large') sendJson(res, 413, { error: 'payload too large' });
+      else if (err instanceof SyntaxError) sendJson(res, 400, { error: 'malformed JSON' });
+      else {
+        console.error('api', req.method, url.pathname, err);
+        sendJson(res, 500, { error: 'server error' });
+      }
     }
   };
 }
