@@ -52,6 +52,7 @@ function readBody(req: IncomingMessage): Promise<string> {
  *   POST   /api/account/register              <- { username, password, displayName }
  *   POST   /api/account/login                 <- { username, password }
  *   POST   /api/account/logout
+ *   POST   /api/account/delete                 (the signed-in player's account, village and Valley place)
  *
  * With an AuthService, every /api/save and /api/valley call must carry a session token
  * (Authorization: Bearer …, or `token` in the body for sendBeacon) for that player id.
@@ -114,7 +115,11 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         }
       }
       if (auth && (url.pathname === '/api/session' || url.pathname === '/api/me' || url.pathname.startsWith('/api/account/'))) {
-        await handleAuth(req, res, auth, url.pathname, token, json());
+        await handleAuth(req, res, auth, url.pathname, token, json(), async (playerId) => {
+          await store.remove(playerId);
+          await valleys?.forget(playerId);
+          await options.playtest?.forget(playerId);
+        });
         return;
       }
       const playtest = options.playtest;
@@ -354,7 +359,7 @@ function cleanBag(resources: unknown): ResourceBag {
   return clean;
 }
 
-async function handleAuth(req: IncomingMessage, res: ServerResponse, auth: AuthService, path: string, token: string | null, body: Record<string, unknown>): Promise<void> {
+async function handleAuth(req: IncomingMessage, res: ServerResponse, auth: AuthService, path: string, token: string | null, body: Record<string, unknown>, forget?: (playerId: string) => Promise<void>): Promise<void> {
   const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : '');
   if (path === '/api/session' && req.method === 'POST') {
     sendAuth(res, await auth.session(typeof body.playerId === 'string' ? body.playerId : undefined));
@@ -370,7 +375,16 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, auth: AuthS
   }
   if (path === '/api/me' && req.method === 'GET') sendAuth(res, await auth.me(token));
   else if (path === '/api/account/register' && req.method === 'POST') sendAuth(res, await auth.register(token, str('username'), str('password'), str('displayName')));
-  else if (path === '/api/account/logout' && req.method === 'POST') {
+  else if (path === '/api/account/delete' && req.method === 'POST') {
+    // Everything about this player goes: account, sessions, village save, Valley place and chat.
+    const playerId = await auth.deleteMe(token);
+    if (!playerId) {
+      sendJson(res, 401, { error: 'Not signed in' });
+      return;
+    }
+    await forget?.(playerId);
+    sendJson(res, 200, { ok: true });
+  } else if (path === '/api/account/logout' && req.method === 'POST') {
     await auth.logout(token);
     sendJson(res, 200, { ok: true });
   } else sendJson(res, 404, { error: 'not found' });

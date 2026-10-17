@@ -214,6 +214,22 @@ export class PgAuthStore implements AuthStore {
     return out.rowCount === 1;
   }
 
+  async deletePlayer(playerId: string): Promise<void> {
+    const client = await this.db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM sessions WHERE player_id = $1', [playerId]);
+      await client.query('DELETE FROM players WHERE player_id = $1', [playerId]);
+      await client.query('DELETE FROM accounts WHERE player_id = $1', [playerId]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async setOwner(playerId: string, username: string): Promise<void> {
     await this.db.pool.query(
       'INSERT INTO players (player_id, username) VALUES ($1, $2) ON CONFLICT (player_id) DO UPDATE SET username = EXCLUDED.username',

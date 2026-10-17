@@ -37,11 +37,17 @@ export interface PlaytestStore {
   addEvents(events: ProgressEvent[]): Promise<void>;
   feedback(limit: number): Promise<FeedbackRecord[]>;
   events(): Promise<ProgressEvent[]>;
+  /** Removes a player's notes and events (their account was deleted). */
+  forget(playerId: string): Promise<void>;
 }
 
 export class MemoryPlaytestStore implements PlaytestStore {
-  readonly notes: FeedbackRecord[] = [];
-  readonly log: ProgressEvent[] = [];
+  notes: FeedbackRecord[] = [];
+  log: ProgressEvent[] = [];
+  async forget(playerId: string): Promise<void> {
+    this.notes = this.notes.filter((n) => n.playerId !== playerId);
+    this.log = this.log.filter((e) => e.playerId !== playerId);
+  }
   async addFeedback(f: FeedbackRecord): Promise<void> {
     this.notes.push(f);
   }
@@ -83,10 +89,21 @@ export class FilePlaytestStore implements PlaytestStore {
   events(): Promise<ProgressEvent[]> {
     return this.read<ProgressEvent>('progress.jsonl');
   }
+  async forget(playerId: string): Promise<void> {
+    for (const file of ['feedback.jsonl', 'progress.jsonl']) {
+      const rows = (await this.read<{ playerId: string }>(file)).filter((r) => r.playerId !== playerId);
+      await fs.mkdir(this.dir, { recursive: true });
+      await fs.writeFile(path.join(this.dir, file), rows.map((r) => JSON.stringify(r) + '\n').join(''));
+    }
+  }
 }
 
 export class PgPlaytestStore implements PlaytestStore {
   constructor(private readonly pool: pg.Pool) {}
+  async forget(playerId: string): Promise<void> {
+    await this.pool.query('DELETE FROM playtest_feedback WHERE player_id = $1', [playerId]);
+    await this.pool.query('DELETE FROM playtest_events WHERE player_id = $1', [playerId]);
+  }
   async addFeedback(f: FeedbackRecord): Promise<void> {
     await this.pool.query('INSERT INTO playtest_feedback (player_id, at, mood, text, context) VALUES ($1, $2, $3, $4, $5::jsonb)', [f.playerId, f.at, f.mood, f.text, JSON.stringify(f.context)]);
   }

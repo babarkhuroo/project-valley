@@ -5,6 +5,7 @@ import { createApiMiddleware } from '../../server/api.ts';
 import { AuthService, MemoryAuthStore } from '../../server/auth.ts';
 import { MemorySaveStore } from '../../server/saveStore.ts';
 import { RateLimiter, clientIp } from '../../server/rateLimit.ts';
+import { MemoryValleyStore, ValleyService } from '../../server/valleyService.ts';
 
 /** Drives the middleware with an in-memory request/response pair. */
 async function call(api: ReturnType<typeof createApiMiddleware>, method: string, url: string, body?: unknown, token?: string): Promise<{ status: number; body: Record<string, unknown> }> {
@@ -149,5 +150,34 @@ describe('request limits', () => {
     await api(req, res, () => {});
     expect(status).toBe(400);
     expect(JSON.parse(text)).toEqual({ error: 'malformed JSON' });
+  });
+});
+
+describe('deleting an account', () => {
+  it('removes the account, every session, the village and the Valley place and chat', async () => {
+    const saves = new MemorySaveStore();
+    const valleys = new ValleyService(new MemoryValleyStore());
+    const auth = new AuthService(new MemoryAuthStore());
+    const api = createApiMiddleware(saves, valleys, { auth });
+    const guest = await call(api, 'POST', '/api/session', {});
+    const token = guest.body.token as string;
+    const id = guest.body.playerId as string;
+    expect((await call(api, 'POST', '/api/account/register', { username: 'leaving_soon', password: 'long enough', displayName: 'Wren' }, token)).status).toBe(200);
+    expect((await call(api, 'PUT', `/api/save/${id}`, { revision: 1, payload: { hello: 1 } }, token)).status).toBe(200);
+    const other = await auth.login('leaving_soon', 'long enough');
+    expect((await call(api, 'POST', `/api/valley/${id}/create`, { name: 'Wren', villageName: 'Thistledown', valleyName: 'Dale' }, token)).status).toBe(200);
+    expect((await call(api, 'POST', `/api/valley/${id}/chat`, { text: 'hello all' }, token)).status).toBe(200);
+    const valleyId = (await valleys.get(id))!.valley.id;
+
+    expect((await call(api, 'POST', '/api/account/delete', {}, token)).status).toBe(200);
+    expect((await call(api, 'GET', '/api/me', undefined, token)).status).toBe(401);
+    if (other.ok) expect(await auth.authenticate(other.token)).toBeNull();
+    expect(await auth.login('leaving_soon', 'long enough')).toMatchObject({ ok: false });
+    expect(await saves.load(id)).toBeNull();
+    expect(await valleys.get(id)).toBeNull();
+    // What's left in the Valley says nothing about who they were.
+    const raw = JSON.stringify(await (valleys as unknown as { load(id: string): Promise<unknown> }).load(valleyId));
+    expect(raw).not.toContain('hello all');
+    expect(raw).not.toContain('Thistledown');
   });
 });

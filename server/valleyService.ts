@@ -301,6 +301,33 @@ export class ValleyService {
     });
   }
 
+  /**
+   * A player deleted their account: they leave their Valley, their name and village name
+   * there become anonymous and their chat messages are removed. Their deliveries stay (the
+   * buildings they helped restore belong to everyone).
+   */
+  async forget(playerId: string): Promise<void> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return;
+    await this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (v) {
+        const now = this.clock();
+        advanceValley(v, now);
+        removePlayer(v, playerId, now);
+        for (const m of v.members) {
+          if (m.id !== playerId) continue;
+          m.name = 'A former villager';
+          m.villageName = 'a village';
+        }
+        v.chat = v.chat.filter((c) => c.member !== playerId);
+        await this.commit(v);
+      }
+      await this.store.clearMembership(playerId);
+      this.announce(playerId, null);
+    });
+  }
+
   /** Owner-ish settings: anyone in the Valley may open it up or close it. */
   async setOpen(playerId: string, open: boolean): Promise<ValleyView | null> {
     const valleyId = await this.store.valleyFor(playerId);

@@ -56,6 +56,8 @@ export interface AuthStore {
   /** Claims an unowned player id for a guest; false when someone already owns it. */
   claim(playerId: string): Promise<boolean>;
   setOwner(playerId: string, username: string): Promise<void>;
+  /** Forgets a player entirely: their account (if any), every session and the claim on their id. */
+  deletePlayer(playerId: string): Promise<void>;
 }
 
 /**
@@ -125,6 +127,13 @@ abstract class DocumentAuthStore implements AuthStore {
   }
   async setOwner(playerId: string, username: string): Promise<void> {
     (await this.db()).owned[playerId] = { username };
+    await this.persist();
+  }
+  async deletePlayer(playerId: string): Promise<void> {
+    const data = await this.db();
+    for (const [hash, s] of Object.entries(data.sessions)) if (s.playerId === playerId) delete data.sessions[hash];
+    for (const [name, a] of Object.entries(data.accounts)) if (a.playerId === playerId) delete data.accounts[name];
+    delete data.owned[playerId];
     await this.persist();
   }
 }
@@ -257,6 +266,15 @@ export class AuthService {
     this.failures.delete(name);
     const token = await this.issue(a.playerId, name);
     return { ok: true, playerId: a.playerId, token, account: await this.accountView(name) };
+  }
+
+  /** Deletes the signed-in player's account, sessions and claim; their village and Valley place go separately. */
+  async deleteMe(token: string): Promise<string | null> {
+    const me = await this.authenticate(token);
+    if (!me) return null;
+    await this.store.deletePlayer(me.playerId);
+    this.failures.delete(me.username ?? '');
+    return me.playerId;
   }
 
   async logout(token: string): Promise<void> {
