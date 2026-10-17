@@ -2,6 +2,7 @@ import { CHAT_BALANCE, VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/co
 import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
 import { activeMembers, postChat, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, contributeSowing, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
 import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
+import { ContributionAllowance, addInto } from './contributionLimits.ts';
 
 /**
  * Persistence for shared Valleys: JSON files for a single process
@@ -122,10 +123,31 @@ export class ValleyService {
   /** Called when a player joins or leaves a Valley (the live hub moves their connection). */
   readonly membership = new Set<(playerId: string, valleyId: string | null) => void>();
 
+  private readonly allowance: ContributionAllowance;
+
   constructor(
     private readonly store: ValleyStore,
     private readonly clock: () => number = Date.now,
-  ) {}
+  ) {
+    this.allowance = new ContributionAllowance(clock);
+  }
+
+  /**
+   * A delivery within the player's allowance (see contributionLimits.ts): what fits goes to
+   * the Valley, the rest is returned with the answer. A retried op keeps its first answer.
+   */
+  private capped(v: ValleyState, playerId: string, opId: string, offer: ResourceBag, deliver: (within: ResourceBag) => ContributeOutcome): ContributeOutcome {
+    if (v.ops[playerId]?.[opId]) return deliver(offer);
+    this.allowance.prune();
+    const { within, over } = this.allowance.split(playerId, offer);
+    const out = deliver(within);
+    if (out.ok) {
+      this.allowance.charge(playerId, out.result.accepted);
+      // The stored answer is this same object, so a retry returns the excess too.
+      addInto(out.result.returned, over);
+    }
+    return out;
+  }
 
   private async commit(v: ValleyState, notify = true): Promise<void> {
     await this.store.save(v);
@@ -333,7 +355,7 @@ export class ValleyService {
       if (!v) return null;
       const now = this.clock();
       advanceValley(v, now);
-      const out = contributeFestival(v, playerId, festivalId, resources, opId);
+      const out = this.capped(v, playerId, opId, resources, (within) => contributeFestival(v, playerId, festivalId, within, opId));
       await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
@@ -348,7 +370,7 @@ export class ValleyService {
       if (!v) return null;
       const now = this.clock();
       advanceValley(v, now);
-      const out = contributeSowing(v, playerId, round, grain, opId);
+      const out = this.capped(v, playerId, opId, { grain }, (within) => contributeSowing(v, playerId, round, within.grain ?? 0, opId));
       await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
@@ -397,7 +419,7 @@ export class ValleyService {
       if (!v) return null;
       const now = this.clock();
       advanceValley(v, now);
-      const out = contribute(v, playerId, building as ValleyBuildingId, resources, opId, now);
+      const out = this.capped(v, playerId, opId, resources, (within) => contribute(v, playerId, building as ValleyBuildingId, within, opId, now));
       await this.commit(v);
       return { ...out, view: { valley: snapshotOf(v), memberId: playerId, now } };
     });
