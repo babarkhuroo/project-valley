@@ -767,7 +767,10 @@ function house(variant: number): BuildingModel {
   return m;
 }
 
-/** Small flag that tells the building's level at a glance (blue = 2, gold = 3). */
+/** The pennant's colour by level: blue 2, gold 3, ruby 4, royal violet 5. */
+const PENNANT = ['#6fa8dc', '#6fa8dc', '#6fa8dc', PALETTE.gold, '#c94f5a', '#8a63d2'];
+
+/** Small flag that tells the building's level at a glance (blue = 2, gold = 3, ruby = 4, violet = 5). */
 export function levelPennant(m: BuildingModel, level: number, x: number, z: number, height: number): void {
   const pole = new THREE.Group();
   pole.position.set(x, 0, z);
@@ -779,7 +782,7 @@ export function levelPennant(m: BuildingModel, level: number, x: number, z: numb
   shape.closePath();
   const flagPivot = new THREE.Group();
   flagPivot.position.set(0.02, height - 0.02, 0);
-  const flag = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat(level >= 3 ? PALETTE.gold : '#6fa8dc', { side: THREE.DoubleSide }));
+  const flag = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat(PENNANT[Math.min(level, PENNANT.length - 1)], { side: THREE.DoubleSide }));
   flagPivot.add(flag);
   pole.add(flagPivot);
   for (let i = 0; i < level; i++) box(pole, 0.07, 0.07, 0.07, mat(level >= 3 ? PALETTE.gold : '#e8f1fb'), 0, height - 0.32 - i * 0.12, 0.03);
@@ -802,6 +805,30 @@ function addLevelDetails(m: BuildingModel, id: BuildingId, level: number): void 
         box(r, w, 0.16, d, stoneDark, x, 0.08, z);
       }
       levelPennant(m, level, 0.92, -0.92, 2.4);
+      if (level >= 4) {
+        // Level 4: a covered bay down one side, on posts, to keep the best stock dry.
+        const post = mat(PALETTE.woodDark);
+        for (const [x, z] of [[0.48, 0.82], [0.96, 0.82], [0.48, -0.5], [0.96, -0.5]] as const) box(r, 0.08, 1.25, 0.08, post, x, 0.62, z);
+        const roof = box(r, 0.66, 0.06, 1.55, mat(PALETTE.slate, { flat: true }), 0.72, 1.3, 0.16);
+        roof.rotation.z = -0.22;
+        box(r, 0.7, 0.05, 1.6, mat(PALETTE.slateDark, { flat: true }), 0.72, 1.24, 0.16).rotation.z = -0.22;
+      }
+      if (level >= 5) {
+        // Level 5: a stone gateway at the front with a hanging banner and two lamps.
+        for (const x of [-0.62, 0.62]) {
+          box(r, 0.26, 1.5, 0.26, stone, x, 0.75, 1.0);
+          box(r, 0.32, 0.1, 0.32, mat(PALETTE.gold), x, 1.55, 1.0);
+          box(r, 0.12, 0.16, 0.12, glowMat(), x, 1.2, 1.15);
+        }
+        box(r, 1.5, 0.16, 0.2, stoneDark, 0, 1.62, 1.0);
+        const bannerPivot = new THREE.Group();
+        bannerPivot.position.set(0, 1.54, 1.04);
+        const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.42), mat('#8a63d2', { side: THREE.DoubleSide }));
+        banner.position.y = -0.21;
+        bannerPivot.add(banner);
+        r.add(bannerPivot);
+        m.wavers.push({ obj: bannerPivot, amp: 0.12, speed: 1.6, base: 0 });
+      }
       if (level >= 3) {
         if (id === 'clayShed') {
           // A little brick kiln for firing the best clay.
@@ -829,6 +856,26 @@ function addLevelDetails(m: BuildingModel, id: BuildingId, level: number): void 
       box(r, 0.3, 1.0, 0.3, stoneDark, -0.75, 2.0, -0.7);
       m.smoke.push(new THREE.Vector3(-0.75, 2.6, -0.7));
       levelPennant(m, level, 1.25, -1.2, 3.1);
+      if (level >= 4) {
+        // Level 4: a dining table and benches under a string of bunting.
+        const wood = mat(PALETTE.wood);
+        box(r, 0.95, 0.06, 0.38, wood, -1.0, 0.46, 1.05);
+        for (const [x, z] of [[-1.38, 0.9], [-0.62, 0.9], [-1.38, 1.2], [-0.62, 1.2]] as const) box(r, 0.05, 0.44, 0.05, mat(PALETTE.woodDark), x, 0.22, z);
+        for (const z of [0.72, 1.38]) box(r, 0.95, 0.05, 0.16, wood, -1.0, 0.27, z);
+        ['#e86b8a', '#f2c14e', '#6fa8dc', '#7cbf57', '#e86b8a'].forEach((c, i) => {
+          const f = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 3), mat(c, { flat: true }));
+          f.rotation.x = Math.PI;
+          f.position.set(-1.4 + i * 0.2, 1.2 - Math.sin((i / 4) * Math.PI) * 0.08, 1.38);
+          r.add(f);
+        });
+      }
+      if (level >= 5) {
+        // Level 5: a tall smokehouse at the back, curing hams for the whole valley.
+        box(r, 0.55, 1.5, 0.55, mat(PALETTE.wood), 1.0, 0.75, -0.95);
+        gableRoof(r, 0.7, 0.38, 0.7, mat(PALETTE.terracotta, { flat: true }), 1.5, true, 1.0, -0.95);
+        box(r, 0.2, 0.28, 0.04, mat('#3b2f2a'), 1.0, 0.3, -0.66);
+        m.smoke.push(new THREE.Vector3(1.0, 2.05, -0.95));
+      }
       if (level >= 3) {
         // Bread oven beside the kitchen.
         const oven = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#c98a5e', { flat: true }));
@@ -845,6 +892,28 @@ function addLevelDetails(m: BuildingModel, id: BuildingId, level: number): void 
       const vane = box(r, 0.4, 0.05, 0.02, mat(PALETTE.gold), 0.95, 4.92, -0.85);
       m.spinners.push({ obj: vane, axis: 'y', speed: 0.6 });
       levelPennant(m, level, -1.25, -1.15, 3.2);
+      if (level >= 4) {
+        // Level 4: a library wing with tall windows.
+        box(r, 0.75, 1.15, 0.95, mat('#e2d9c6'), 1.12, 0.58, 0.62);
+        gableRoof(r, 0.95, 0.42, 1.05, mat(PALETTE.slate, { flat: true }), 1.15, false, 1.12, 0.62);
+        windowPane(r, 1.12, 0.7, 1.1, 0.22, 0.42);
+        windowPane(r, 1.5, 0.7, 0.62, 0.22, 0.42, Math.PI / 2);
+      }
+      if (level >= 5) {
+        // Level 5: a brass telescope on the observatory and banners framing the front.
+        const scope = cyl(r, 0.05, 0.08, 0.7, mat(PALETTE.gold), -0.8, 2.75, -0.95, 8);
+        scope.rotation.z = -0.8;
+        for (const x of [-1.25, 1.25]) {
+          cyl(r, 0.025, 0.025, 1.6, mat(PALETTE.woodDark), x, 0.8, 1.55, 6);
+          const pivot = new THREE.Group();
+          pivot.position.set(x, 1.55, 1.57);
+          const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), mat('#8a63d2', { side: THREE.DoubleSide }));
+          cloth.position.set(0, -0.32, 0);
+          pivot.add(cloth);
+          r.add(pivot);
+          m.wavers.push({ obj: pivot, amp: 0.1, speed: 1.4 + x, base: 0 });
+        }
+      }
       if (level >= 3) {
         cyl(r, 0.36, 0.4, 2.2, mat('#e2d9c6'), -0.95, 1.32, -0.95, 12);
         const dome = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(PALETTE.gold, { flat: true }));
