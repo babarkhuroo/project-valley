@@ -47,19 +47,33 @@ export interface VillagerRig {
 export const RIG = { hipHeight: 0.25, thigh: 0.115, shin: 0.135, upperArm: 0.115, forearm: 0.105 } as const;
 
 const G = {
-  thigh: new THREE.CapsuleGeometry(0.054, 0.05, 3, 8),
-  shin: new THREE.CapsuleGeometry(0.05, 0.045, 3, 8),
-  foot: new THREE.BoxGeometry(0.1, 0.06, 0.15),
-  upperArm: new THREE.CapsuleGeometry(0.047, 0.06, 3, 8),
-  forearm: new THREE.CapsuleGeometry(0.043, 0.05, 3, 8),
-  hand: new THREE.SphereGeometry(0.048, 8, 6),
-  head: new THREE.SphereGeometry(0.17, 18, 14),
-  eye: new THREE.SphereGeometry(0.022, 8, 6),
+  thigh: new THREE.CapsuleGeometry(0.054, 0.05, 4, 10),
+  shin: new THREE.CapsuleGeometry(0.05, 0.045, 4, 10),
+  boot: new THREE.SphereGeometry(0.066, 12, 8),
+  sole: new THREE.BoxGeometry(0.1, 0.018, 0.17),
+  bootCuff: new THREE.TorusGeometry(0.052, 0.014, 6, 14),
+  upperArm: new THREE.CapsuleGeometry(0.047, 0.06, 4, 10),
+  forearm: new THREE.CapsuleGeometry(0.043, 0.05, 4, 10),
+  cuff: new THREE.TorusGeometry(0.044, 0.012, 6, 14),
+  hand: new THREE.SphereGeometry(0.046, 10, 8),
+  thumb: new THREE.SphereGeometry(0.02, 8, 6),
+  head: new THREE.SphereGeometry(0.17, 24, 18),
+  ear: new THREE.SphereGeometry(0.04, 10, 8),
+  eye: new THREE.SphereGeometry(0.022, 10, 8),
+  brow: new THREE.CapsuleGeometry(0.0085, 0.04, 2, 6),
   lid: new THREE.SphereGeometry(0.0265, 8, 6),
   cheek: new THREE.SphereGeometry(0.03, 8, 6),
-  nose: new THREE.SphereGeometry(0.028, 8, 6),
+  nose: new THREE.SphereGeometry(0.03, 10, 8),
   mouth: new THREE.SphereGeometry(0.022, 10, 6),
-  hairCap: new THREE.SphereGeometry(0.182, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.52),
+  fringe: new THREE.SphereGeometry(0.068, 10, 8),
+  lock: new THREE.CapsuleGeometry(0.045, 0.12, 4, 8),
+  collar: new THREE.TorusGeometry(0.084, 0.024, 8, 18),
+  hem: new THREE.TorusGeometry(0.152, 0.02, 6, 22),
+  button: new THREE.SphereGeometry(0.014, 6, 4),
+  buckle: new THREE.BoxGeometry(0.05, 0.042, 0.022),
+  hatBand: new THREE.CylinderGeometry(0.172, 0.172, 0.035, 18, 1, true),
+  beanieCuff: new THREE.TorusGeometry(0.172, 0.032, 6, 20),
+  hairCap: new THREE.SphereGeometry(0.182, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.52),
   bun: new THREE.SphereGeometry(0.08, 10, 8),
   longHair: new THREE.CapsuleGeometry(0.13, 0.12, 4, 10),
   tail: new THREE.SphereGeometry(0.065, 10, 8),
@@ -72,17 +86,24 @@ const G = {
 };
 
 const torsoGeometry = (() => {
+  // A rounder, smoother body: full at the belly, narrowing to the shoulders.
   const pts = [
     new THREE.Vector2(0.0, 0.0),
-    new THREE.Vector2(0.15, 0.01),
-    new THREE.Vector2(0.175, 0.07),
-    new THREE.Vector2(0.16, 0.18),
-    new THREE.Vector2(0.13, 0.27),
-    new THREE.Vector2(0.08, 0.31),
+    new THREE.Vector2(0.14, 0.005),
+    new THREE.Vector2(0.168, 0.035),
+    new THREE.Vector2(0.177, 0.08),
+    new THREE.Vector2(0.172, 0.14),
+    new THREE.Vector2(0.158, 0.2),
+    new THREE.Vector2(0.138, 0.25),
+    new THREE.Vector2(0.108, 0.29),
+    new THREE.Vector2(0.06, 0.315),
     new THREE.Vector2(0.0, 0.32),
   ];
-  return new THREE.LatheGeometry(pts, 16);
+  return new THREE.LatheGeometry(pts, 22);
 })();
+
+/** A shade of a colour (k < 1 darker): in the exported placeholder colours it stays a shade of the same placeholder, so the Godot client recolours it too. */
+const tone = (hex: string, k: number): string => `#${new THREE.Color(hex).multiplyScalar(k).getHexString()}`;
 
 function mesh(geo: THREE.BufferGeometry, material: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh {
   const m = new THREE.Mesh(geo, material);
@@ -241,7 +262,10 @@ export function createVillagerRig(a: Appearance): VillagerRig {
   const shirt = mat(a.shirt);
   const trousers = mat(a.trousers);
   const hair = mat(a.hair);
+  const browMat = mat(tone(a.hair, 0.7));
   const shoe = mat(PALETTE.barkDark);
+  const soleMat = mat('#4a2c1b');
+  const shirtTrim = mat(tone(a.shirt, 0.8));
 
   // Skeleton, in the bind pose. Parts are first attached to bones as ordinary meshes,
   // then baked into one skinned geometry below.
@@ -251,7 +275,12 @@ export function createVillagerRig(a: Appearance): VillagerRig {
     hip.add(mesh(G.thigh, trousers, 0, -0.05, 0));
     const knee = bone(hip, 0, -RIG.thigh, 0, `knee${side}`);
     knee.add(mesh(G.shin, trousers, 0, -0.045, 0));
-    knee.add(mesh(G.foot, shoe, 0, -0.105, 0.025));
+    // A rounded boot on a darker sole, with a turned-down cuff.
+    const boot = mesh(G.boot, shoe, 0, -0.1, 0.03);
+    boot.scale.set(0.82, 0.58, 1.3);
+    const cuff = mesh(G.bootCuff, shoe, 0, -0.07, 0.004);
+    cuff.rotation.x = Math.PI / 2;
+    knee.add(boot, cuff, mesh(G.sole, soleMat, 0, -0.126, 0.03));
     return [hip, knee];
   };
   const [legL, kneeL] = makeLeg(-0.075, 'L');
@@ -261,33 +290,63 @@ export function createVillagerRig(a: Appearance): VillagerRig {
   spine.add(mesh(torsoGeometry, shirt, 0, 0, 0));
   const belt = mesh(G.belt, mat(PALETTE.woodDark), 0, 0.07, 0);
   belt.rotation.x = Math.PI / 2;
-  spine.add(belt);
+  spine.add(belt, mesh(G.buckle, mat(PALETTE.gold), 0, 0.07, 0.17));
+  // Collar, hem and a couple of buttons down the front.
+  const collar = mesh(G.collar, shirtTrim, 0, 0.3, 0.004);
+  collar.rotation.x = Math.PI / 2;
+  const hem = mesh(G.hem, shirtTrim, 0, 0.018, 0);
+  hem.rotation.x = Math.PI / 2;
+  const buttonMat = mat('#f4ead2');
+  spine.add(collar, hem, mesh(G.button, buttonMat, 0, 0.215, 0.155), mesh(G.button, buttonMat, 0, 0.15, 0.17));
 
   const makeArm = (x: number, side: string): [THREE.Bone, THREE.Bone] => {
     const shoulder = bone(spine, x, 0.26, 0, `shoulder${side}`);
     shoulder.add(mesh(G.upperArm, shirt, 0, -0.055, 0));
     const elbow = bone(shoulder, 0, -RIG.upperArm, 0, `elbow${side}`);
     elbow.add(mesh(G.forearm, shirt, 0, -0.04, 0));
-    elbow.add(mesh(G.hand, skin, 0, -RIG.forearm, 0));
+    const cuff = mesh(G.cuff, shirtTrim, 0, -0.078, 0);
+    cuff.rotation.x = Math.PI / 2;
+    // A mitten of a hand with its thumb towards the front.
+    const hand = mesh(G.hand, skin, 0, -RIG.forearm, 0);
+    hand.scale.set(0.95, 1.05, 0.9);
+    elbow.add(cuff, hand, mesh(G.thumb, skin, x < 0 ? 0.018 : -0.018, -RIG.forearm + 0.012, 0.038));
     return [shoulder, elbow];
   };
   const [armL, elbowL] = makeArm(-0.19, 'L');
   const [armR, elbowR] = makeArm(0.19, 'R');
 
   const head = bone(spine, 0, 0.49, 0, 'head');
-  head.add(mesh(G.head, skin));
+  const skull = mesh(G.head, skin);
+  skull.scale.set(1, 1.02, 0.97);
+  head.add(skull);
+  for (const x of [-0.165, 0.165]) {
+    const ear = mesh(G.ear, skin, x, -0.005, -0.005);
+    ear.scale.set(0.55, 0.95, 0.8);
+    head.add(ear);
+  }
   const eyeMat = mat('#2b2a3a');
-  head.add(mesh(G.eye, eyeMat, -0.06, 0.02, 0.155), mesh(G.eye, eyeMat, 0.06, 0.02, 0.155));
+  for (const x of [-0.06, 0.06]) {
+    const eye = mesh(G.eye, eyeMat, x, 0.022, 0.154);
+    eye.scale.set(0.95, 1.3, 0.8);
+    head.add(eye);
+    // Brows in a darker shade of the hair, lifted a little at the outer end.
+    const brow = mesh(G.brow, browMat, x, 0.07, 0.158);
+    brow.rotation.set(-0.25, 0, Math.PI / 2 + (x < 0 ? -0.18 : 0.18));
+    head.add(brow);
+  }
   // Eye shines make the face read at a distance.
   const shine = mat('#ffffff');
-  head.add(mesh(new THREE.SphereGeometry(0.007, 6, 4), shine, -0.053, 0.03, 0.174), mesh(new THREE.SphereGeometry(0.007, 6, 4), shine, 0.067, 0.03, 0.174));
+  head.add(mesh(new THREE.SphereGeometry(0.008, 6, 4), shine, -0.052, 0.035, 0.172), mesh(new THREE.SphereGeometry(0.008, 6, 4), shine, 0.068, 0.035, 0.172));
+  head.add(mesh(new THREE.SphereGeometry(0.0045, 5, 3), shine, -0.064, 0.012, 0.173), mesh(new THREE.SphereGeometry(0.0045, 5, 3), shine, 0.056, 0.012, 0.173));
   const blush = mat('#f19a8f');
   const cheekL = mesh(G.cheek, blush, -0.1, -0.04, 0.125);
   const cheekR = mesh(G.cheek, blush, 0.1, -0.04, 0.125);
   cheekL.scale.set(1, 0.6, 0.5);
   cheekR.scale.set(1, 0.6, 0.5);
   head.add(cheekL, cheekR);
-  head.add(mesh(G.nose, skin, 0, -0.015, 0.17));
+  const nose = mesh(G.nose, skin, 0, -0.012, 0.168);
+  nose.scale.set(1, 0.85, 0.9);
+  head.add(nose);
 
   // Eyelids (skin-coloured caps over the eyes) live on their own bone, collapsed until a blink.
   const lids = bone(head, 0, 0.02, 0.15, 'lids');
@@ -304,6 +363,13 @@ export function createVillagerRig(a: Appearance): VillagerRig {
   const cap = mesh(G.hairCap, hair, 0, 0.012, -0.012);
   cap.rotation.x = -0.25;
   head.add(cap);
+  // A soft fringe over the forehead.
+  for (const [x, y, z, r] of [[-0.075, 0.128, 0.104, 0.3], [0, 0.145, 0.112, 0], [0.075, 0.128, 0.104, -0.3]]) {
+    const lock = mesh(G.fringe, hair, x, y, z);
+    lock.scale.set(1.15, 0.55, 0.7);
+    lock.rotation.z = r;
+    head.add(lock);
+  }
   const hairBone = bone(head, 0, 0.06, -0.12, 'hair');
   switch (a.hairStyle) {
     case 1:
@@ -313,6 +379,12 @@ export function createVillagerRig(a: Appearance): VillagerRig {
       const back = mesh(G.longHair, hair, 0, -0.14, 0.02);
       back.scale.set(1.1, 1, 0.7);
       hairBone.add(back);
+      // Locks falling forward past the ears.
+      for (const x of [-0.15, 0.15]) {
+        const lock = mesh(G.lock, hair, x, -0.13, 0.13);
+        lock.scale.set(0.9, 1, 0.75);
+        hairBone.add(lock);
+      }
       break;
     }
     case 3:
@@ -325,10 +397,13 @@ export function createVillagerRig(a: Appearance): VillagerRig {
     const hatMat = mat(a.hatColor);
     head.add(mesh(G.brim, mat(PALETTE.thatch), 0, 0.12, 0));
     head.add(mesh(G.crown, hatMat, 0, 0.19, 0));
+    head.add(mesh(G.hatBand, mat(tone(a.hatColor, 0.65), { side: THREE.DoubleSide }), 0, 0.15, 0));
   } else if (a.hat === 2) {
     const hatMat = mat(a.hatColor);
     head.add(mesh(G.beanie, hatMat, 0, 0.03, -0.01));
-    head.add(mesh(G.pom, mat('#fff6e8'), 0, 0.21, -0.02));
+    const turn = mesh(G.beanieCuff, mat(tone(a.hatColor, 0.82)), 0, 0.06, -0.01);
+    turn.rotation.x = Math.PI / 2 - 0.12;
+    head.add(turn, mesh(G.pom, mat('#fff6e8'), 0, 0.21, -0.02));
   }
 
   // Job clothing: each on a bone at the chest's centre, hidden until that job.
