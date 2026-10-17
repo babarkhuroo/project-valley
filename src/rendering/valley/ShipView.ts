@@ -24,7 +24,7 @@ function hullShape(length: number, beam: number): THREE.Shape {
 }
 
 /** A small two-masted merchant ship; the sails wear the merchant's colour. */
-function createShip(color: string): { root: THREE.Group; sails: THREE.Object3D[]; flag: THREE.Object3D } {
+export function createShip(color: string): { root: THREE.Group; sails: THREE.Object3D[]; flag: THREE.Object3D } {
   const root = new THREE.Group();
   const hull = new THREE.ExtrudeGeometry(hullShape(6, 2.2), { depth: 1.0, bevelEnabled: true, bevelThickness: 0.15, bevelSize: 0.12, bevelSegments: 2, curveSegments: 10 });
   hull.rotateX(Math.PI / 2);
