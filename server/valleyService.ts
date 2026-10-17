@@ -315,12 +315,14 @@ export class ValleyService {
         const now = this.clock();
         advanceValley(v, now);
         removePlayer(v, playerId, now);
-        for (const m of v.members) {
-          if (m.id !== playerId) continue;
-          m.name = 'A former villager';
-          m.villageName = 'a village';
+        const me = v.members.find((m) => m.id === playerId);
+        const names = me ? [me.name, me.villageName].filter((n) => n.trim().length > 0) : [];
+        if (me) {
+          me.name = 'A former villager';
+          me.villageName = 'a village';
         }
-        v.chat = v.chat.filter((c) => c.member !== playerId);
+        // Their own messages, and neighbours' lines that greeted them by name.
+        v.chat = v.chat.filter((c) => c.member !== playerId && !names.some((n) => c.text.includes(n)));
         await this.commit(v);
       }
       await this.store.clearMembership(playerId);
