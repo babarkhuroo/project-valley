@@ -60,7 +60,9 @@ export type SimEvent =
   | { type: 'requestFulfilled'; requestId: number; who: string; wants: Partial<Record<ResourceId, number>>; xp: number; coins: number; tonic: BoostId | null }
   | { type: 'wildGathered'; spotId: number; kind: WildKind; x: number; z: number; gifts: Partial<Record<ResourceId | 'herbs', number>>; coins: number; tonic: BoostId | null }
   | { type: 'chestOpened'; reward: ChestReward }
-  | { type: 'tonicBrewed'; tonic: BoostId };
+  | { type: 'tonicBrewed'; tonic: BoostId }
+  /** The requests board just opened (from the game's upkeep, not the simulation). */
+  | { type: 'requestsOpened' };
 
 export type IdleReason = 'depleted' | 'unassigned' | 'finished' | 'unreachable' | 'removed';
 

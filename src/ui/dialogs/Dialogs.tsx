@@ -9,6 +9,9 @@ import { Icon } from '../common/Icon';
 import { Portrait } from '../common/Portrait';
 import { formatDuration, useGameState } from '../hooks';
 import { ui, useUI } from '../store';
+import { chestsPending } from '../../sim/chests';
+import { traitForName } from '../../sim/traits';
+import { openNextChest } from '../actions';
 
 export function NewcomerDialog() {
   const state = useGameState();
@@ -36,6 +39,9 @@ export function NewcomerDialog() {
               <span className="pill pill-blue" style={{ background: SKILLS[c.specialty].color }}>
                 {SKILLS[c.specialty].name} 1
               </span>
+              <small className="good">
+                ✦ {traitForName(c.name).name}: {traitForName(c.name).description}
+              </small>
               <small>{SPECIALTY_BLURB[c.specialty]}</small>
             </button>
           ))}
@@ -141,6 +147,7 @@ export function AwayDialog() {
 
 export function LevelUpBanner() {
   const level = useUI((s) => s.levelUp);
+  const state = useGameState();
   useEffect(() => {
     if (level === null) return;
     const t = window.setTimeout(() => ui.set({ levelUp: null }), 6000);
@@ -180,6 +187,17 @@ export function LevelUpBanner() {
           }}
         >
           Open research
+        </button>
+      ) : null}
+      {chestsPending(state) > 0 ? (
+        <button
+          className="btn orange"
+          onClick={(e) => {
+            e.stopPropagation();
+            openNextChest();
+          }}
+        >
+          <Icon name="gift" size={20} /> Open your chest
         </button>
       ) : null}
     </div>

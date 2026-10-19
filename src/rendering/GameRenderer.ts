@@ -35,6 +35,10 @@ import { VillagersView } from './VillagersView';
 import { createWater } from './WaterView';
 import { sharedUniforms } from './wind';
 import { WorldOverlay } from './WorldOverlay';
+import { villageUpkeep } from '../game/upkeep';
+import { WildsView } from './WildsView';
+import { CartsView } from './CartsView';
+import { canAfford } from '../sim/economy';
 
 export type { PickTarget } from './InputController';
 
@@ -98,6 +102,8 @@ export class GameRenderer {
   private readonly smoke = new SmokeSystem();
   private readonly ambient: AmbientLife;
   private readonly hens: Hens;
+  private readonly wilds: WildsView;
+  private readonly carts: CartsView;
   private readonly fireflies: Fireflies;
   private readonly selection: SelectionView;
   private readonly overlay: WorldOverlay;
@@ -107,6 +113,8 @@ export class GameRenderer {
   private readonly resizeObserver: ResizeObserver;
   private frameHandle = 0;
   private lastFrame = 0;
+  /** Seconds until the next village upkeep pass (requests, wild finds, chests, brews). */
+  private upkeepIn = 0;
   private realTime = 0;
   private lastLayout = '';
   private unsubscribe: () => void;
@@ -220,6 +228,11 @@ export class GameRenderer {
       if (this.cameraCtl.distance < 24 && Math.hypot(p.x - this.cameraCtl.target.x, p.z - this.cameraCtl.target.z) < 12) this.audio.playAt('cluck', p);
     };
     this.scene.add(this.hens.group);
+    this.wilds = new WildsView(world.terrain, this.particles);
+    this.scene.add(this.wilds.group);
+    this.carts = new CartsView(world, this.particles);
+    this.carts.onArrive = (p) => this.audio.playAt('notify', p);
+    this.scene.add(this.carts.group);
     this.fireflies = new Fireflies(world.terrain, map);
     this.scene.add(this.fireflies.mesh);
     this.selection = new SelectionView(world.terrain);
@@ -469,6 +482,21 @@ export class GameRenderer {
           this.audio.play('newcomer');
           break;
         }
+        case 'wildGathered': {
+          const at = new THREE.Vector3(e.x, this.game.world.terrain.groundHeightAt(e.x, e.z), e.z);
+          let lift = 0.9;
+          for (const [r, n] of Object.entries(e.gifts) as [string, number][]) {
+            if (!n || n <= 0) continue;
+            const icon = r === 'herbs' ? ICONS.leaf : ICONS[r as keyof typeof ICONS];
+            this.overlay.float(at.clone().add(new THREE.Vector3(0, lift, 0)), `<span class="ico">${icon}</span>+${n}${r === 'herbs' ? ' herbs' : ''}`, `wo-float res-${r}`);
+            lift += 0.45;
+          }
+          if (e.coins > 0) this.overlay.float(at.clone().add(new THREE.Vector3(0, lift, 0)), `<span class="ico">${ICONS.coin}</span>+${e.coins}`, 'wo-float res-coins');
+          this.particles.emit(e.kind === 'herbs' ? 'leaves' : 'sparkle', at.clone().add(new THREE.Vector3(0, 0.3, 0)), 10, 0.35);
+          this.particles.emit('glint', at.clone().add(new THREE.Vector3(0, 0.4, 0)), 6, 0.3);
+          this.audio.playAt('pick', at);
+          break;
+        }
         case 'skillUp': {
           const p = this.positionOf({ kind: 'villager', id: e.villagerId });
           if (p) {
@@ -496,6 +524,10 @@ export class GameRenderer {
     this.realTime += dt;
     this.lastRealDt = realDt;
     this.game.tick(realDt);
+    if ((this.upkeepIn -= realDt) <= 0) {
+      this.upkeepIn = 2;
+      villageUpkeep(this.game);
+    }
     const state = this.game.state;
     sharedUniforms.uTime.value = this.realTime;
 
@@ -531,6 +563,8 @@ export class GameRenderer {
     this.villagers.update(state, dt, this.realTime, this.game.speed, eye, lod);
     this.ambient.update(this.realTime, this.dayCycle.night);
     this.hens.update(state, dt, this.realTime, this.dayCycle.night);
+    this.wilds.update(state, dt, this.realTime, document.documentElement.classList.contains('reduce-motion'));
+    this.carts.update(state, dt, this.realTime);
     this.fireflies.update(this.realTime, this.dayCycle.night);
     this.particles.update(dt);
     this.effects.update(dt);
@@ -602,10 +636,26 @@ export class GameRenderer {
     return { ...this.lastInfo, natureTriangles: Math.round(this.nature.triangles()), ...this.chunks.stats };
   }
 
+  /** A wild find or a visitor's cart under a ground point (tapped before ordinary selection). */
+  extrasAt(x: number, z: number): { kind: 'wild'; id: number } | { kind: 'cart'; id: number } | null {
+    const state = this.game.state;
+    const wild = this.wilds.spotAt(x, z, state);
+    if (wild !== null) return { kind: 'wild', id: wild };
+    const cart = this.carts.cartAt(x, z);
+    return cart !== null ? { kind: 'cart', id: cart } : null;
+  }
+
   private updateOverlay(): void {
     const state = this.game.state;
     const o = this.overlay;
     o.beginFrame();
+    // Each parked cart shows what its visitor wants ("Can deliver" when the stores cover it).
+    for (const { requestId, at } of this.carts.parked()) {
+      const req = state.requests?.slots.find((r) => r.id === requestId);
+      if (!req) continue;
+      const good = Object.keys(req.wants)[0] as keyof typeof ICONS;
+      o.badge(`cart${requestId}`, at.clone().add(new THREE.Vector3(0, 1.75, 0)), `<span class="wo-ico">${ICONS[good]}</span>${canAfford(state, req.wants) ? '<span class="wo-name">Can deliver</span>' : ''}`, 'wo-villager');
+    }
     const tmp = new THREE.Vector3();
     const zoomedIn = this.cameraCtl.distance < 20;
     for (const v of state.villagers) {

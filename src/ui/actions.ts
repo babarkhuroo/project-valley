@@ -38,6 +38,11 @@ import type { Job, Rotation } from '../sim/types';
 import { findBuilding, findVillager } from '../sim/villagerAI';
 import type { PickTarget } from '../rendering/InputController';
 import { ui } from './store';
+import { fulfilRequest, skipRequest } from '../sim/requests';
+import { openChest as openChestCommand } from '../sim/chests';
+import { brew } from '../sim/brewing';
+import { gatherWild } from '../sim/wilds';
+import type { BaseBoostId } from '../config/trade';
 
 /**
  * UI-facing actions. Each wraps a simulation command with player feedback: sounds,
@@ -381,3 +386,36 @@ export async function leaveCurrentValley(): Promise<void> {
   ui.toast({ kind: 'info', title: 'You left the Valley', body: 'Your village is on its own until it joins another.', icon: 'valley' });
   returnToVillage();
 }
+
+// ---------------------------------------------------------------------------
+// The requests board, chests, brewing and wild finds
+// ---------------------------------------------------------------------------
+
+export function deliverRequest(id: number): void {
+  feedback(game().run((s, _w, sink) => fulfilRequest(s, id, sink)), () => runtime.audio.play('click'));
+}
+
+export function turnDownRequest(id: number): void {
+  feedback(game().run((s) => skipRequest(s, id)), () => runtime.audio.play('close'));
+}
+
+/** Opens the next level-up chest and shows what was inside. */
+export function openNextChest(): void {
+  const res = feedback(game().run((s, _w, sink) => openChestCommand(s, sink)));
+  if (res.ok && res.value) {
+    ui.set({ chest: res.value, levelUp: null });
+    runtime.audio.play('levelUp');
+  }
+}
+
+export function brewTonic(tonic: BaseBoostId, strength: number): void {
+  feedback(game().run((s) => brew(s, tonic, strength)), () => {
+    runtime.audio.play('bubble');
+    ui.toast({ kind: 'info', title: "Brewing — it'll be in your tonics when it's ready", icon: 'potion' }, 3000);
+  });
+}
+
+export function gather(spotId: number): void {
+  game().run((s, w, sink) => gatherWild(s, w, spotId, sink));
+}
+

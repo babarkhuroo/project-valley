@@ -10,6 +10,7 @@ import { ChatButton } from '../valley/ChatUi';
 import { formatNumber, useGameState } from '../hooks';
 import { useEdgeVar } from '../layout';
 import { ui, useUI } from '../store';
+import { ChestButton, RequestsButton } from '../village/VillageExtras';
 
 function LevelBadge() {
   const state = useGameState();
@@ -90,6 +91,8 @@ export function TopBar() {
       </div>
       <div className="top-buttons">
         <ChatButton />
+        <ChestButton />
+        <RequestsButton />
         <TradeButtons />
         <button className="round-btn" onClick={() => ui.openPanel('notifications')} title="Notifications">
           <Icon name="bell" size={24} />

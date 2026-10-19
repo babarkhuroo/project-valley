@@ -4,7 +4,7 @@ import { findBuilding, findNode } from '../sim/villagerAI';
 import { NODES } from '../config/nodes';
 import { BUILDINGS } from '../config/buildings';
 import type { Job } from '../sim/types';
-import { assign, cancelMode, confirmPlacement, rotatePlacement, updatePlacementFromGround } from './actions';
+import { assign, cancelMode, confirmPlacement, gather, rotatePlacement, updatePlacementFromGround } from './actions';
 import { sameTarget, ui } from './store';
 
 /** Job implied by clicking a target while assigning a villager. */
@@ -51,6 +51,17 @@ export const interaction: InteractionHandler = {
         const n = findNode(game().state, result.target.id);
         if (n) ui.toast({ kind: 'warning', title: `${NODES[n.kind].name} can't be worked right now`, icon: 'info' }, 2500);
       } else cancelMode();
+      return;
+    }
+    // Wild finds and visitors' carts sit on open ground: a tap gathers or opens the board.
+    const extra = result.ground ? runtime.renderer?.extrasAt(result.ground.x, result.ground.z) : null;
+    if (extra?.kind === 'wild') {
+      gather(extra.id);
+      return;
+    }
+    if (extra?.kind === 'cart') {
+      ui.openPanel('requests');
+      runtime.audio.play('click');
       return;
     }
     if (result.target) {

@@ -66,6 +66,20 @@ export function attachNotifications(game: Game): () => void {
         case 'levelUp':
           ui.set({ levelUp: e.level });
           break;
+        case 'requestsOpened':
+          ui.toast({ kind: 'success', title: 'Requests are coming in', body: 'Folk from around the valley need goods. Help them for XP, coins and tonics — the crate button up top.', icon: 'crate' }, 7000);
+          break;
+        case 'requestFulfilled':
+          ui.toast({ kind: 'success', title: `Thank you! — ${e.who}`, body: `+${e.xp} XP, +${e.coins} coins${e.tonic ? `, and a ${BOOSTS[e.tonic].name}` : ''}.`, icon: 'crate' });
+          runtime.audio.play('skillUp');
+          break;
+        case 'tonicBrewed':
+          ui.toast({ kind: 'success', title: `${BOOSTS[e.tonic].name} is ready`, body: "It's in your tonics — use it when the work matters.", icon: 'potion' }, 6000);
+          runtime.audio.play('complete');
+          break;
+        case 'wildGathered':
+          if (e.tonic) ui.toast({ kind: 'success', title: `You found a ${BOOSTS[e.tonic].name}!`, body: "Tucked among the herbs. It's in your tonics.", icon: 'potion' });
+          break;
         case 'storageFull':
           if (e.resource === 'knowledge') break;
           if (once(`full-${e.resource}`, 90_000)) {

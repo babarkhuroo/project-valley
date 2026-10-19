@@ -9,6 +9,7 @@ import type { PickTarget } from '../rendering/InputController';
 import type { Rotation } from '../sim/types';
 import type { IconName } from './icons';
 import { screenScale } from './layout';
+import type { ChestReward } from '../sim/types';
 
 export type Mode =
   | { kind: 'normal' }
@@ -23,7 +24,7 @@ export interface Placement {
   reason: string | null;
 }
 
-export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | 'chat' | 'feedback' | null;
+export type Panel = 'build' | 'research' | 'settings' | 'dev' | 'notifications' | 'workers' | 'satchel' | 'road' | 'chat' | 'feedback' | 'requests' | null;
 
 export interface Toast {
   id: number;
@@ -96,6 +97,8 @@ export interface UIState {
   unread: number;
   away: AwaySummary | null;
   levelUp: number | null;
+  /** The level-up chest being shown (just opened). */
+  chest: ChestReward | null;
   newcomersHidden: boolean;
   showNames: boolean;
   confirmReset: boolean;
@@ -128,6 +131,7 @@ export const useUI = create<UIState>(() => ({
   unread: 0,
   away: null,
   levelUp: null,
+  chest: null,
   newcomersHidden: false,
   showNames: false,
   confirmReset: false,

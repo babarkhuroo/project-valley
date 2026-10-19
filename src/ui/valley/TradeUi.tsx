@@ -34,19 +34,23 @@ export function CoinsChip() {
 
 export function TradeButtons() {
   const state = useGameState();
-  if (!isValleyUnlocked(state)) return null;
+  const valley = isValleyUnlocked(state);
   const tonics = BOOST_ORDER.reduce((n, b) => n + (state.trade.inventory[b] ?? 0), 0);
   const active = state.trade.active.length > 0;
+  // Requests, chests, wild finds and brewing hand out tonics too: the satchel shows as soon as there's one.
+  if (!valley && tonics === 0 && !active) return null;
   return (
     <>
       <button className={`round-btn ${active ? 'glow' : ''}`} onClick={() => ui.openPanel('satchel')} title="Tonics">
         <Icon name="potion" size={24} />
         {tonics > 0 ? <span className="badge-count soft">{tonics}</span> : null}
       </button>
-      <button className="round-btn" onClick={() => ui.openPanel('road')} title="Reputation Road">
-        <Icon name="reputation" size={24} />
-        {canClaimRoad(state) ? <span className="badge-count">!</span> : null}
-      </button>
+      {valley ? (
+        <button className="round-btn" onClick={() => ui.openPanel('road')} title="Reputation Road">
+          <Icon name="reputation" size={24} />
+          {canClaimRoad(state) ? <span className="badge-count">!</span> : null}
+        </button>
+      ) : null}
     </>
   );
 }
@@ -85,7 +89,7 @@ export function SatchelPanel() {
       ) : null}
       <Section title="In your satchel">
         {owned.length === 0 ? (
-          <p className="small muted">No tonics yet. Merchant ships sell them, and the Reputation Road gives some away.</p>
+          <p className="small muted">No tonics yet. Brew them at the Cookhouse; requests, chests and herb patches give some away, and merchant ships sell them.</p>
         ) : (
           owned.map((b) => (
             <div key={b} className="tonic-row">
@@ -103,7 +107,7 @@ export function SatchelPanel() {
           ))
         )}
       </Section>
-      <p className="small muted">Taking another dose of a tonic that's already working adds to its time.</p>
+      <p className="small muted">Taking another dose of a tonic that's already working adds to its time. Only the strongest tonic for a job counts at once.</p>
     </div>
   );
 }

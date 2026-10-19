@@ -4341,3 +4341,177 @@ h4 {
     max-height: calc(var(--ui-vh) - var(--hud-top, 88px) - 16px - env(safe-area-inset-bottom));
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Requests board, level-up chests, brewing (ui/village/VillageExtras.tsx)
+   --------------------------------------------------------------------------- */
+
+.strong-honey {
+  color: var(--honey-dark);
+  font-weight: 700;
+}
+
+small.good,
+p.good,
+span.good {
+  color: var(--leaf-dark);
+  font-weight: 700;
+}
+
+.center {
+  text-align: center;
+  justify-content: center;
+}
+
+.request-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--paper-2);
+  box-shadow: 0 2px 0 rgba(120, 85, 40, 0.18);
+}
+
+.request-card.can {
+  background: #fff1cf;
+}
+
+.request-card.waiting {
+  flex-direction: row;
+  align-items: center;
+  background: #efe2c8;
+}
+
+.request-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.request-head span {
+  display: flex;
+  flex-direction: column;
+}
+
+.request-head small {
+  color: var(--ink-soft);
+}
+
+.request-reward {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-weight: 700;
+}
+
+.request-reward span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.modal.chest h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.chest-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 14px 0;
+}
+
+.chest-rewards .reveal {
+  opacity: 0;
+  animation: chest-reveal 0.4s ease-out forwards;
+}
+
+@keyframes chest-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reduce-motion .chest-rewards .reveal {
+  animation: none;
+  opacity: 1;
+}
+
+.kettle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--paper-3);
+  margin-bottom: 8px;
+}
+
+.segmented button {
+  flex: 1;
+  border: 0;
+  border-radius: 10px;
+  padding: 7px 4px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: transparent;
+  cursor: pointer;
+}
+
+.segmented button.on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 2px 0 rgba(120, 85, 40, 0.2);
+}
+
+.brew-card {
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 14px;
+  background: var(--paper-2);
+}
+
+.brew-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 6px 0;
+  font-weight: 700;
+}
+
+.brew-cost > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.brew-card .row-buttons {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn.orange {
+  background: linear-gradient(#ffc477, #f3a447);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}

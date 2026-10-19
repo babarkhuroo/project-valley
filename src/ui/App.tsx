@@ -21,6 +21,7 @@ import { RoadPanel, SatchelPanel } from './valley/TradeUi';
 import { ValleyChooser } from './valley/ValleyChooser';
 import { ChatPanel } from './valley/ChatUi';
 import { FeedbackPanel, ProgressConsent } from './playtest/Feedback';
+import { ChestDialog, RequestsPanel } from './village/VillageExtras';
 
 // Compiled out of production builds entirely.
 const DevPanel = import.meta.env.DEV ? lazy(() => import('./dev/DevPanel').then((m) => ({ default: m.DevPanel }))) : null;
@@ -78,6 +79,7 @@ export function App() {
         <Toasts />
         <NotificationsPanel />
         <SatchelPanel />
+        <RequestsPanel />
         <RoadPanel />
         <ChatPanel />
         <SettingsPanel />
@@ -93,6 +95,7 @@ export function App() {
       <NewcomerDialog />
       <AwayDialog />
       <LevelUpBanner />
+      <ChestDialog />
       <TravelVeil />
       <ValleyChooser />
       </div>

@@ -31,6 +31,8 @@ import type { IconName } from '../icons';
 import { ui, useUI } from '../store';
 import { FARMING } from '../../config/farming';
 import { fieldYield, growthFraction, isFertile } from '../../sim/farming';
+import { traitJobMult, traitMealMult, traitOf } from '../../sim/traits';
+import { BrewSection } from '../village/VillageExtras';
 
 // ---------------------------------------------------------------------------
 // Shared pieces
@@ -96,6 +98,7 @@ function AssignList({ job }: { job: Job }) {
   const slots = jobSlots(state, job);
   const blocker = jobBlocker(state, job);
   const skill = skillFor(state, job);
+  const jt = jobTypeOf(state, job);
   const full = workers.length >= slots;
   const others = state.villagers
     .filter((v) => !workers.includes(v))
@@ -158,6 +161,7 @@ function AssignList({ job }: { job: Job }) {
                       {v.name} {task.idle ? <Pill tone="idle">Idle</Pill> : null}
                     </strong>
                     <small>
+                      {jt && traitJobMult(v, jt) > 1 ? `✦ ${traitOf(v).name} · ` : ''}
                       {skill ? `${SKILLS[skill].name} ${v.skills[skill].level}` : ''}
                       {est?.resource ? ` · ≈${est.perMinute.toFixed(1)}/min` : est ? ` · ${est.rate.toFixed(2)} work/s` : ''}
                       {!task.idle ? ` · now: ${task.label.toLowerCase()}` : ''}
@@ -222,13 +226,14 @@ function VillagerPanel({ v }: { v: Villager }) {
   const est = v.job ? estimateJob(state, g.world, v, v.job) : null;
   const jt = v.job ? jobTypeOf(state, v.job) : null;
   const eats = jt ? JOBS[jt].consumesFood : false;
-  const meal = mealDuration(state);
+  const meal = mealDuration(state) * traitMealMult(v);
   const level = 1 + SKILL_ORDER.reduce((s, k) => s + v.skills[k].level, 0);
+  const trait = traitOf(v);
   return (
     <>
       <PanelHeader
         title={v.name}
-        subtitle={`Villager level ${level} · ${home ? `lives in the ${BUILDINGS[home.defId].name}` : 'no home yet'}`}
+        subtitle={`Villager level ${level} · ${trait.name}: ${trait.description} · ${home ? `lives in the ${BUILDINGS[home.defId].name}` : 'no home yet'}`}
         media={<Portrait appearance={v.appearance} size={64} ring={task.idle ? 'idle' : task.warning ? 'warn' : null} />}
         onClose={() => ui.select(null)}
       />
@@ -641,6 +646,7 @@ function BuildingPanel({ id }: { id: number }) {
               ) : null}
             </Section>
           ) : null}
+          {b.defId === 'cookhouse' && b.status === 'complete' ? <BrewSection /> : null}
           {b.defId === 'academy' ? (
             <Section title="Research">
               {state.research.active ? (
