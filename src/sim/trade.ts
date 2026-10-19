@@ -1,4 +1,4 @@
-import { BOOSTS, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS, type BoostId } from '../config/trade';
+import { BASE_BOOST_ORDER, BOOSTS, MERCHANTS, REPUTATION_ROAD, TRADE_BALANCE, TRADE_GOODS, TRADING_POST_LEVELS, type BoostId } from '../config/trade';
 import type { JobType } from '../config/jobs';
 import type { ResourceId } from '../config/resources';
 import { mulberry32 } from '../world/noise';
@@ -74,7 +74,8 @@ function rollShip(state: GameState): MerchantShip {
       filled: false,
     });
   }
-  const boosts = Object.keys(BOOSTS) as BoostId[];
+  // Merchants sell the ordinary tonics (stronger ones are only brewed).
+  const boosts: BoostId[] = [...BASE_BOOST_ORDER];
   const wares: MerchantWare[] = [];
   while (wares.length < B.wares) {
     const boost = boosts[Math.floor(rand(state) * boosts.length) % boosts.length];
@@ -192,17 +193,22 @@ export function useBoost(state: GameState, boost: BoostId, sink: EventSink): Com
 }
 
 /** Combined multiplier from active tonics for a job, and their names (for rate breakdowns). */
+/**
+ * The tonic boost for a job and the tonic giving it. Only the strongest working tonic for a
+ * job counts (a Grand brew doesn't stack on the ordinary one); each job belongs to one tonic
+ * family, so ordinary tonics behave as they always have.
+ */
 export function boostFor(state: GameState, job: JobType): { mult: number; names: string[] } {
   let mult = 1;
-  const names: string[] = [];
+  let name: string | null = null;
   for (const a of state.trade.active) {
     const def = BOOSTS[a.boost];
-    if (def.jobs.includes(job)) {
-      mult *= def.mult;
-      names.push(def.name);
+    if (def.jobs.includes(job) && def.mult > mult) {
+      mult = def.mult;
+      name = def.name;
     }
   }
-  return { mult, names };
+  return { mult, names: name ? [name] : [] };
 }
 
 export function nextRoadMilestone(state: GameState): (typeof REPUTATION_ROAD)[number] | null {

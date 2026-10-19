@@ -57,6 +57,8 @@ function effectText(e: ResearchEffect): string {
       return `Harvests +${Math.round((e.mult - 1) * 100)}% grain`;
     case 'unlockValley':
       return `Opens the road to ${IDENTITY.valleyName}`;
+    case 'buildingLevel':
+      return `The ${BUILDINGS[e.building].name} can reach level ${e.level}`;
   }
 }
 

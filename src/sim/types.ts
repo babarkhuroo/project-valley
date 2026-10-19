@@ -333,4 +333,78 @@ export interface GameState {
   lastProcessedAt: number;
   /** Monotonic save counter used to reject stale writes. */
   revision: number;
+  /** The requests board (null/absent until it opens at village level 3; sim/requests.ts). */
+  requests?: RequestBoard | null;
+  /** Wild finds to gather (sim/wilds.ts). */
+  wilds?: WildState | null;
+  /** Level-up chests (sim/chests.ts). */
+  chests?: ChestState | null;
+  /** The Cookhouse kettle and the herb pouch (sim/brewing.ts). */
+  brewing?: BrewState | null;
+}
+
+export interface VillageRequest {
+  id: number;
+  who: string;
+  why: string;
+  wants: Partial<Record<ResourceId, number>>;
+  xp: number;
+  coins: number;
+  /** A tonic thrown in, now and then. */
+  tonic: BoostId | null;
+  /** Sim time it appears on the board. */
+  readyAt: number;
+}
+
+export interface RequestBoard {
+  slots: VillageRequest[];
+  rng: number;
+  nextId: number;
+  /** Requests fulfilled so far. */
+  done: number;
+}
+
+export type WildKind = 'berries' | 'mushrooms' | 'herbs';
+
+export interface WildSpot {
+  id: number;
+  kind: WildKind;
+  x: number;
+  z: number;
+  /** Sim time it shows. */
+  readyAt: number;
+}
+
+export interface WildState {
+  spots: WildSpot[];
+  rng: number;
+  nextId: number;
+  gathered: number;
+}
+
+export interface ChestState {
+  /** The village level when chests began (no chests for levels reached before). */
+  baseLevel: number;
+  opened: number;
+  rng: number;
+}
+
+export interface ChestReward {
+  level: number;
+  coins: number;
+  goods: Partial<Record<ResourceId, number>>;
+  tonics: BoostId[];
+}
+
+export interface BrewingNow {
+  /** The tonic being brewed (its Strong/Grand id). */
+  tonic: BoostId;
+  /** Sim time it's ready. */
+  doneAt: number;
+}
+
+export interface BrewState {
+  herbs: number;
+  kettles: BrewingNow[];
+  brewed: number;
 }

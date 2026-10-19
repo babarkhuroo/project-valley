@@ -7,7 +7,7 @@ import type { ValleyBuildingId } from '../config/valley';
 import type { BoostId } from '../config/trade';
 import type { FestivalId } from '../config/festivals';
 import type { CoopRecipeId } from '../config/millrace';
-import type { ValleyTarget } from './types';
+import type { ChestReward, ValleyTarget, WildKind } from './types';
 
 /**
  * Transient facts emitted while the simulation advances. They are not saved: the
@@ -56,7 +56,11 @@ export type SimEvent =
   | { type: 'boostStarted'; boost: BoostId }
   | { type: 'boostEnded'; boost: BoostId }
   | { type: 'roadReward'; index: number }
-  | { type: 'valleyAccepted'; building: ValleyBuildingId; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number };
+  | { type: 'valleyAccepted'; building: ValleyBuildingId; accepted: Partial<Record<ResourceId, number>>; returned: Partial<Record<ResourceId, number>>; reputation: number }
+  | { type: 'requestFulfilled'; requestId: number; who: string; wants: Partial<Record<ResourceId, number>>; xp: number; coins: number; tonic: BoostId | null }
+  | { type: 'wildGathered'; spotId: number; kind: WildKind; x: number; z: number; gifts: Partial<Record<ResourceId | 'herbs', number>>; coins: number; tonic: BoostId | null }
+  | { type: 'chestOpened'; reward: ChestReward }
+  | { type: 'tonicBrewed'; tonic: BoostId };
 
 export type IdleReason = 'depleted' | 'unassigned' | 'finished' | 'unreachable' | 'removed';
 

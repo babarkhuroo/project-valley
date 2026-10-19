@@ -105,6 +105,9 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     upgrades: [
       { cost: { resources: { timber: 120, clay: 50, stone: 40 }, work: 60 }, storage: { stew: 60 }, slots: 2, outputMult: 1.2, xp: 40 },
       { cost: { resources: { timber: 160, clay: 60, stone: 100, bricks: 30 }, work: 90 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stew: 90 }, outputMult: 1.4, xp: 60 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 260, stone: 200, planks: 80, bricks: 80 }, work: 120 }, requiresResearch: 'guildKitchens', minPlayerLevel: 7, storage: { stew: 130 }, slots: 3, outputMult: 1.6, xp: 90 },
+      { cost: { resources: { timber: 380, stone: 300, planks: 150, bricks: 160 }, work: 150 }, requiresResearch: 'guildKitchens', minPlayerLevel: 8, storage: { stew: 180 }, outputMult: 1.8, xp: 130 },
     ],
   },
   lodge: {
@@ -144,6 +147,9 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     upgrades: [
       { cost: { resources: { timber: 80, clay: 30 }, work: 30 }, storage: { timber: 200 }, xp: 20 },
       { cost: { resources: { timber: 100, clay: 40, stone: 60, planks: 20 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { timber: 320 }, xp: 35 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 260, stone: 140, planks: 80, bricks: 40 }, work: 70 }, requiresResearch: 'grandYards', minPlayerLevel: 7, storage: { timber: 480 }, xp: 70 },
+      { cost: { resources: { timber: 400, stone: 260, planks: 160, bricks: 120 }, work: 100 }, requiresResearch: 'grandStores', minPlayerLevel: 8, storage: { timber: 700 }, xp: 110 },
     ],
   },
   clayShed: {
@@ -166,6 +172,9 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     upgrades: [
       { cost: { resources: { timber: 90, clay: 40 }, work: 30 }, storage: { clay: 170 }, xp: 20 },
       { cost: { resources: { timber: 100, clay: 60, stone: 60, planks: 20 }, work: 45 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { clay: 260 }, xp: 35 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 200, clay: 160, stone: 120, planks: 70, bricks: 40 }, work: 70 }, requiresResearch: 'grandYards', minPlayerLevel: 7, storage: { clay: 400 }, xp: 70 },
+      { cost: { resources: { timber: 320, clay: 260, stone: 220, planks: 140, bricks: 110 }, work: 100 }, requiresResearch: 'grandStores', minPlayerLevel: 8, storage: { clay: 600 }, xp: 110 },
     ],
   },
   stoneYard: {
@@ -188,6 +197,9 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     upgrades: [
       { cost: { resources: { timber: 80, clay: 30, stone: 40 }, work: 35 }, storage: { stone: 170 }, xp: 25 },
       { cost: { resources: { timber: 100, clay: 60, stone: 100, planks: 20 }, work: 50 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { stone: 260 }, xp: 40 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 240, stone: 180, planks: 80, bricks: 50 }, work: 70 }, requiresResearch: 'grandYards', minPlayerLevel: 7, storage: { stone: 400 }, xp: 70 },
+      { cost: { resources: { timber: 360, stone: 320, planks: 160, bricks: 120 }, work: 100 }, requiresResearch: 'grandStores', minPlayerLevel: 8, storage: { stone: 600 }, xp: 110 },
     ],
   },
   sawmill: {
@@ -208,6 +220,8 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 2.6,
     upgrades: [
       { cost: { resources: { timber: 140, stone: 60, planks: 30 }, work: 60 }, storage: { planks: 80 }, slots: 2, outputMult: 1.2, xp: 45 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 220, stone: 120, planks: 80, bricks: 40 }, work: 90 }, requiresResearch: 'fineJoinery', minPlayerLevel: 6, storage: { planks: 140 }, slots: 3, outputMult: 1.4, xp: 70 },
     ],
   },
   brickworks: {
@@ -228,6 +242,8 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     height: 2.8,
     upgrades: [
       { cost: { resources: { timber: 120, stone: 60, planks: 30, bricks: 30 }, work: 70 }, storage: { bricks: 80 }, slots: 2, outputMult: 1.2, xp: 55 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 200, stone: 140, planks: 60, bricks: 70 }, work: 100 }, requiresResearch: 'fineJoinery', minPlayerLevel: 6, storage: { bricks: 140 }, slots: 3, outputMult: 1.4, xp: 80 },
     ],
   },
   warehouse: {
@@ -265,7 +281,11 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     operate: { job: 'chop', slots: 2 },
     model: 'woodlot',
     height: 2.8,
-    upgrades: [{ cost: { resources: { timber: 120, planks: 40, stone: 40 }, work: 60 }, slots: 3, outputMult: 1.2, xp: 40 }],
+    upgrades: [
+      { cost: { resources: { timber: 120, planks: 40, stone: 40 }, work: 60 }, slots: 3, outputMult: 1.2, xp: 40 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 180, planks: 80, stone: 80 }, work: 80 }, requiresResearch: 'deepSeams', minPlayerLevel: 6, slots: 4, outputMult: 1.4, xp: 60 },
+    ],
   },
   clayPit: {
     id: 'clayPit',
@@ -284,7 +304,11 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     operate: { job: 'dig', slots: 2 },
     model: 'clayPit',
     height: 1.4,
-    upgrades: [{ cost: { resources: { timber: 100, planks: 40, bricks: 20 }, work: 55 }, slots: 3, outputMult: 1.2, xp: 40 }],
+    upgrades: [
+      { cost: { resources: { timber: 100, planks: 40, bricks: 20 }, work: 55 }, slots: 3, outputMult: 1.2, xp: 40 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 160, planks: 80, bricks: 60 }, work: 80 }, requiresResearch: 'deepSeams', minPlayerLevel: 6, slots: 4, outputMult: 1.4, xp: 60 },
+    ],
   },
   quarry: {
     id: 'quarry',
@@ -300,7 +324,11 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     operate: { job: 'quarry', slots: 2 },
     model: 'quarry',
     height: 2.6,
-    upgrades: [{ cost: { resources: { timber: 160, planks: 60, bricks: 40 }, work: 80 }, slots: 3, outputMult: 1.2, xp: 60 }],
+    upgrades: [
+      { cost: { resources: { timber: 160, planks: 60, bricks: 40 }, work: 80 }, slots: 3, outputMult: 1.2, xp: 60 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 220, planks: 100, bricks: 80 }, work: 110 }, requiresResearch: 'deepSeams', minPlayerLevel: 6, slots: 4, outputMult: 1.4, xp: 80 },
+    ],
   },
   field: {
     id: 'field',
@@ -338,7 +366,11 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     storage: { grain: 80 },
     model: 'granary',
     height: 2.6,
-    upgrades: [{ cost: { resources: { timber: 80, stone: 40, planks: 20 }, work: 35 }, storage: { grain: 140 }, xp: 25 }],
+    upgrades: [
+      { cost: { resources: { timber: 80, stone: 40, planks: 20 }, work: 35 }, storage: { grain: 140 }, xp: 25 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 140, stone: 80, planks: 50, bricks: 30 }, work: 60 }, requiresResearch: 'guildKitchens', minPlayerLevel: 6, storage: { grain: 220 }, xp: 45 },
+    ],
   },
   house: {
     id: 'house',
@@ -375,6 +407,9 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     upgrades: [
       { cost: { resources: { timber: 140, clay: 60, stone: 50 }, work: 70 }, storage: { knowledge: 50 }, slots: 2, outputMult: 1.2, xp: 45 },
       { cost: { resources: { timber: 160, clay: 80, stone: 120, planks: 40, bricks: 30 }, work: 100 }, requiresResearch: 'masonry', minPlayerLevel: 3, storage: { knowledge: 80 }, outputMult: 1.4, xp: 70 },
+      // Levels opened by the sixth research tier.
+      { cost: { resources: { timber: 280, stone: 220, planks: 100, bricks: 80 }, work: 130 }, requiresResearch: 'learnedSociety', minPlayerLevel: 7, storage: { knowledge: 120 }, slots: 3, outputMult: 1.6, xp: 100 },
+      { cost: { resources: { timber: 400, stone: 320, planks: 180, bricks: 160 }, work: 160 }, requiresResearch: 'learnedSociety', minPlayerLevel: 8, storage: { knowledge: 170 }, outputMult: 1.8, xp: 140 },
     ],
   },
   cottage: {

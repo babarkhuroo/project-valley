@@ -40,7 +40,10 @@ export const TRADE_GOODS: { resource: ResourceId; requires: ResearchId | null; v
   { resource: 'grain', requires: 'fieldSowing', value: 1.1 },
 ];
 
-export type BoostId = 'woodTonic' | 'minersMeal' | 'farmersTea' | 'researchBrew' | 'buildersBrew' | 'craftersOil';
+/** The ordinary tonics (merchants, rewards). */
+export type BaseBoostId = 'woodTonic' | 'minersMeal' | 'farmersTea' | 'researchBrew' | 'buildersBrew' | 'craftersOil';
+/** Every tonic: the ordinary ones and their Strong and Grand brews (brewed at the Cookhouse, sim/brewing.ts). */
+export type BoostId = BaseBoostId | `${BaseBoostId}Strong` | `${BaseBoostId}Grand`;
 
 export interface BoostDef {
   id: BoostId;
@@ -56,7 +59,7 @@ export interface BoostDef {
   color: string;
 }
 
-export const BOOSTS: Record<BoostId, BoostDef> = {
+const BASE_BOOSTS: Record<BaseBoostId, BoostDef> = {
   woodTonic: { id: 'woodTonic', name: 'Woodworker Tonic', description: 'Woodcutting +50% for 30 minutes.', jobs: ['chop'], mult: 1.5, seconds: 1800, price: 60, color: '#7aa84f' },
   minersMeal: { id: 'minersMeal', name: "Miner's Meal", description: 'Digging and quarrying +50% for 30 minutes.', jobs: ['dig', 'quarry'], mult: 1.5, seconds: 1800, price: 70, color: '#c7764a' },
   farmersTea: { id: 'farmersTea', name: "Farmer's Tea", description: 'Cooking and farming +50% for 30 minutes.', jobs: ['cook', 'farm'], mult: 1.5, seconds: 1800, price: 50, color: '#e0b040' },
@@ -65,7 +68,26 @@ export const BOOSTS: Record<BoostId, BoostDef> = {
   craftersOil: { id: 'craftersOil', name: "Crafter's Oil", description: 'Workshop crafting +50% for 30 minutes.', jobs: ['craft'], mult: 1.5, seconds: 1800, price: 70, color: '#b36fc2' },
 };
 
-export const BOOST_ORDER: BoostId[] = ['woodTonic', 'minersMeal', 'farmersTea', 'researchBrew', 'buildersBrew', 'craftersOil'];
+export const BASE_BOOST_ORDER: BaseBoostId[] = ['woodTonic', 'minersMeal', 'farmersTea', 'researchBrew', 'buildersBrew', 'craftersOil'];
+
+/** Stronger brews of every tonic: same jobs, a bigger boost for longer (ordinary is +50% for 30 minutes). */
+export const TONIC_STRENGTHS = [
+  { suffix: 'Strong', label: 'Strong', mult: 1.75, seconds: 2700, priceMult: 2 },
+  { suffix: 'Grand', label: 'Grand', mult: 2, seconds: 3600, priceMult: 3.5 },
+] as const;
+
+const STRONGER: BoostDef[] = TONIC_STRENGTHS.flatMap((s) =>
+  BASE_BOOST_ORDER.map((id) => {
+    const b = BASE_BOOSTS[id];
+    const description = b.description.replace(/\+\d+%/, `+${Math.round((s.mult - 1) * 100)}%`).replace(/\d+ minutes/, `${Math.round(s.seconds / 60)} minutes`);
+    return { ...b, id: `${id}${s.suffix}` as BoostId, name: `${s.label} ${b.name}`, description, mult: s.mult, seconds: s.seconds, price: Math.round(b.price * s.priceMult) };
+  }),
+);
+
+export const BOOSTS = Object.fromEntries([...Object.values(BASE_BOOSTS), ...STRONGER].map((b) => [b.id, b])) as Record<BoostId, BoostDef>;
+
+/** Every tonic, ordinary ones first, then the Strong brews, then the Grand. */
+export const BOOST_ORDER: BoostId[] = [...BASE_BOOST_ORDER, ...STRONGER.map((b) => b.id)];
 
 /** What each Trading Post level does for every member's merchant visits. */
 export const TRADING_POST_LEVELS = [

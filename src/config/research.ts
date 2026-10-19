@@ -32,7 +32,13 @@ export type ResearchId =
   | 'buildersPlans'
   | 'valleyRoad'
   | 'fieldSowing'
-  | 'cropRotation';
+  | 'cropRotation'
+  | 'deepSeams'
+  | 'grandYards'
+  | 'guildKitchens'
+  | 'grandStores'
+  | 'learnedSociety'
+  | 'fineJoinery';
 
 export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge' | 'crafting' | 'valley';
 
@@ -50,7 +56,9 @@ export type ResearchEffect =
   /** Informational: opens building upgrades up to this level (checked by upgrade definitions). */
   | { type: 'upgradeTier'; level: number }
   /** Opens the road to the shared Valley. */
-  | { type: 'unlockValley' };
+  | { type: 'unlockValley' }
+  /** Informational: this building can now reach this level (checked by its upgrade definitions). */
+  | { type: 'buildingLevel'; building: BuildingId; level: number };
 
 export interface ResearchDef {
   id: ResearchId;
@@ -448,6 +456,105 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     ],
     xp: 300,
     row: 3,
+  },
+  // Tier 6: later building levels and lasting bonuses.
+  deepSeams: {
+    id: 'deepSeams',
+    name: 'Deep Seams',
+    description: 'Shored galleries and stout winches. Clay Pits, Quarries and Woodlots can be raised to level 3, and digging and quarrying go faster.',
+    category: 'resources',
+    tier: 6,
+    cost: 1200,
+    prereqs: ['stoneQuarry'],
+    effects: [
+      { type: 'buildingLevel', building: 'clayPit', level: 3 },
+      { type: 'buildingLevel', building: 'quarry', level: 3 },
+      { type: 'buildingLevel', building: 'woodlot', level: 3 },
+      { type: 'jobRate', job: 'dig', mult: 1.15 },
+      { type: 'jobRate', job: 'quarry', mult: 1.15 },
+    ],
+    xp: 120,
+    row: 1,
+  },
+  grandYards: {
+    id: 'grandYards',
+    name: 'Grand Yards',
+    description: 'Covered bays and a proper crane. Timber Yards, Clay Sheds and Stone Yards can be raised to level 4.',
+    category: 'storage',
+    tier: 6,
+    cost: 1100,
+    prereqs: ['organisedStores'],
+    effects: [
+      { type: 'buildingLevel', building: 'timberYard', level: 4 },
+      { type: 'buildingLevel', building: 'clayShed', level: 4 },
+      { type: 'buildingLevel', building: 'stoneYard', level: 4 },
+    ],
+    xp: 120,
+    row: 2,
+  },
+  guildKitchens: {
+    id: 'guildKitchens',
+    name: 'Guild Kitchens',
+    description: 'A cooks\' guild sets up in the village. The Cookhouse can reach levels 4 and 5, the Granary level 3, and each bowl of Stew lasts longer.',
+    category: 'food',
+    tier: 6,
+    cost: 1300,
+    prereqs: ['cropRotation'],
+    effects: [
+      { type: 'buildingLevel', building: 'cookhouse', level: 5 },
+      { type: 'buildingLevel', building: 'granary', level: 3 },
+      { type: 'mealDuration', mult: 1.15 },
+    ],
+    xp: 140,
+    row: 3,
+  },
+  grandStores: {
+    id: 'grandStores',
+    name: 'Grand Stores',
+    description: 'Stone-floored storehouses built to last. The yards and sheds can be raised to level 5, and every store of Timber, Clay and Stone holds more.',
+    category: 'storage',
+    tier: 6,
+    cost: 1800,
+    prereqs: ['grandYards', 'masterBuilders'],
+    effects: [
+      { type: 'buildingLevel', building: 'timberYard', level: 5 },
+      { type: 'buildingLevel', building: 'clayShed', level: 5 },
+      { type: 'buildingLevel', building: 'stoneYard', level: 5 },
+      { type: 'storage', mult: 1.2, resources: ['timber', 'clay', 'stone'] },
+    ],
+    xp: 180,
+    row: 4,
+  },
+  learnedSociety: {
+    id: 'learnedSociety',
+    name: 'Learned Society',
+    description: 'Scholars from across the valley meet at your Academy. It can reach levels 4 and 5, and practice lifts skills one level higher.',
+    category: 'knowledge',
+    tier: 6,
+    cost: 1500,
+    prereqs: ['masterBuilders'],
+    effects: [
+      { type: 'buildingLevel', building: 'academy', level: 5 },
+      { type: 'practiceCap', add: 1 },
+    ],
+    xp: 160,
+    row: 5,
+  },
+  fineJoinery: {
+    id: 'fineJoinery',
+    name: 'Fine Joinery',
+    description: 'Jigs, kilns and patient hands. The Sawmill and Brickworks can be raised to level 3, and crafting goes faster.',
+    category: 'crafting',
+    tier: 6,
+    cost: 1400,
+    prereqs: ['masterCrafts'],
+    effects: [
+      { type: 'buildingLevel', building: 'sawmill', level: 3 },
+      { type: 'buildingLevel', building: 'brickworks', level: 3 },
+      { type: 'jobRate', job: 'craft', mult: 1.2 },
+    ],
+    xp: 150,
+    row: 6,
   },
 };
 

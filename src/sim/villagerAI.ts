@@ -19,6 +19,7 @@ import { RECIPES } from '../config/recipes';
 import { cookPot, finishFarmBatch } from './farming';
 import type { BuildingInstance, GameState, Job, ResourceNode, Vec2, Villager, WalkPurpose } from './types';
 import type { World } from './world';
+import { traitJobMult, traitMealMult, traitOf, traitWalkMult } from './traits';
 
 /**
  * Villager behaviour as an event-driven state machine.
@@ -92,6 +93,8 @@ export function workRateBreakdown(state: GameState, v: Villager, jt: JobType, jo
   if (research && research.mult !== 1) factors.push({ label: 'Research', mult: research.mult });
   const tonic = boostFor(state, jt);
   if (tonic.mult !== 1) factors.push({ label: tonic.names.join(' + '), mult: tonic.mult });
+  const trait = traitJobMult(v, jt);
+  if (trait !== 1) factors.push({ label: traitOf(v).name, mult: trait });
   const guild = state.valley.bonuses.jobRate[jt];
   if (guild && guild !== 1) factors.push({ label: 'Valley guild', mult: guild });
   if (job?.kind === 'operate') {
@@ -213,7 +216,7 @@ export function walkTo(state: GameState, world: World, v: Villager, target: Vec2
   const from = villagerPosition(v, state.time);
   const points = findPath(world.grid, from, target);
   if (!points) return false;
-  const speed = BALANCE.villager.walkSpeed * (v.carrying ? BALANCE.villager.carrySpeedMult : 1);
+  const speed = BALANCE.villager.walkSpeed * (v.carrying ? BALANCE.villager.carrySpeedMult : 1) * traitWalkMult(v);
   v.pos = { x: from.x, z: from.z };
   v.route = buildRoute(world.grid, points, state.time, speed, BALANCE.villager.pathSpeedMult);
   v.activity = 'walking';
@@ -567,7 +570,7 @@ function eat(state: GameState, v: Villager, sink: EventSink): void {
   if (state.resources.stew >= 1) {
     state.resources.stew -= 1;
     bumpStat(state, 'consumed.stew');
-    v.energy = mealDuration(state);
+    v.energy = mealDuration(state) * traitMealMult(v);
     v.hungry = false;
     sink.push({ type: 'ate', villagerId: v.id });
   } else if (!v.hungry) {
