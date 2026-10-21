@@ -32,21 +32,49 @@ export interface ProgressEvent {
   data: Record<string, unknown>;
 }
 
+/** A player reported a Valley chat message (the message is copied: chat is capped and moves on). */
+export interface ChatReport {
+  reporterId: string;
+  at: number;
+  valleyId: string;
+  messageId: number;
+  /** Who wrote it, and the name they went by. */
+  memberId: string;
+  memberName: string;
+  text: string;
+  reason: ReportReason;
+  note: string;
+}
+
+export const REPORT_REASONS = ['rude', 'bullying', 'spam', 'personal', 'other'] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
 export interface PlaytestStore {
   addFeedback(f: FeedbackRecord): Promise<void>;
   addEvents(events: ProgressEvent[]): Promise<void>;
+  addReport(r: ChatReport): Promise<void>;
   feedback(limit: number): Promise<FeedbackRecord[]>;
   events(): Promise<ProgressEvent[]>;
-  /** Removes a player's notes and events (their account was deleted). */
+  /** Newest first. */
+  reports(limit: number): Promise<ChatReport[]>;
+  /** Removes a player's notes, events and the reports they sent (their account was deleted). */
   forget(playerId: string): Promise<void>;
 }
 
 export class MemoryPlaytestStore implements PlaytestStore {
   notes: FeedbackRecord[] = [];
   log: ProgressEvent[] = [];
+  chatReports: ChatReport[] = [];
   async forget(playerId: string): Promise<void> {
     this.notes = this.notes.filter((n) => n.playerId !== playerId);
     this.log = this.log.filter((e) => e.playerId !== playerId);
+    this.chatReports = this.chatReports.filter((r) => r.reporterId !== playerId);
+  }
+  async addReport(r: ChatReport): Promise<void> {
+    this.chatReports.push(r);
+  }
+  async reports(limit: number): Promise<ChatReport[]> {
+    return this.chatReports.slice(-limit).reverse();
   }
   async addFeedback(f: FeedbackRecord): Promise<void> {
     this.notes.push(f);
@@ -89,9 +117,15 @@ export class FilePlaytestStore implements PlaytestStore {
   events(): Promise<ProgressEvent[]> {
     return this.read<ProgressEvent>('progress.jsonl');
   }
+  addReport(r: ChatReport): Promise<void> {
+    return this.append('reports.jsonl', [r]);
+  }
+  async reports(limit: number): Promise<ChatReport[]> {
+    return (await this.read<ChatReport>('reports.jsonl')).slice(-limit).reverse();
+  }
   async forget(playerId: string): Promise<void> {
-    for (const file of ['feedback.jsonl', 'progress.jsonl']) {
-      const rows = (await this.read<{ playerId: string }>(file)).filter((r) => r.playerId !== playerId);
+    for (const file of ['feedback.jsonl', 'progress.jsonl', 'reports.jsonl']) {
+      const rows = (await this.read<{ playerId?: string; reporterId?: string }>(file)).filter((r) => (r.playerId ?? r.reporterId) !== playerId);
       await fs.mkdir(this.dir, { recursive: true });
       await fs.writeFile(path.join(this.dir, file), rows.map((r) => JSON.stringify(r) + '\n').join(''));
     }
@@ -103,6 +137,20 @@ export class PgPlaytestStore implements PlaytestStore {
   async forget(playerId: string): Promise<void> {
     await this.pool.query('DELETE FROM playtest_feedback WHERE player_id = $1', [playerId]);
     await this.pool.query('DELETE FROM playtest_events WHERE player_id = $1', [playerId]);
+    await this.pool.query('DELETE FROM chat_reports WHERE reporter_id = $1', [playerId]);
+  }
+  async addReport(r: ChatReport): Promise<void> {
+    await this.pool.query(
+      'INSERT INTO chat_reports (reporter_id, at, valley_id, message_id, member_id, member_name, text, reason, note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+      [r.reporterId, r.at, r.valleyId, r.messageId, r.memberId, r.memberName, r.text, r.reason, r.note],
+    );
+  }
+  async reports(limit: number): Promise<ChatReport[]> {
+    const { rows } = await this.pool.query<{ reporter_id: string; at: number; valley_id: string; message_id: number; member_id: string; member_name: string; text: string; reason: ReportReason; note: string }>(
+      'SELECT reporter_id, at, valley_id, message_id, member_id, member_name, text, reason, note FROM chat_reports ORDER BY at DESC, id DESC LIMIT $1',
+      [limit],
+    );
+    return rows.map((r) => ({ reporterId: r.reporter_id, at: r.at, valleyId: r.valley_id, messageId: r.message_id, memberId: r.member_id, memberName: r.member_name, text: r.text, reason: r.reason, note: r.note }));
   }
   async addFeedback(f: FeedbackRecord): Promise<void> {
     await this.pool.query('INSERT INTO playtest_feedback (player_id, at, mood, text, context) VALUES ($1, $2, $3, $4, $5::jsonb)', [f.playerId, f.at, f.mood, f.text, JSON.stringify(f.context)]);
@@ -191,6 +239,8 @@ export interface PlaytestReport {
   players: number;
   sharing: number;
   feedback: FeedbackRecord[];
+  /** Reported chat messages, newest first. */
+  reports: ChatReport[];
   /** Per milestone: how many players reached it, and the median sim minutes / play minutes it took. */
   milestones: { kind: string; label: string; players: number; medianSimMinutes: number; medianPlayMinutes: number }[];
   /** Per player: furthest level, buildings, minutes played, last seen. */
@@ -208,6 +258,7 @@ function median(xs: number[]): number {
 export async function playtestReport(store: PlaytestStore): Promise<PlaytestReport> {
   const events = await store.events();
   const feedback = await store.feedback(200);
+  const reports = await store.reports(200);
   const byPlayer = new Map<string, ProgressEvent[]>();
   for (const e of events) {
     const list = byPlayer.get(e.playerId) ?? [];
@@ -243,7 +294,7 @@ export async function playtestReport(store: PlaytestStore): Promise<PlaytestRepo
   const milestones = [...firsts.entries()]
     .map(([kind, f]) => ({ kind, label: f.label, players: f.sim.length, medianSimMinutes: Math.round(median(f.sim)), medianPlayMinutes: Math.round(median(f.play)) }))
     .sort((a, b) => a.medianSimMinutes - b.medianSimMinutes);
-  return { players: new Set([...byPlayer.keys(), ...feedback.map((f) => f.playerId)]).size, sharing: byPlayer.size, feedback, milestones, roster: roster.sort((a, b) => b.lastSeen - a.lastSeen) };
+  return { players: new Set([...byPlayer.keys(), ...feedback.map((f) => f.playerId)]).size, sharing: byPlayer.size, feedback, reports, milestones, roster: roster.sort((a, b) => b.lastSeen - a.lastSeen) };
 }
 
 export function sendJsonReply(res: ServerResponse, status: number, body: unknown): void {

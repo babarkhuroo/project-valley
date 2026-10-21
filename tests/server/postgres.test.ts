@@ -132,4 +132,15 @@ describe.skipIf(!URL)('postgres stores', () => {
     expect(r.feedback[0]).toMatchObject({ text: 'where is clay?', mood: 'stuck', context: { level: 2 } });
     expect(r.milestones.find((m) => m.label === 'Built Academy')).toMatchObject({ players: 2, medianSimMinutes: 7, medianPlayMinutes: 6 });
   });
+
+  it('keeps chat reports, newest first, and forgets the reporter’s', async () => {
+    const store = new PgPlaytestStore(db.pool);
+    const base = { valleyId: 'v-1', memberId: 'p-pg-rude-01', memberName: 'Rook', reason: 'rude' as const, note: '' };
+    await store.addReport({ ...base, reporterId: 'p-pg-rep-01', at: 2000, messageId: 4, text: 'first' });
+    await store.addReport({ ...base, reporterId: 'p-pg-rep-02', at: 3000, messageId: 9, text: 'second', note: 'again' });
+    expect((await playtestReport(store)).reports.map((r) => r.text)).toEqual(['second', 'first']);
+    expect((await store.reports(10))[0]).toMatchObject({ messageId: 9, memberName: 'Rook', note: 'again', at: 3000 });
+    await store.forget('p-pg-rep-02');
+    expect((await store.reports(10)).map((r) => r.messageId)).toEqual([4]);
+  });
 });

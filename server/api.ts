@@ -3,7 +3,8 @@ import type { SaveStore } from './saveStore.ts';
 import type { ResourceBag } from '../src/valley/types.ts';
 import type { JoinOutcome, ValleyService } from './valleyService.ts';
 import type { AuthResult, AuthService } from './auth.ts';
-import { isAdmin, playtestReport, receiveFeedback, receiveProgress, type PlaytestStore } from './playtest.ts';
+import { isAdmin, playtestReport, receiveFeedback, receiveProgress, REPORT_REASONS, type PlaytestStore, type ReportReason } from './playtest.ts';
+import { maskRude } from '../src/valley/chatFilter.ts';
 import { RateLimiter, clientIp } from './rateLimit.ts';
 
 const PLAYER_ID = /^[a-z0-9-]{8,64}$/;
@@ -46,6 +47,9 @@ function readBody(req: IncomingMessage): Promise<string> {
  *   GET    /api/valley/:playerId              -> { valley, memberId, now } | 404
  *   POST   /api/valley/:playerId/join         <- { name, villageName }
  *   POST   /api/valley/:playerId/contribute   <- { opId, building, resources } -> { result, valley, … }
+ *   POST   /api/valley/:playerId/report       <- { messageId, reason, note? }  (someone else's chat message)
+ *   GET    /api/admin/playtest                -> feedback, reported messages, milestones (ADMIN_TOKEN)
+ *   POST   /api/admin/moderate                <- { valleyId, messageId?, member?, mute? }  (ADMIN_TOKEN)
  *
  *   POST   /api/session                       <- { playerId? } -> { playerId, token, account }
  *   GET    /api/me
@@ -66,8 +70,8 @@ export interface ApiOptions {
   playtest?: PlaytestStore;
   /** Bearer token for `GET /api/admin/playtest` (unset: the report is unavailable). */
   adminToken?: string;
-  /** Request limits (tests pass their own). */
-  limits?: Record<'session' | 'login' | 'register' | 'join' | 'progress', RateLimiter>;
+  /** Request limits (tests pass their own; missing ones get the defaults). */
+  limits?: Partial<Record<'session' | 'login' | 'register' | 'join' | 'progress' | 'report', RateLimiter>>;
 }
 
 function bearer(req: IncomingMessage): string | null {
@@ -85,13 +89,15 @@ const TOO_MANY = { error: 'Too many requests — wait a little and try again' };
 
 export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, options: ApiOptions = {}) {
   const auth = options.auth;
-  // Per address: new guest villages, sign-ins, new accounts. Per player: invite-code joins, progress batches.
-  const limits = options.limits ?? {
+  // Per address: new guest villages, sign-ins, new accounts. Per player: invite-code joins, progress batches, chat reports.
+  const limits = {
     session: new RateLimiter(30, 3_600_000),
     login: new RateLimiter(20, 600_000),
     register: new RateLimiter(10, 3_600_000),
     join: new RateLimiter(20, 600_000),
     progress: new RateLimiter(30, 600_000),
+    report: new RateLimiter(20, 3_600_000),
+    ...options.limits,
   };
   return async (req: IncomingMessage, res: ServerResponse, next: Next): Promise<void> => {
     const url = new URL(req.url ?? '/', 'http://localhost');
@@ -147,6 +153,21 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
         sendJson(res, 200, await playtestReport(playtest));
         return;
       }
+      if (valleys && url.pathname === '/api/admin/moderate' && req.method === 'POST') {
+        if (!isAdmin(req, options.adminToken)) {
+          sendJson(res, 401, { error: 'admin token required' });
+          return;
+        }
+        const body = json();
+        const action = {
+          messageId: typeof body.messageId === 'number' ? body.messageId : undefined,
+          member: typeof body.member === 'string' ? body.member : undefined,
+          mute: typeof body.mute === 'boolean' ? body.mute : undefined,
+        };
+        const done = typeof body.valleyId === 'string' && (await valleys.moderate(body.valleyId, action));
+        sendJson(res, done ? 200 : 404, done ? { ok: true } : { error: 'nothing to do' });
+        return;
+      }
       if (url.pathname === '/api/valleys' && req.method === 'GET' && valleys) {
         if (auth && !(await auth.authenticate(token))) {
           sendJson(res, 401, { error: 'Not signed in' });
@@ -164,6 +185,16 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
           sendJson(res, 401, { error: 'not signed in as this player' });
           return;
         }
+      }
+      const reportMatch = /^\/api\/valley\/([^/]+)\/report$/.exec(url.pathname);
+      if (reportMatch && req.method === 'POST' && valleys && options.playtest) {
+        if (!limits.report.take(reportMatch[1])) {
+          sendJson(res, 429, TOO_MANY);
+          return;
+        }
+        const out = await reportMessage(valleys, options.playtest, reportMatch[1], json());
+        sendJson(res, out.status, out.body);
+        return;
       }
       const valleyMatch = /^\/api\/valley\/([^/]+)(?:\/(join|create|leave|settings|contribute|vote|profile|chat|dev-skip))?$/.exec(url.pathname);
       if (valleyMatch && valleys) {
@@ -247,8 +278,8 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     return;
   }
   const names = {
-    name: typeof body.name === 'string' ? body.name.slice(0, 24) : 'Founder',
-    villageName: typeof body.villageName === 'string' ? body.villageName.slice(0, 28) : 'A village',
+    name: typeof body.name === 'string' ? maskRude(body.name.slice(0, 24)) : 'Founder',
+    villageName: typeof body.villageName === 'string' ? maskRude(body.villageName.slice(0, 28)) : 'A village',
   };
   const joined = (out: JoinOutcome) => (out.ok ? sendJson(res, 200, out.view) : sendJson(res, out.status, { error: out.error }));
   if (action === 'join') {
@@ -258,7 +289,7 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     return;
   }
   if (action === 'create') {
-    joined(await valleys.create(playerId, names, { name: typeof body.valleyName === 'string' ? body.valleyName : undefined, open: body.open !== false }));
+    joined(await valleys.create(playerId, names, { name: typeof body.valleyName === 'string' ? maskRude(body.valleyName) : undefined, open: body.open !== false }));
     return;
   }
   if (action === 'leave') {
@@ -348,6 +379,28 @@ async function handleValley(req: IncomingMessage, res: ServerResponse, valleys: 
     return;
   }
   sendJson(res, 404, { error: 'not found' });
+}
+
+/** POST /api/valley/:playerId/report — the player reports someone else's message in their Valley. */
+async function reportMessage(valleys: ValleyService, playtest: PlaytestStore, playerId: string, body: Record<string, unknown>): Promise<{ status: number; body: unknown }> {
+  if (!PLAYER_ID.test(playerId)) return { status: 400, body: { error: 'invalid player id' } };
+  const reason = typeof body.reason === 'string' && (REPORT_REASONS as readonly string[]).includes(body.reason) ? (body.reason as ReportReason) : null;
+  if (typeof body.messageId !== 'number' || !reason) return { status: 400, body: { error: 'malformed report' } };
+  const found = await valleys.reportable(playerId, body.messageId);
+  if (!found) return { status: 404, body: { error: 'That message is no longer in the chat' } };
+  const note = typeof body.note === 'string' ? body.note.replace(/\s+/g, ' ').trim().slice(0, 500) : '';
+  await playtest.addReport({
+    reporterId: playerId,
+    at: Date.now(),
+    valleyId: found.valleyId,
+    messageId: found.message.id,
+    memberId: found.message.member,
+    memberName: found.memberName,
+    text: found.message.text,
+    reason,
+    note,
+  });
+  return { status: 200, body: { ok: true } };
 }
 
 /** Keeps only positive, finite, whole amounts. */

@@ -1,8 +1,9 @@
 import { CHAT_BALANCE, VALLEY_BUILDINGS, type ValleyBuildingId } from '../src/config/valley.ts';
-import type { ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
+import type { ChatMessage, ResourceBag, ValleySnapshot, ValleyState } from '../src/valley/types.ts';
 import { activeMembers, postChat, activePlayers, addPlayer, advanceValley, ageValley, MAX_PLAYERS, removePlayer, contribute, contributeFestival, contributeKnowledge, contributeSowing, createValley, snapshotOf, upgradeValley, voteResearch, type ContributeOutcome } from '../src/valley/valleySim.ts';
 import { VALLEY_RESEARCH, type ValleyResearchId } from '../src/config/valleyResearch.ts';
 import { ContributionAllowance, addInto } from './contributionLimits.ts';
+import { maskRude } from '../src/valley/chatFilter.ts';
 
 /**
  * Persistence for shared Valleys: JSON files for a single process
@@ -414,12 +415,50 @@ export class ValleyService {
       if (!v) return null;
       const m = v.members.find((x) => x.id === playerId);
       if (!m) return null;
-      m.name = name.slice(0, 24) || m.name;
-      m.villageName = villageName.slice(0, 28) || m.villageName;
+      m.name = maskRude(name.slice(0, 24)) || m.name;
+      m.villageName = maskRude(villageName.slice(0, 28)) || m.villageName;
       const now = this.clock();
       advanceValley(v, now);
       await this.commit(v);
       return { valley: snapshotOf(v), memberId: playerId, now };
+    });
+  }
+
+  /**
+   * A chat message in the player's own Valley that they may report: someone else's,
+   * still in the chat. Null otherwise.
+   */
+  async reportable(playerId: string, messageId: number): Promise<{ valleyId: string; message: ChatMessage; memberName: string } | null> {
+    const valleyId = await this.store.valleyFor(playerId);
+    if (!valleyId) return null;
+    const v = await this.load(valleyId);
+    const message = v?.chat.find((c) => c.id === messageId);
+    if (!v || !message || message.member === playerId) return null;
+    return { valleyId, message, memberName: v.members.find((m) => m.id === message.member)?.name ?? '' };
+  }
+
+  /**
+   * A moderator acting on a report: removes one message, or every message by a member,
+   * and can mute (or unmute) that member so the Valley refuses their chat. False when
+   * the Valley, message or member isn't there.
+   */
+  async moderate(valleyId: string, action: { messageId?: number; member?: string; mute?: boolean }): Promise<boolean> {
+    return this.locked(valleyId, async () => {
+      const v = await this.load(valleyId);
+      if (!v) return false;
+      const member = action.member ?? v.chat.find((c) => c.id === action.messageId)?.member;
+      if (action.messageId === undefined && !member) return false;
+      const before = v.chat.length;
+      if (action.messageId !== undefined) v.chat = v.chat.filter((c) => c.id !== action.messageId);
+      else v.chat = v.chat.filter((c) => c.member !== member);
+      const m = member ? v.members.find((x) => x.id === member) : undefined;
+      if (action.mute !== undefined && m) {
+        if (action.mute) m.muted = true;
+        else delete m.muted;
+      }
+      if (v.chat.length === before && !(action.mute !== undefined && m)) return false;
+      await this.commit(v);
+      return true;
     });
   }
 

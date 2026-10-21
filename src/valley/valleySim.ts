@@ -6,6 +6,7 @@ import { newValleyBonuses } from '../sim/save';
 import { VALLEY_RESEARCH, VALLEY_RESEARCH_ORDER, type ValleyResearchId } from '../config/valleyResearch';
 import { FESTIVALS, FESTIVAL_BALANCE, FESTIVAL_ORDER } from '../config/festivals';
 import { SOWING } from '../config/sowing';
+import { maskRude } from './chatFilter';
 import type { ChatMessage, ContributionResult, ResourceBag, ValleyBuildingState, ValleyFestival, ValleyLogEntry, ValleyMember, ValleyResearchState, ValleySnapshot, ValleySowing, ValleyState } from './types';
 
 /**
@@ -711,10 +712,13 @@ function pushChat(v: ValleyState, member: string, text: string, at: number): Cha
   return msg;
 }
 
-/** A member's message. Whitespace is tidied and length capped; empty messages are dropped. */
+/**
+ * A member's message. Whitespace is tidied, length capped and rude words masked; empty
+ * messages, and anything from a member a moderator muted, are dropped.
+ */
 export function postChat(v: ValleyState, memberId: string, text: string, now: number): ChatMessage | null {
-  if (!v.members.some((m) => m.id === memberId && m.leftAt === null)) return null;
-  const clean = text.replace(/\s+/g, ' ').trim().slice(0, CHAT_BALANCE.maxLength);
+  if (!v.members.some((m) => m.id === memberId && m.leftAt === null && !m.muted)) return null;
+  const clean = maskRude(text.replace(/\s+/g, ' ').trim().slice(0, CHAT_BALANCE.maxLength));
   if (!clean) return null;
   return pushChat(v, memberId, clean, now);
 }

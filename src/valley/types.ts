@@ -25,6 +25,8 @@ export interface ValleyMember {
   lifetimeValue: number;
   /** When a player left, or a neighbour moved on to make room. Null while active. */
   leftAt: number | null;
+  /** Set by a moderator: the player's chat messages are refused. */
+  muted?: boolean;
 }
 
 export type ValleyBuildingStatus = 'locked' | 'collecting' | 'building' | 'complete';

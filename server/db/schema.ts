@@ -89,6 +89,23 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX playtest_events_player ON playtest_events (player_id, at);
   `,
+  // 3: reported Valley chat messages (a copy of the message, so the report outlives the chat).
+  `
+  CREATE TABLE chat_reports (
+    id           bigserial PRIMARY KEY,
+    reporter_id  text    NOT NULL,
+    at           bigint  NOT NULL,
+    valley_id    text    NOT NULL,
+    message_id   integer NOT NULL,
+    member_id    text    NOT NULL,
+    member_name  text    NOT NULL,
+    text         text    NOT NULL,
+    reason       text    NOT NULL,
+    note         text    NOT NULL
+  );
+  CREATE INDEX chat_reports_at ON chat_reports (at);
+  CREATE INDEX chat_reports_reporter ON chat_reports (reporter_id);
+  `,
 ];
 
 /** Arbitrary constant key for the migration advisory lock. */

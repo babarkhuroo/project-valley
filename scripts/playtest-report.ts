@@ -1,6 +1,6 @@
 /**
  * Playtest report: what real players reached and how long it took, next to the
- * autoplayer's times, plus the latest feedback notes.
+ * autoplayer's times, plus the latest feedback notes and reported chat messages.
  *
  *   ADMIN_TOKEN=… npx tsx scripts/playtest-report.ts https://project-valley.onrender.com
  *
@@ -52,4 +52,13 @@ for (const f of report.feedback) {
   const c = f.context as Record<string, unknown>;
   console.log(`\n— ${new Date(f.at).toISOString().slice(0, 16).replace('T', ' ')} · ${f.mood ?? 'no mood'} · level ${c.level ?? '?'}, ${c.playMinutes ?? '?'} min played, ${c.touch ? 'touch' : 'mouse'} ${c.screen ?? ''}`);
   if (f.text) console.log(`  ${f.text}`);
+}
+
+if (report.reports?.length) {
+  console.log(`\nReported chat messages (${report.reports.length}, newest first) — act with POST /api/admin/moderate { valleyId, messageId | member, mute }`);
+  for (const r of report.reports) {
+    console.log(`\n— ${new Date(r.at).toISOString().slice(0, 16).replace('T', ' ')} · ${r.reason} · Valley ${r.valleyId} · message ${r.messageId}`);
+    console.log(`  ${r.memberName} (${r.memberId}): ${r.text}`);
+    if (r.note) console.log(`  Reporter (${r.reporterId}) says: ${r.note}`);
+  }
 }
