@@ -23,6 +23,8 @@ export type BuildingId =
   | 'flowerBed'
   | 'lantern'
   | 'bench'
+  | 'swing'
+  | 'campfire'
   | 'valleyBanner'
   | 'fountain'
   | 'festivalLanterns';
@@ -470,6 +472,32 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     model: 'bench',
     height: 0.8,
   },
+  swing: {
+    id: 'swing',
+    name: 'Garden Swing',
+    description: 'A plank swing on a little frame. Resting villagers take turns on it.',
+    category: 'decor',
+    footprint: { w: 1, d: 1 },
+    buildable: true,
+    maxCount: 6,
+    costs: [{ resources: { timber: 18 }, work: 0 }],
+    xp: 1,
+    model: 'swing',
+    height: 1.4,
+  },
+  campfire: {
+    id: 'campfire',
+    name: 'Campfire',
+    description: 'A ring of stones and a crackling fire. Resting villagers gather round to warm their hands.',
+    category: 'decor',
+    footprint: { w: 1, d: 1 },
+    buildable: true,
+    maxCount: 4,
+    costs: [{ resources: { timber: 12 }, work: 0 }],
+    xp: 1,
+    model: 'campfire',
+    height: 0.6,
+  },
   valleyBanner: {
     id: 'valleyBanner',
     name: 'Valley Banner',
@@ -532,6 +560,8 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'flowerBed',
   'lantern',
   'bench',
+  'swing',
+  'campfire',
   'valleyBanner',
   'fountain',
   'festivalLanterns',

@@ -438,6 +438,43 @@ function bench(): BuildingModel {
   return m;
 }
 
+/** A plank seat hanging from a little A-frame, swaying gently. */
+function swing(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const wood = mat(PALETTE.woodDark);
+  for (const x of [-0.42, 0.42]) {
+    for (const z of [-0.18, 0.18]) box(r, 0.06, 1.35, 0.06, wood, x, 0.66, z).rotation.x = z > 0 ? -0.13 : 0.13;
+  }
+  box(r, 0.95, 0.07, 0.07, wood, 0, 1.3, 0);
+  const pivot = new THREE.Group();
+  pivot.position.set(0, 1.3, 0);
+  for (const x of [-0.22, 0.22]) cyl(pivot, 0.01, 0.01, 0.86, mat('#d8c39a'), x, -0.43, 0, 4);
+  box(pivot, 0.55, 0.05, 0.22, mat(PALETTE.woodLight), 0, -0.88, 0);
+  r.add(pivot);
+  m.wavers.push({ obj: pivot, amp: 0.06, speed: 1.3, base: 0 });
+  return m;
+}
+
+/** A ring of stones round a little crackling fire. */
+function campfire(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.09, 0), mat(PALETTE.stone, { flat: true }));
+    s.position.set(Math.cos(a) * 0.3, 0.06, Math.sin(a) * 0.3);
+    r.add(s);
+  }
+  for (const a of [0.4, 1.9, 3.3]) cyl(r, 0.035, 0.04, 0.42, mat(PALETTE.woodDark), Math.cos(a) * 0.05, 0.1, Math.sin(a) * 0.05, 6).rotation.set(1.1, a, 0);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.34, 7), mat('#ffb347', { emissive: '#ff8a2a', emissiveIntensity: 0.9 }));
+  flame.position.y = 0.26;
+  r.add(flame);
+  m.flames.push(flame);
+  m.smoke.push(new THREE.Vector3(0, 0.5, 0));
+  return m;
+}
+
 function stoneYard(): BuildingModel {
   const m = emptyModel();
   const r = m.root;
@@ -997,6 +1034,12 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
       break;
     case 'bench':
       model = bench();
+      break;
+    case 'swing':
+      model = swing();
+      break;
+    case 'campfire':
+      model = campfire();
       break;
     case 'valleyBanner':
       model = valleyBanner();

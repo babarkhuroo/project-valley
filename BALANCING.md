@@ -82,6 +82,8 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Flower Bed | 1×1 | 24 | #1: 5 Timber | instant | 1 | decoration | — |
 | Lantern Post | 1×1 | 16 | #1: 12 Timber | instant | 1 | decoration | — |
 | Garden Bench | 1×1 | 12 | #1: 15 Timber | instant | 1 | decoration | — |
+| Garden Swing | 1×1 | 6 | #1: 18 Timber | instant | 1 | decoration | — |
+| Campfire | 1×1 | 4 | #1: 12 Timber | instant | 1 | decoration | — |
 | Valley Banner | 1×1 | 8 | #1: 10 Timber | instant | 2 | decoration | — |
 | Fountain | 2×2 | 2 | #1: 30 Stone | instant | 5 | decoration | — |
 | Festival Lanterns | 2×1 | 6 | #1: 15 Timber | instant | 3 | decoration | — |
@@ -103,21 +105,37 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | --- | --- | --- | --- | --- | --- | --- |
 | Cookhouse | 1 → 2 | 120 Timber, 50 Clay, 40 Stone | 60 | — | stores 60 Stew; 2 worker slots; work ×1.2 | 40 |
 | Cookhouse | 2 → 3 | 160 Timber, 60 Clay, 100 Stone, 30 Bricks | 90 | Masonry, village level 3 | stores 90 Stew; work ×1.4 | 60 |
+| Cookhouse | 3 → 4 | 260 Timber, 200 Stone, 80 Planks, 80 Bricks | 120 | Guild Kitchens, village level 7 | stores 130 Stew; 3 worker slots; work ×1.6 | 90 |
+| Cookhouse | 4 → 5 | 380 Timber, 300 Stone, 150 Planks, 160 Bricks | 150 | Guild Kitchens, village level 8 | stores 180 Stew; work ×1.8 | 130 |
 | Founders' Lodge | 1 → 2 | 120 Timber, 60 Clay, 80 Stone, 30 Planks | 80 | Masonry | houses 3 | 60 |
 | Academy | 1 → 2 | 140 Timber, 60 Clay, 50 Stone | 70 | — | stores 50 Knowledge; 2 worker slots; work ×1.2 | 45 |
 | Academy | 2 → 3 | 160 Timber, 80 Clay, 120 Stone, 40 Planks, 30 Bricks | 100 | Masonry, village level 3 | stores 80 Knowledge; work ×1.4 | 70 |
+| Academy | 3 → 4 | 280 Timber, 220 Stone, 100 Planks, 80 Bricks | 130 | Learned Society, village level 7 | stores 120 Knowledge; 3 worker slots; work ×1.6 | 100 |
+| Academy | 4 → 5 | 400 Timber, 320 Stone, 180 Planks, 160 Bricks | 160 | Learned Society, village level 8 | stores 170 Knowledge; work ×1.8 | 140 |
 | Timber Yard | 1 → 2 | 80 Timber, 30 Clay | 30 | — | stores 200 Timber | 20 |
 | Timber Yard | 2 → 3 | 100 Timber, 40 Clay, 60 Stone, 20 Planks | 45 | Masonry, village level 3 | stores 320 Timber | 35 |
+| Timber Yard | 3 → 4 | 260 Timber, 140 Stone, 80 Planks, 40 Bricks | 70 | Grand Yards, village level 7 | stores 480 Timber | 70 |
+| Timber Yard | 4 → 5 | 400 Timber, 260 Stone, 160 Planks, 120 Bricks | 100 | Grand Stores, village level 8 | stores 700 Timber | 110 |
 | Clay Shed | 1 → 2 | 90 Timber, 40 Clay | 30 | — | stores 170 Clay | 20 |
 | Clay Shed | 2 → 3 | 100 Timber, 60 Clay, 60 Stone, 20 Planks | 45 | Masonry, village level 3 | stores 260 Clay | 35 |
+| Clay Shed | 3 → 4 | 200 Timber, 160 Clay, 120 Stone, 70 Planks, 40 Bricks | 70 | Grand Yards, village level 7 | stores 400 Clay | 70 |
+| Clay Shed | 4 → 5 | 320 Timber, 260 Clay, 220 Stone, 140 Planks, 110 Bricks | 100 | Grand Stores, village level 8 | stores 600 Clay | 110 |
 | Stone Yard | 1 → 2 | 80 Timber, 30 Clay, 40 Stone | 35 | — | stores 170 Stone | 25 |
 | Stone Yard | 2 → 3 | 100 Timber, 60 Clay, 100 Stone, 20 Planks | 50 | Masonry, village level 3 | stores 260 Stone | 40 |
+| Stone Yard | 3 → 4 | 240 Timber, 180 Stone, 80 Planks, 50 Bricks | 70 | Grand Yards, village level 7 | stores 400 Stone | 70 |
+| Stone Yard | 4 → 5 | 360 Timber, 320 Stone, 160 Planks, 120 Bricks | 100 | Grand Stores, village level 8 | stores 600 Stone | 110 |
 | Sawmill | 1 → 2 | 140 Timber, 60 Stone, 30 Planks | 60 | — | stores 80 Planks; 2 worker slots; work ×1.2 | 45 |
+| Sawmill | 2 → 3 | 220 Timber, 120 Stone, 80 Planks, 40 Bricks | 90 | Fine Joinery, village level 6 | stores 140 Planks; 3 worker slots; work ×1.4 | 70 |
 | Brickworks | 1 → 2 | 120 Timber, 60 Stone, 30 Planks, 30 Bricks | 70 | — | stores 80 Bricks; 2 worker slots; work ×1.2 | 55 |
+| Brickworks | 2 → 3 | 200 Timber, 140 Stone, 60 Planks, 70 Bricks | 100 | Fine Joinery, village level 6 | stores 140 Bricks; 3 worker slots; work ×1.4 | 80 |
 | Woodlot | 1 → 2 | 120 Timber, 40 Stone, 40 Planks | 60 | — | 3 worker slots; work ×1.2 | 40 |
+| Woodlot | 2 → 3 | 180 Timber, 80 Stone, 80 Planks | 80 | Deep Seams, village level 6 | 4 worker slots; work ×1.4 | 60 |
 | Clay Pit | 1 → 2 | 100 Timber, 40 Planks, 20 Bricks | 55 | — | 3 worker slots; work ×1.2 | 40 |
+| Clay Pit | 2 → 3 | 160 Timber, 80 Planks, 60 Bricks | 80 | Deep Seams, village level 6 | 4 worker slots; work ×1.4 | 60 |
 | Quarry | 1 → 2 | 160 Timber, 60 Planks, 40 Bricks | 80 | — | 3 worker slots; work ×1.2 | 60 |
+| Quarry | 2 → 3 | 220 Timber, 100 Planks, 80 Bricks | 110 | Deep Seams, village level 6 | 4 worker slots; work ×1.4 | 80 |
 | Granary | 1 → 2 | 80 Timber, 40 Stone, 20 Planks | 35 | — | stores 140 Grain | 25 |
+| Granary | 2 → 3 | 140 Timber, 80 Stone, 50 Planks, 30 Bricks | 60 | Guild Kitchens, village level 6 | stores 220 Grain | 45 |
 | Grain Field | 1 → 2 | 80 Timber, 20 Stone, 30 Planks | 40 | — | 3 worker slots; work ×1.2 | 30 |
 
 ## Research
@@ -153,6 +171,12 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 5 | Stone Quarry | 720 | 300 | Clay Pits | Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out. |
 | 5 | Crop Rotation | 700 | 300 | Preserved Food | Rest and feed the soil between sowings. One more Grain Field, and every harvest yields 25% more grain. |
 | 5 | Master Builders | 720 | 300 | Apprenticeship | Cranes, templates and practised crews. Construction is 30% faster. |
+| 6 | Deep Seams | 1200 | 120 | Stone Quarry | Shored galleries and stout winches. Clay Pits, Quarries and Woodlots can be raised to level 3, and digging and quarrying go faster. |
+| 6 | Grand Yards | 1100 | 120 | Organised Stores | Covered bays and a proper crane. Timber Yards, Clay Sheds and Stone Yards can be raised to level 4. |
+| 6 | Guild Kitchens | 1300 | 140 | Crop Rotation | A cooks' guild sets up in the village. The Cookhouse can reach levels 4 and 5, the Granary level 3, and each bowl of Stew lasts longer. |
+| 6 | Grand Stores | 1800 | 180 | Grand Yards, Master Builders | Stone-floored storehouses built to last. The yards and sheds can be raised to level 5, and every store of Timber, Clay and Stone holds more. |
+| 6 | Learned Society | 1500 | 160 | Master Builders | Scholars from across the valley meet at your Academy. It can reach levels 4 and 5, and practice lifts skills one level higher. |
+| 6 | Fine Joinery | 1400 | 150 | Master Crafts | Jigs, kilns and patient hands. The Sawmill and Brickworks can be raised to level 3, and crafting goes faster. |
 
 - Tier 1: 60 Knowledge in total ≈ 6 scholar-minutes.
 - Tier 2: 340 Knowledge in total ≈ 34 scholar-minutes.
@@ -167,8 +191,11 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans, The Valley Road, Field Sowing |
 | 4 | 700 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
 | 5 | 1500 | Research tier 5: Townhouses, Stone Quarry, Master Builders, Crop Rotation |
-| 6 | 2800 | — |
+| 6 | 2800 | Research tier 6: Deep Seams, Grand Yards, Guild Kitchens, Grand Stores, Learned Society, Fine Joinery |
 | 7 | 4600 | — |
+| 8 | 7000 | — |
+| 9 | 10000 | — |
+| 10 | 14000 | — |
 
 Level-up gift: 40 Timber, 25 Stew (capped by storage). Tutorial beats: +5 XP each.
 
@@ -387,6 +414,18 @@ Ships call once the Valley's Trading Post is restored: the first 10 min later, e
 | Research Brew | study ×1.5 | 30 min | 80 coins ±15% |
 | Builder's Brew | build ×1.5 | 30 min | 70 coins ±15% |
 | Crafter's Oil | craft ×1.5 | 30 min | 70 coins ±15% |
+| Strong Woodworker Tonic | chop ×1.75 | 45 min | 120 coins ±15% |
+| Strong Miner's Meal | dig, quarry ×1.75 | 45 min | 140 coins ±15% |
+| Strong Farmer's Tea | cook, farm ×1.75 | 45 min | 100 coins ±15% |
+| Strong Research Brew | study ×1.75 | 45 min | 160 coins ±15% |
+| Strong Builder's Brew | build ×1.75 | 45 min | 140 coins ±15% |
+| Strong Crafter's Oil | craft ×1.75 | 45 min | 140 coins ±15% |
+| Grand Woodworker Tonic | chop ×2 | 60 min | 210 coins ±15% |
+| Grand Miner's Meal | dig, quarry ×2 | 60 min | 245 coins ±15% |
+| Grand Farmer's Tea | cook, farm ×2 | 60 min | 175 coins ±15% |
+| Grand Research Brew | study ×2 | 60 min | 280 coins ±15% |
+| Grand Builder's Brew | build ×2 | 60 min | 245 coins ±15% |
+| Grand Crafter's Oil | craft ×2 | 60 min | 245 coins ±15% |
 
 ### Reputation Road
 
@@ -412,44 +451,44 @@ A deterministic autoplayer (`src/sim/autoplay.ts`) plays a fresh village for 4 h
 | Time | Milestone |
 | --- | --- |
 | 1m 45s | Academy |
-| 6m 45s | Cottage |
-| 6m 45s | Village level 2 |
-| 6m 45s | Villager #3 joins |
-| 9m 00s | Clay Shed |
-| 12m 45s | Timber Yard → level 2 |
-| 16m 30s | Stone Yard |
-| 16m 30s | Village level 3 |
-| 22m 30s | Cottage |
-| 22m 30s | Villager #4 joins |
-| 28m 00s | Cookhouse → level 2 |
-| 35m 45s | Sawmill |
-| 37m 30s | Clay Shed → level 2 |
+| 6m 30s | Cottage |
+| 6m 30s | Village level 2 |
+| 6m 30s | Villager #3 joins |
+| 8m 45s | Clay Shed |
+| 10m 30s | Timber Yard → level 2 |
+| 16m 00s | Stone Yard |
+| 16m 00s | Village level 3 |
+| 22m 00s | Cottage |
+| 22m 00s | Villager #4 joins |
+| 27m 45s | Cookhouse → level 2 |
+| 33m 00s | Sawmill |
+| 34m 30s | Clay Shed → level 2 |
 | 38m 30s | Village level 4 |
-| 53m 00s | Academy → level 2 |
-| 54m 00s | Stone Yard → level 2 |
-| 1h 00m | Brickworks |
-| 1h 09m | Warehouse |
-| 1h 16m | Founders' Lodge → level 2 |
-| 1h 16m | Village level 5 |
-| 1h 16m | Villager #5 joins |
-| 1h 23m | Cottage |
-| 1h 23m | Villager #6 joins |
-| 1h 25m | Granary |
-| 1h 25m | Grain Field |
-| 1h 34m | Timber Yard → level 3 |
-| 1h 45m | Woodlot |
-| 1h 49m | House |
-| 1h 49m | Villager #7 joins |
-| 1h 50m | Villager #8 joins |
-| 1h 54m | Cookhouse → level 3 |
-| 1h 55m | Clay Pit |
-| 2h 08m | Academy → level 3 |
-| 2h 08m | Grain Field |
-| 2h 08m | Village level 6 |
-| 2h 57m | House |
-| 2h 57m | Villager #9 joins |
-| 2h 58m | Villager #10 joins |
-| 3h 08m | Quarry |
-| 3h 39m | Village level 7 |
+| 43m 45s | Academy → level 2 |
+| 46m 45s | Stone Yard → level 2 |
+| 56m 00s | Founders' Lodge → level 2 |
+| 56m 00s | Villager #5 joins |
+| 59m 30s | Brickworks |
+| 1h 07m | Warehouse |
+| 1h 13m | Village level 5 |
+| 1h 14m | Cottage |
+| 1h 14m | Villager #6 joins |
+| 1h 16m | Granary |
+| 1h 17m | Grain Field |
+| 1h 20m | Timber Yard → level 3 |
+| 1h 33m | House |
+| 1h 33m | Villager #7 joins |
+| 1h 33m | Villager #8 joins |
+| 1h 37m | Cookhouse → level 3 |
+| 1h 39m | Woodlot |
+| 1h 49m | Clay Pit |
+| 1h 58m | Academy → level 3 |
+| 1h 59m | Grain Field |
+| 2h 00m | Village level 6 |
+| 2h 47m | House |
+| 2h 47m | Villager #9 joins |
+| 2h 47m | Villager #10 joins |
+| 3h 02m | Quarry |
+| 3h 33m | Village level 7 |
 
-Research completed: 28 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 30% waiting, h4: 78% waiting (waiting rises once everything unlocked is built and research is the bottleneck).
+Research completed: 28 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 45% waiting, h4: 82% waiting (waiting rises once everything unlocked is built and research is the bottleneck).
