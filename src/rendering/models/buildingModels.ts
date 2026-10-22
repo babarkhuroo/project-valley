@@ -475,6 +475,22 @@ function campfire(): BuildingModel {
   return m;
 }
 
+/** A little pet house: wooden walls, a dark doorway, a coloured roof (a cushion on top for the cat's). */
+function petHouse(roof: string, cushion: boolean): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 0.6, 0.45, 0.55, mat(PALETTE.woodLight), 0, 0.225, -0.05);
+  box(r, 0.24, 0.3, 0.02, mat('#4a3426'), 0, 0.16, 0.23);
+  gableRoof(r, 0.7, 0.28, 0.65, mat(roof, { flat: true }), 0.45, false, 0, -0.05);
+  if (cushion) {
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 6), mat('#f2c14e'));
+    c.scale.set(1.2, 0.4, 1);
+    c.position.set(0, 0.76, -0.05);
+    r.add(c);
+  } else cyl(r, 0.09, 0.07, 0.05, mat('#8fb6d8'), 0.22, 0.025, 0.36, 10);
+  return m;
+}
+
 function stoneYard(): BuildingModel {
   const m = emptyModel();
   const r = m.root;
@@ -1040,6 +1056,12 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
       break;
     case 'campfire':
       model = campfire();
+      break;
+    case 'dogHouse':
+      model = petHouse('#d9544a', false);
+      break;
+    case 'catHouse':
+      model = petHouse('#6f8fe0', true);
       break;
     case 'valleyBanner':
       model = valleyBanner();

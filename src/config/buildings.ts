@@ -25,6 +25,8 @@ export type BuildingId =
   | 'bench'
   | 'swing'
   | 'campfire'
+  | 'dogHouse'
+  | 'catHouse'
   | 'valleyBanner'
   | 'fountain'
   | 'festivalLanterns';
@@ -498,6 +500,32 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     model: 'campfire',
     height: 0.6,
   },
+  dogHouse: {
+    id: 'dogHouse',
+    name: 'Dog Kennel',
+    description: 'A snug kennel with a water bowl. A friendly dog moves in and pads about the village.',
+    category: 'decor',
+    footprint: { w: 1, d: 1 },
+    buildable: true,
+    maxCount: 2,
+    costs: [{ resources: { timber: 25 }, work: 0 }],
+    xp: 2,
+    model: 'dogHouse',
+    height: 0.9,
+  },
+  catHouse: {
+    id: 'catHouse',
+    name: 'Cat Cottage',
+    description: 'A little cottage with a cushion on the roof. A cat moves in and naps in the sun.',
+    category: 'decor',
+    footprint: { w: 1, d: 1 },
+    buildable: true,
+    maxCount: 2,
+    costs: [{ resources: { timber: 25 }, work: 0 }],
+    xp: 2,
+    model: 'catHouse',
+    height: 0.9,
+  },
   valleyBanner: {
     id: 'valleyBanner',
     name: 'Valley Banner',
@@ -562,6 +590,8 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'bench',
   'swing',
   'campfire',
+  'dogHouse',
+  'catHouse',
   'valleyBanner',
   'fountain',
   'festivalLanterns',

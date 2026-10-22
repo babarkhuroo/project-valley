@@ -84,6 +84,8 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Garden Bench | 1×1 | 12 | #1: 15 Timber | instant | 1 | decoration | — |
 | Garden Swing | 1×1 | 6 | #1: 18 Timber | instant | 1 | decoration | — |
 | Campfire | 1×1 | 4 | #1: 12 Timber | instant | 1 | decoration | — |
+| Dog Kennel | 1×1 | 2 | #1: 25 Timber | instant | 2 | decoration | — |
+| Cat Cottage | 1×1 | 2 | #1: 25 Timber | instant | 2 | decoration | — |
 | Valley Banner | 1×1 | 8 | #1: 10 Timber | instant | 2 | decoration | — |
 | Fountain | 2×2 | 2 | #1: 30 Stone | instant | 5 | decoration | — |
 | Festival Lanterns | 2×1 | 6 | #1: 15 Timber | instant | 3 | decoration | — |
