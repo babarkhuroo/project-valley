@@ -330,7 +330,7 @@ export function nextSteps(state: GameState): Suggestion[] {
   }
   const eaters = state.villagers.filter((v) => v.job && jobTypeOf(state, v.job) && JOBS[jobTypeOf(state, v.job)!].consumesFood).length;
   const cooks = state.villagers.filter((v) => v.job && jobTypeOf(state, v.job) === 'cook').length;
-  if (state.resources.stew < 5 && eaters > 0 && cooks === 0) {
+  if (state.resources.stew + state.resources.bread < 5 && eaters > 0 && cooks === 0) {
     const kitchen = state.buildings.find((b) => b.defId === 'cookhouse');
     tips.push({ id: 'food', kind: 'warning', text: 'Stew is running low — put someone on the pot', action: kitchen ? { type: 'selectBuilding', id: kitchen.id } : undefined });
   }

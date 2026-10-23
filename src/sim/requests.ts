@@ -25,6 +25,9 @@ const FOLK: Partial<Record<ResourceId, [string, string][]>> = {
   planks: [['A boatwright from the bay', 'for a fishing boat'], ['The schoolhouse at Larkfield', 'for new benches'], ['A travelling carpenter', 'for a run of shutters']],
   bricks: [['The baker at Brookend', 'for a bigger oven'], ["A chimney-sweep's guild", 'to rebuild a chimney stack'], ['The well-keepers at Elmstead', 'to line a new well']],
   grain: [["The miller's family", 'to keep the stones turning'], ['A goose-girl from the commons', 'for her geese'], ['The brewers at Rushford', 'for the harvest ale']],
+  bread: [['The shepherds on the high pastures', 'for a week up with the flock'], ['A wedding party at Elmstead', 'for the wedding breakfast'], ['The ferryman at Rushford', 'for the river crossing crowds']],
+  eggs: [['The innkeeper at Brookend', 'for a busy market morning'], ['A cake-maker from Larkfield', 'for a tower of sponges'], ['Old Maud by the mill', 'for her custard tarts']],
+  honey: [['An apothecary passing through', 'for soothing syrups'], ['The mead-makers at Rushford', 'for the autumn brew'], ['A sweet-shop from the bay', 'for honey drops']],
 };
 
 export const requestsUnlocked = (state: GameState): boolean => state.player.level >= REQUESTS.unlockLevel;

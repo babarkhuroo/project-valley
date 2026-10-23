@@ -17,6 +17,9 @@ export type BuildingId =
   | 'quarry'
   | 'field'
   | 'granary'
+  | 'bakery'
+  | 'chickenCoop'
+  | 'beehive'
   | 'house'
   | 'academy'
   | 'cottage'
@@ -267,6 +270,70 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     storage: { planks: 100, bricks: 100 },
     model: 'warehouse',
     height: 3.6,
+  },
+  bakery: {
+    id: 'bakery',
+    name: 'Bakery',
+    description: 'A warm brick oven where a crafter bakes grain into Bread. Villagers eat a loaf before Stew, and it lasts half as long again.',
+    category: 'production',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresResearch: 'baking',
+    maxCount: 1,
+    costs: [{ resources: { timber: 100, clay: 40, stone: 40 }, work: 55 }],
+    xp: 50,
+    storage: { bread: 40 },
+    operate: { job: 'craft', slots: 1 },
+    workshop: { recipes: ['bread'], orderSlots: 4 },
+    model: 'bakery',
+    height: 2.6,
+    upgrades: [
+      { cost: { resources: { timber: 140, stone: 60, bricks: 30 }, work: 60 }, storage: { bread: 80 }, slots: 2, outputMult: 1.2, xp: 45 },
+    ],
+  },
+  chickenCoop: {
+    id: 'chickenCoop',
+    name: 'Chicken Coop',
+    description: 'A little henhouse and its run. A keeper feeds the hens and gathers Eggs, which merchants and visitors love.',
+    category: 'production',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresResearch: 'henkeeping',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 80, clay: 20 }, work: 40 },
+      { resources: { timber: 120, planks: 20 }, work: 50 },
+    ],
+    xp: 40,
+    storage: { eggs: 30 },
+    operate: { job: 'keepHens', slots: 1 },
+    model: 'chickenCoop',
+    height: 1.8,
+    upgrades: [
+      { cost: { resources: { timber: 120, planks: 30, stone: 20 }, work: 50 }, storage: { eggs: 60 }, slots: 2, outputMult: 1.2, xp: 40 },
+    ],
+  },
+  beehive: {
+    id: 'beehive',
+    name: 'Apiary',
+    description: 'A row of hives among the flowers. A keeper tends the bees and draws off golden Honey to trade.',
+    category: 'production',
+    footprint: { w: 2, d: 2 },
+    buildable: true,
+    requiresResearch: 'beekeeping',
+    maxCount: 2,
+    costs: [
+      { resources: { timber: 70, planks: 20 }, work: 40 },
+      { resources: { timber: 110, planks: 40 }, work: 50 },
+    ],
+    xp: 45,
+    storage: { honey: 25 },
+    operate: { job: 'keepBees', slots: 1 },
+    model: 'beehive',
+    height: 1.4,
+    upgrades: [
+      { cost: { resources: { timber: 110, planks: 40, stone: 20 }, work: 50 }, storage: { honey: 50 }, slots: 2, outputMult: 1.2, xp: 45 },
+    ],
   },
   woodlot: {
     id: 'woodlot',
@@ -583,6 +650,9 @@ export const BUILD_MENU_ORDER: BuildingId[] = [
   'quarry',
   'granary',
   'field',
+  'bakery',
+  'chickenCoop',
+  'beehive',
   'cottage',
   'house',
   'flowerBed',

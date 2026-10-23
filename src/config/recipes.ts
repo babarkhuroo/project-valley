@@ -1,7 +1,7 @@
 import type { BuildingId, ResourceBundle } from './buildings';
 import type { ResourceId } from './resources';
 
-export type RecipeId = 'planks' | 'bricks';
+export type RecipeId = 'planks' | 'bricks' | 'bread';
 
 /**
  * Something a workshop makes. Inputs are taken when an item starts (so they can never
@@ -36,6 +36,15 @@ export const RECIPES: Record<RecipeId, RecipeDef> = {
     building: 'brickworks',
     inputs: { clay: 3, timber: 1 },
     output: { resource: 'bricks', amount: 2 },
+    work: 14,
+  },
+  bread: {
+    id: 'bread',
+    name: 'Bread',
+    verb: 'Baking bread',
+    building: 'bakery',
+    inputs: { grain: 3 },
+    output: { resource: 'bread', amount: 2 },
     work: 14,
   },
 };

@@ -1,7 +1,7 @@
 import type { ResourceId } from './resources';
 import type { SkillId } from './skills';
 
-export type JobType = 'chop' | 'dig' | 'quarry' | 'farm' | 'cook' | 'study' | 'craft' | 'build';
+export type JobType = 'chop' | 'dig' | 'quarry' | 'farm' | 'cook' | 'study' | 'craft' | 'build' | 'keepHens' | 'keepBees';
 
 /** Visual hint for the villager animation layer. The simulation never reads it. */
 export type WorkAnim = 'chop' | 'dig' | 'mine' | 'farm' | 'cook' | 'research' | 'craft' | 'build';
@@ -97,6 +97,26 @@ export const JOBS: Record<JobType, JobDef> = {
     consumesFood: true,
     anim: 'craft',
     tool: 'saw',
+  },
+  keepHens: {
+    id: 'keepHens',
+    verb: 'Tending hens',
+    skill: 'farming',
+    batchWork: 10,
+    consumesFood: true,
+    output: { resource: 'eggs', amount: 2, delivery: 'direct' },
+    anim: 'farm',
+    tool: 'seeds',
+  },
+  keepBees: {
+    id: 'keepBees',
+    verb: 'Keeping bees',
+    skill: 'farming',
+    batchWork: 14,
+    consumesFood: true,
+    output: { resource: 'honey', amount: 1, delivery: 'direct' },
+    anim: 'cook',
+    tool: 'ladle',
   },
   build: {
     id: 'build',

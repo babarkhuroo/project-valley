@@ -38,6 +38,9 @@ export type ResearchId =
   | 'guildKitchens'
   | 'grandStores'
   | 'learnedSociety'
+  | 'baking'
+  | 'henkeeping'
+  | 'beekeeping'
   | 'fineJoinery';
 
 export type ResearchCategory = 'villagers' | 'resources' | 'storage' | 'food' | 'production' | 'knowledge' | 'crafting' | 'valley';
@@ -555,6 +558,42 @@ export const RESEARCH: Record<ResearchId, ResearchDef> = {
     ],
     xp: 150,
     row: 6,
+  },
+  baking: {
+    id: 'baking',
+    name: 'Baking',
+    description: 'A proper oven and a baker who knows it. Unlocks the Bakery, where grain becomes Bread — villagers eat a loaf before Stew, and it lasts half as long again.',
+    category: 'food',
+    tier: 4,
+    cost: 380,
+    prereqs: ['fieldSowing'],
+    effects: [{ type: 'unlockBuilding', building: 'bakery' }],
+    xp: 90,
+    row: 7,
+  },
+  henkeeping: {
+    id: 'henkeeping',
+    name: 'Henkeeping',
+    description: 'A coop, a run and a handful of hens. Unlocks the Chicken Coop, where a keeper gathers Eggs for the merchants and visitors.',
+    category: 'food',
+    tier: 4,
+    cost: 340,
+    prereqs: ['fieldSowing'],
+    effects: [{ type: 'unlockBuilding', building: 'chickenCoop' }],
+    xp: 80,
+    row: 8,
+  },
+  beekeeping: {
+    id: 'beekeeping',
+    name: 'Beekeeping',
+    description: 'Hives among the flowers and a patient keeper. Unlocks the Apiary, whose Honey is among the best things to trade.',
+    category: 'food',
+    tier: 4,
+    cost: 420,
+    prereqs: ['fieldSowing'],
+    effects: [{ type: 'unlockBuilding', building: 'beehive' }],
+    xp: 90,
+    row: 9,
   },
 };
 

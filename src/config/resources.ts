@@ -1,4 +1,4 @@
-export type ResourceId = 'timber' | 'clay' | 'stone' | 'planks' | 'bricks' | 'grain' | 'stew' | 'knowledge';
+export type ResourceId = 'timber' | 'clay' | 'stone' | 'planks' | 'bricks' | 'grain' | 'stew' | 'bread' | 'eggs' | 'honey' | 'knowledge';
 
 export interface ResourceDef {
   id: ResourceId;
@@ -60,6 +60,27 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
     color: '#e8a93a',
     hud: true,
   },
+  bread: {
+    id: 'bread',
+    name: 'Bread',
+    description: 'Crusty loaves from the Bakery. Working villagers eat a loaf before Stew, and it keeps them going half as long again.',
+    color: '#d99a52',
+    hud: true,
+  },
+  eggs: {
+    id: 'eggs',
+    name: 'Eggs',
+    description: 'Gathered from the Chicken Coop. Merchants and visitors pay well for a fresh basket.',
+    color: '#f2e2c4',
+    hud: true,
+  },
+  honey: {
+    id: 'honey',
+    name: 'Honey',
+    description: 'Golden honey from the Apiary. One of the sweetest things a village can trade.',
+    color: '#f2b23a',
+    hud: true,
+  },
   knowledge: {
     id: 'knowledge',
     name: 'Knowledge',
@@ -69,4 +90,4 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   },
 };
 
-export const RESOURCE_ORDER: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks', 'grain', 'stew', 'knowledge'];
+export const RESOURCE_ORDER: ResourceId[] = ['timber', 'clay', 'stone', 'planks', 'bricks', 'grain', 'stew', 'bread', 'eggs', 'honey', 'knowledge'];

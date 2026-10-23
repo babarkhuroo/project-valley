@@ -475,6 +475,60 @@ function campfire(): BuildingModel {
   return m;
 }
 
+/** A brick oven house: plastered walls, a dome oven out the side, a chimney that smokes, loaves on a rack. */
+function bakery(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 1.8, 0.14, 1.8, mat(PALETTE.stone), 0, 0.07, 0);
+  box(r, 1.4, 1.05, 1.2, mat(PALETTE.plaster), -0.1, 0.665, -0.15);
+  gableRoof(r, 1.6, 0.7, 1.45, mat(PALETTE.terracotta, { flat: true }), 1.19, true, -0.1, -0.15);
+  const oven = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat('#b8553a'));
+  oven.position.set(0.55, 0.14, 0.45);
+  r.add(oven);
+  box(r, 0.2, 0.2, 0.05, mat('#3d2c22'), 0.55, 0.27, 0.86);
+  box(r, 0.28, 0.9, 0.28, mat(PALETTE.stoneDark, { flat: true }), 0.45, 1.6, -0.45);
+  m.smoke.push(new THREE.Vector3(0.45, 2.1, -0.45));
+  box(r, 0.5, 0.06, 0.25, mat(PALETTE.woodLight), -0.55, 0.55, 0.62);
+  for (const x of [-0.7, -0.55, -0.4]) {
+    const loaf = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), mat('#d99a52'));
+    loaf.scale.set(1.3, 0.8, 1);
+    loaf.position.set(x, 0.62, 0.62);
+    r.add(loaf);
+  }
+  return m;
+}
+
+/** A small henhouse on stilts with a ramp, and a fenced run in front. */
+function chickenCoop(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  const wood = mat(PALETTE.woodDark);
+  for (const [x, z] of [[-0.45, -0.55], [0.45, -0.55], [-0.45, -0.05], [0.45, -0.05]]) box(r, 0.07, 0.4, 0.07, wood, x, 0.2, z);
+  box(r, 1.0, 0.6, 0.6, mat(PALETTE.woodLight), 0, 0.7, -0.3);
+  gableRoof(r, 1.15, 0.4, 0.75, mat('#d9544a', { flat: true }), 1.0, true, 0, -0.3);
+  box(r, 0.2, 0.05, 0.6, wood, 0.25, 0.2, 0.25).rotation.x = 0.6;
+  for (const x of [-0.85, 0.85]) box(r, 0.04, 0.4, 1.7, wood, x, 0.2, 0);
+  box(r, 1.7, 0.4, 0.04, wood, 0, 0.2, 0.85);
+  return m;
+}
+
+/** Three box hives on a low stand among flowers. */
+function apiary(): BuildingModel {
+  const m = emptyModel();
+  const r = m.root;
+  box(r, 1.7, 0.12, 0.5, mat(PALETTE.woodDark), 0, 0.2, -0.2);
+  for (const x of [-0.55, 0, 0.55]) {
+    box(r, 0.4, 0.42, 0.38, mat('#f2e2b6'), x, 0.47, -0.2);
+    box(r, 0.46, 0.06, 0.44, mat('#f2c14e'), x, 0.71, -0.2);
+  }
+  for (let i = 0; i < 6; i++) {
+    const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06, 0), mat(['#e86b8a', '#f2c14e', '#b58be0'][i % 3], { flat: true }));
+    f.position.set(-0.7 + i * 0.28, 0.12, 0.45);
+    r.add(f);
+  }
+  return m;
+}
+
 /** A little pet house: wooden walls, a dark doorway, a coloured roof (a cushion on top for the cat's). */
 function petHouse(roof: string, cushion: boolean): BuildingModel {
   const m = emptyModel();
@@ -1056,6 +1110,15 @@ export function createBuildingModel(id: BuildingId, variant: number, level = 1):
       break;
     case 'campfire':
       model = campfire();
+      break;
+    case 'bakery':
+      model = bakery();
+      break;
+    case 'chickenCoop':
+      model = chickenCoop();
+      break;
+    case 'beehive':
+      model = apiary();
       break;
     case 'dogHouse':
       model = petHouse('#d9544a', false);

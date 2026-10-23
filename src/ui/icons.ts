@@ -82,6 +82,34 @@ export const ICONS = {
      <ellipse cx="12" cy="11" rx="9" ry="2.2" fill="#e8a93a" stroke="${O}" stroke-width="1.4"/>
      <circle cx="9" cy="10.8" r="1" fill="#8fd16b"/><circle cx="14" cy="11.2" r="1" fill="#d6455a"/>`,
   ),
+  bread: svg(
+    `<path d="M3.5 15.5c0-4.6 3.8-8 8.5-8s8.5 3.4 8.5 8c0 1.4-1.1 2.5-2.5 2.5h-12c-1.4 0-2.5-1.1-2.5-2.5z" fill="#d99a52" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M8 10.5l1.5 2.5M11.5 9.5l1.2 2.6M15 10.2l1.2 2.4" stroke="#f3d29a" stroke-width="1.4" stroke-linecap="round"/>`,
+  ),
+  eggs: svg(
+    `<path d="M3 15h18l-1.5 5.5h-15z" fill="#c9965e" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <ellipse cx="8.5" cy="12" rx="2.8" ry="3.6" fill="#f6ead4" stroke="${O}" stroke-width="1.3"/>
+     <ellipse cx="14.5" cy="11.2" rx="2.8" ry="3.6" fill="#fff7ea" stroke="${O}" stroke-width="1.3"/>
+     <path d="M4 17.5h16" stroke="#a87545" stroke-width="1.2"/>`,
+  ),
+  honey: svg(
+    `<path d="M6 8h12v9.5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="#f2b23a" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <rect x="5" y="5" width="14" height="3.2" rx="1" fill="#d9c49a" stroke="${O}" stroke-width="1.3"/>
+     <path d="M9 11.5c0 1.5 1 2.2 2 2.2" stroke="#ffe08a" stroke-width="1.4" fill="none" stroke-linecap="round"/>`,
+  ),
+  keepHens: svg(
+    `<path d="M7 17c-2.5 0-4-2-4-4.5S5 8 8 8c.5-2 2-3 3.5-3 1.6 0 2.6 1.3 2.6 2.8 2.8.4 5 2.8 5 5.8 0 2.4-2 4.4-4.6 4.4z" fill="#fff7ea" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
+     <path d="M11.5 3.2c.6.2 1 .9.8 1.6" stroke="#d9544a" stroke-width="1.6" stroke-linecap="round"/>
+     <path d="M14.4 7.4l1.8.6-1.6 1" fill="#f2b04a" stroke="${O}" stroke-width="1"/>
+     <circle cx="12.6" cy="7.2" r=".8" fill="${O}"/>
+     <path d="M9 17v3M13 17v3" stroke="#e0a03a" stroke-width="1.4" stroke-linecap="round"/>`,
+  ),
+  keepBees: svg(
+    `<path d="M6 20h12l-1-3H7zM7 17l-.6-3h11.2L17 17M6.4 14l.3-3h10.6l.3 3M6.7 11l1.3-3.5h8L17.3 11" fill="#f2c14e" stroke="${O}" stroke-width="1.3" stroke-linejoin="round"/>
+     <circle cx="12" cy="14.8" r="1" fill="${O}"/>
+     <ellipse cx="18.5" cy="5.5" rx="1.8" ry="1.3" fill="#f2b23a" stroke="${O}" stroke-width="1"/>
+     <path d="M18 4.2c-.8-1.2-2-1.2-2.3-.4M19.2 4.2c.6-1.2 1.8-1 1.9-.2" stroke="${O}" stroke-width=".9" fill="#e8f4ff"/>`,
+  ),
   knowledge: svg(
     `<path d="M12 2.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 15.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="#8fa6f0" stroke="${O}" stroke-width="1.4" stroke-linejoin="round"/>
      <circle cx="12" cy="11" r="2.2" fill="#e5ebff"/>`,

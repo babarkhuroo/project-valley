@@ -102,7 +102,7 @@ export function workRateBreakdown(state: GameState, v: Villager, jt: JobType, jo
     const mult = b ? buildingStats(b.defId, b.level).outputMult : 1;
     if (b && mult !== 1) factors.push({ label: `${BUILDINGS[b.defId].name} level ${b.level}`, mult });
   }
-  if (def.consumesFood && v.hungry) factors.push({ label: 'Hungry — no Stew', mult: BALANCE.villager.hungryWorkMult });
+  if (def.consumesFood && v.hungry) factors.push({ label: 'Hungry — no food', mult: BALANCE.villager.hungryWorkMult });
   const rate = factors.reduce((acc, f) => acc * f.mult, 1);
   return { rate, factors };
 }
@@ -566,11 +566,19 @@ export function nearestFreeNode(state: GameState, kind: ResourceNode['kind'], fr
   return best;
 }
 
+/** A loaf of Bread keeps a villager going this much longer than a bowl of Stew. */
+export const BREAD_MEAL_MULT = 1.5;
+
+/** Whether there's anything to eat: a loaf or a bowl. */
+export const hasFood = (state: GameState): boolean => state.resources.bread >= 1 || state.resources.stew >= 1;
+
 function eat(state: GameState, v: Villager, sink: EventSink): void {
-  if (state.resources.stew >= 1) {
-    state.resources.stew -= 1;
-    bumpStat(state, 'consumed.stew');
-    v.energy = mealDuration(state) * traitMealMult(v);
+  // A loaf first when there is one (it lasts longer), else a bowl of Stew.
+  const food = state.resources.bread >= 1 ? 'bread' : state.resources.stew >= 1 ? 'stew' : null;
+  if (food) {
+    state.resources[food] -= 1;
+    bumpStat(state, `consumed.${food}`);
+    v.energy = mealDuration(state) * traitMealMult(v) * (food === 'bread' ? BREAD_MEAL_MULT : 1);
     v.hungry = false;
     sink.push({ type: 'ate', villagerId: v.id });
   } else if (!v.hungry) {
@@ -649,7 +657,7 @@ export function processVillager(state: GameState, world: World, v: Villager, sin
 /** Re-checks villagers waiting on shared state (food, storage space, research choice). */
 export function settleVillagers(state: GameState, world: World, sink: EventSink): void {
   for (const v of state.villagers) {
-    if (v.hungry && v.activity === 'working' && state.resources.stew >= 1) eat(state, v, sink);
+    if (v.hungry && v.activity === 'working' && hasFood(state)) eat(state, v, sink);
     if (v.activity !== 'blocked') continue;
     switch (v.blockedReason) {
       case 'storageFull':

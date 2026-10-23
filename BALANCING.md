@@ -27,6 +27,8 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Cooking stew | Farming | 8 | 1 Stew | direct | no | 7.50 |
 | Studying | Research | 6 | 1 Knowledge | direct | yes | 10 |
 | Crafting | Crafting | 12 | 12 construction work | site | yes | 60 work |
+| Tending hens | Farming | 10 | 2 Eggs | direct | yes | 12 |
+| Keeping bees | Farming | 14 | 1 Honey | direct | yes | 4.29 |
 | Building | Construction | 5 | 5 construction work | site | yes | 60 work |
 
 ## Food
@@ -77,6 +79,9 @@ All rates assume an untrained, fed villager (work rate 1.0/s). Skill, research a
 | Quarry | 3×3 | 1 | #1: 120 Timber, 40 Planks, 20 Bricks | 70 | 60 | 2 × quarrying stone | Stone Quarry |
 | Granary | 2×2 | 2 | #1: 60 Timber, 20 Stone<br>#2: 90 Timber, 40 Stone, 20 Planks | 35 / 45 | 25 | stores 80 Grain | Field Sowing |
 | Grain Field | 3×3 | 2 | #1: 40 Timber<br>#2: 60 Timber, 10 Planks | 20 / 30 | 25 | 2 × farming | Field Sowing |
+| Bakery | 2×2 | 1 | #1: 100 Timber, 40 Clay, 40 Stone | 55 | 50 | stores 40 Bread; 1 × crafting | Baking |
+| Chicken Coop | 2×2 | 2 | #1: 80 Timber, 20 Clay<br>#2: 120 Timber, 20 Planks | 40 / 50 | 40 | stores 30 Eggs; 1 × tending hens | Henkeeping |
+| Apiary | 2×2 | 2 | #1: 70 Timber, 20 Planks<br>#2: 110 Timber, 40 Planks | 40 / 50 | 45 | stores 25 Honey; 1 × keeping bees | Beekeeping |
 | Cottage | 2×2 | 1 | #1: 100 Timber<br>#2: 120 Timber, 50 Clay<br>#3: 120 Timber, 60 Clay, 40 Planks, 30 Bricks | 60 / 75 / 90 | 50 | houses 1 | Cottage Craft |
 | House | 3×2 | 1 | #1: 160 Timber, 40 Stone, 60 Planks, 40 Bricks<br>#2: 200 Timber, 60 Stone, 80 Planks, 60 Bricks | 100 / 120 | 80 | houses 2 | Family Homes |
 | Flower Bed | 1×1 | 24 | #1: 5 Timber | instant | 1 | decoration | — |
@@ -98,6 +103,7 @@ A crafter makes one item per batch: inputs are taken when the item starts, the o
 | --- | --- | --- | --- | --- | --- |
 | Planks | Sawmill | 4 Timber | 2 Planks | 12 | 10 out, 20 Timber in |
 | Bricks | Brickworks | 1 Timber, 3 Clay | 2 Bricks | 14 | 8.57 out, 4.3 Timber, 12.9 Clay in |
+| Bread | Bakery | 3 Grain | 2 Bread | 14 | 8.57 out, 12.9 Grain in |
 
 ## Building upgrades
 
@@ -139,6 +145,9 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | Granary | 1 → 2 | 80 Timber, 40 Stone, 20 Planks | 35 | — | stores 140 Grain | 25 |
 | Granary | 2 → 3 | 140 Timber, 80 Stone, 50 Planks, 30 Bricks | 60 | Guild Kitchens, village level 6 | stores 220 Grain | 45 |
 | Grain Field | 1 → 2 | 80 Timber, 20 Stone, 30 Planks | 40 | — | 3 worker slots; work ×1.2 | 30 |
+| Bakery | 1 → 2 | 140 Timber, 60 Stone, 30 Bricks | 60 | — | stores 80 Bread; 2 worker slots; work ×1.2 | 45 |
+| Chicken Coop | 1 → 2 | 120 Timber, 20 Stone, 30 Planks | 50 | — | stores 60 Eggs; 2 worker slots; work ×1.2 | 40 |
+| Apiary | 1 → 2 | 110 Timber, 20 Stone, 40 Planks | 50 | — | stores 50 Honey; 2 worker slots; work ×1.2 | 45 |
 
 ## Research
 
@@ -169,6 +178,9 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 4 | Managed Woodland | 380 | 180 | Woodland Tending | Coppice and replant on purpose. Unlocks the Woodlot — timber that never runs out, placed where you like. |
 | 4 | Apprenticeship | 420 | 200 | Study Notes | Elders teach while they work. Villagers can practise any skill up to level 3. |
 | 4 | Master Crafts | 450 | 210 | Brickmaking | Jigs, moulds and better kilns. Workshops produce 25% faster. |
+| 4 | Baking | 380 | 90 | Field Sowing | A proper oven and a baker who knows it. Unlocks the Bakery, where grain becomes Bread — villagers eat a loaf before Stew, and it lasts half as long again. |
+| 4 | Henkeeping | 340 | 80 | Field Sowing | A coop, a run and a handful of hens. Unlocks the Chicken Coop, where a keeper gathers Eggs for the merchants and visitors. |
+| 4 | Beekeeping | 420 | 90 | Field Sowing | Hives among the flowers and a patient keeper. Unlocks the Apiary, whose Honey is among the best things to trade. |
 | 5 | Townhouses | 800 | 320 | Family Homes | Shared walls and tidy lanes: room for a second House. |
 | 5 | Stone Quarry | 720 | 300 | Clay Pits | Open a quarry face with a crane and ramps. Unlocks the Quarry — stone that never runs out. |
 | 5 | Crop Rotation | 700 | 300 | Preserved Food | Rest and feed the soil between sowings. One more Grain Field, and every harvest yields 25% more grain. |
@@ -191,7 +203,7 @@ Upgrades keep the footprint, are paid up front, need builder work, and the build
 | 1 | 0 | Research tier 1: Cottage Craft, Clay Digging, Hearty Recipes |
 | 2 | 80 | Research tier 2: Growing Hamlet, Sturdy Racks, Field Rations, Sharpened Axes, Study Notes, Carpentry, Stonecutting |
 | 3 | 250 | Research tier 3: Brickmaking, Village Commons, Iron-shod Spades, Masonry, Woodland Tending, Builder's Plans, The Valley Road, Field Sowing |
-| 4 | 700 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts |
+| 4 | 700 | Research tier 4: Family Homes, Clay Pits, Organised Stores, Preserved Food, Managed Woodland, Apprenticeship, Master Crafts, Baking, Henkeeping, Beekeeping |
 | 5 | 1500 | Research tier 5: Townhouses, Stone Quarry, Master Builders, Crop Rotation |
 | 6 | 2800 | Research tier 6: Deep Seams, Grand Yards, Guild Kitchens, Grand Stores, Learned Society, Fine Joinery |
 | 7 | 4600 | — |
@@ -397,6 +409,9 @@ Ships call once the Valley's Trading Post is restored: the first 10 min later, e
 | Planks | 2.5 | Carpentry |
 | Bricks | 3 | Brickmaking |
 | Grain | 1.1 | Field Sowing |
+| Bread | 2.2 | Baking |
+| Eggs | 1.8 | Henkeeping |
+| Honey | 2.8 | Beekeeping |
 
 | Merchant | Ship | Likes | Pay |
 | --- | --- | --- | --- |

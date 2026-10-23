@@ -5,7 +5,7 @@ import type { GameState } from './types';
  * migration from the previous version. Migrations run in order on load, so a save from
  * any older version walks forward one step at a time.
  */
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -75,6 +75,12 @@ export const MIGRATIONS: Record<number, Migration> = {
     const out: Record<string, unknown> = { ...d, trade: { harvestsClaimed: [], ...((d.trade as object) ?? newTradeState()) } };
     const valley = d.valley as Record<string, unknown> | undefined;
     if (valley) out.valley = { ...valley, bonuses: { ...newValleyBonuses(), ...(valley.bonuses as object) } };
+    return out;
+  },
+  // v13: the food and farmyard chains — Bread, Eggs and Honey.
+  12: (d) => {
+    const out = { ...d };
+    if (d.resources && typeof d.resources === 'object') out.resources = { bread: 0, eggs: 0, honey: 0, ...(d.resources as Record<string, number>) };
     return out;
   },
 };

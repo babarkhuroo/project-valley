@@ -38,6 +38,9 @@ export const TRADE_GOODS: { resource: ResourceId; requires: ResearchId | null; v
   { resource: 'planks', requires: 'carpentry', value: 2.5 },
   { resource: 'bricks', requires: 'brickmaking', value: 3 },
   { resource: 'grain', requires: 'fieldSowing', value: 1.1 },
+  { resource: 'bread', requires: 'baking', value: 2.2 },
+  { resource: 'eggs', requires: 'henkeeping', value: 1.8 },
+  { resource: 'honey', requires: 'beekeeping', value: 2.8 },
 ];
 
 /** The ordinary tonics (merchants, rewards). */
