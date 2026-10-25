@@ -2,7 +2,7 @@
  * Every player-facing proper noun lives here so the game can be renamed in one place.
  */
 export const IDENTITY = {
-  gameTitle: 'Project Valley',
+  gameTitle: 'Hearthvale',
   tagline: 'Grow a peaceful settlement, one villager at a time.',
   defaultVillageName: 'Thistledown',
   valleyName: 'The Hearthlands',
