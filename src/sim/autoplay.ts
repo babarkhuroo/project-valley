@@ -51,14 +51,54 @@ export const AUTOPLAY_GOALS: Goal[] = [
   { build: 'quarry', count: 1 },
   { build: 'house', count: 2 },
   { build: 'field', count: 2 },
+  // The later game: the food and farmyard chains, then every building to its last level as research allows.
+  { build: 'bakery', count: 1 },
+  { upgrade: 'clayShed', level: 3 },
+  { upgrade: 'stoneYard', level: 3 },
+  { upgrade: 'granary', level: 2 },
+  { upgrade: 'woodlot', level: 2 },
+  { upgrade: 'clayPit', level: 2 },
+  { upgrade: 'quarry', level: 2 },
+  { upgrade: 'sawmill', level: 2 },
+  { upgrade: 'brickworks', level: 2 },
+  { build: 'chickenCoop', count: 1 },
+  { build: 'beehive', count: 1 },
+  { upgrade: 'bakery', level: 2 },
+  { upgrade: 'timberYard', level: 4 },
+  { upgrade: 'clayShed', level: 4 },
+  { upgrade: 'stoneYard', level: 4 },
+  { upgrade: 'sawmill', level: 3 },
+  { upgrade: 'brickworks', level: 3 },
+  { upgrade: 'cookhouse', level: 4 },
+  { upgrade: 'academy', level: 4 },
+  { upgrade: 'quarry', level: 3 },
+  { upgrade: 'clayPit', level: 3 },
+  { upgrade: 'woodlot', level: 3 },
+  { upgrade: 'granary', level: 3 },
+  { upgrade: 'cookhouse', level: 5 },
+  { upgrade: 'academy', level: 5 },
+  { upgrade: 'timberYard', level: 5 },
+  { upgrade: 'clayShed', level: 5 },
+  { upgrade: 'stoneYard', level: 5 },
 ];
 
 export const AUTOPLAY_RESEARCH: ResearchId[] = [
   'cottageCraft', 'clayDigging', 'heartyRecipes', 'stonecutting', 'growingHamlet', 'carpentry', 'sturdyRacks', 'sharpAxes',
   'studyNotes', 'fieldRations', 'masonry', 'villageCommons', 'brickmaking', 'claySpades', 'woodlandTending', 'buildersPlans',
   'fieldSowing', 'familyHomes', 'woodlots', 'clayPits', 'organisedStores', 'apprenticeship', 'masterCrafts', 'preservedFood',
-  'townhouses', 'stoneQuarry', 'masterBuilders', 'cropRotation',
+  'baking', 'townhouses', 'stoneQuarry', 'masterBuilders', 'cropRotation', 'henkeeping', 'beekeeping', 'valleyRoad',
+  'grandYards', 'fineJoinery', 'deepSeams', 'guildKitchens', 'learnedSociety', 'grandStores',
 ];
+
+/** What each workshop turns into what: it's staffed while its input is plentiful and its output has room. */
+const WORKSHOP_FLOW: Partial<Record<BuildingId, [ResourceId, ResourceId]>> = {
+  sawmill: ['timber', 'planks'],
+  brickworks: ['clay', 'bricks'],
+  bakery: ['grain', 'bread'],
+};
+
+/** The farmyard keepers and what they gather. */
+const KEEPERS: Partial<Record<BuildingId, ResourceId>> = { chickenCoop: 'eggs', beehive: 'honey' };
 
 /** Where each kind of building is placed: storage near its resource, workshops in the clearing. */
 const ANCHORS: Partial<Record<BuildingId, [number, number]>> = {
@@ -196,10 +236,18 @@ function allocate(state: GameState, world: World, sink: EventSink): void {
 
   if (n >= 4) {
     for (const b of state.buildings) {
-      if (!b.craft || b.status !== 'complete') continue;
+      const flow = WORKSHOP_FLOW[b.defId];
+      if (!b.craft || b.status !== 'complete' || !flow) continue;
       // Work until the store is actually full: some goals need every last plank the store can hold.
-      const plenty = b.defId === 'sawmill' ? fill(state, 'timber') > 0.35 && fill(state, 'planks') < 1 : fill(state, 'clay') > 0.35 && fill(state, 'bricks') < 1;
-      if (plenty) roles.push({ job: { kind: 'operate', buildingId: b.id }, want: 1 });
+      if (fill(state, flow[0]) > 0.35 && fill(state, flow[1]) < 1) roles.push({ job: { kind: 'operate', buildingId: b.id }, want: 1 });
+    }
+  }
+
+  // A big village keeps its hens and bees while their stores have room (eggs and honey are for trading).
+  if (n >= 8) {
+    for (const b of state.buildings) {
+      const goods = KEEPERS[b.defId];
+      if (goods && b.status === 'complete' && fill(state, goods) < 0.95) roles.push({ job: { kind: 'operate', buildingId: b.id }, want: 1 });
     }
   }
 

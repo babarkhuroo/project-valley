@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { RESEARCH } from '../src/config/research';
 import { runEconomySim, type PacingReport } from '../src/sim/economySim';
 
 /**
@@ -39,6 +40,17 @@ describe('pacing', () => {
     expect(report.hourly[0].blocked).toBeLessThan(0.1);
     expect(report.hourly[1].blocked).toBeLessThan(0.1);
     expect(report.hungryShare).toBeLessThan(0.05);
+  });
+
+  it('the whole village can be completed, and not in one sitting', () => {
+    // A longer run: every research project and every building's last level are within reach of village play alone.
+    const long = runEconomySim(9 * 3600);
+    const done = long.milestones.filter((m) => m.kind === 'research');
+    expect(done.length).toBe(Object.keys(RESEARCH).length);
+    const last = Math.max(...long.milestones.filter((m) => m.kind === 'research' || m.kind === 'upgrade').map((m) => m.t));
+    expect(last).toBeGreaterThan(5 * 3600);
+    expect(last).toBeLessThan(9 * 3600);
+    expect(long.milestones.some((m) => m.label === 'Bakery')).toBe(true);
   });
 
   it('the late tiers do not collapse into the first sitting', () => {

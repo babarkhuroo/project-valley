@@ -502,10 +502,22 @@ A deterministic autoplayer (`src/sim/autoplay.ts`) plays a fresh village for 4 h
 | 1h 58m | Academy → level 3 |
 | 1h 59m | Grain Field |
 | 2h 00m | Village level 6 |
-| 2h 47m | House |
-| 2h 47m | Villager #9 joins |
-| 2h 47m | Villager #10 joins |
-| 3h 02m | Quarry |
-| 3h 33m | Village level 7 |
+| 2h 00m | Clay Shed → level 3 |
+| 2h 06m | Stone Yard → level 3 |
+| 2h 19m | Granary → level 2 |
+| 2h 27m | Woodlot → level 2 |
+| 2h 28m | Clay Pit → level 2 |
+| 2h 31m | Sawmill → level 2 |
+| 2h 37m | Bakery |
+| 2h 41m | Brickworks → level 2 |
+| 2h 45m | Bakery → level 2 |
+| 2h 56m | House |
+| 2h 56m | Villager #9 joins |
+| 2h 56m | Villager #10 joins |
+| 3h 11m | Quarry |
+| 3h 11m | Village level 7 |
+| 3h 11m | Quarry → level 2 |
+| 3h 49m | Chicken Coop |
+| 3h 58m | Apiary |
 
-Research completed: 28 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 45% waiting, h4: 82% waiting (waiting rises once everything unlocked is built and research is the bottleneck).
+Research completed: 31 projects. Villager time per hour — h1: 0% waiting, h2: 0% waiting, h3: 4% waiting, h4: 39% waiting (waiting rises once everything unlocked is built and research is the bottleneck).
