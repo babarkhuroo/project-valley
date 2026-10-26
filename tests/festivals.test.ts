@@ -70,6 +70,20 @@ describe('festivals', () => {
     expect(late.ok && late.result.returned).toEqual({ timber: 10 });
   });
 
+  it('the Country Fair takes the farmyard goods, each worth what a merchant pays', () => {
+    const v = withGrounds();
+    for (const m of v.members) if (m.kind === 'simulated') m.nextVisitAt = null;
+    advanceValley(v, v.nextFestivalAt!);
+    const f = v.festival!;
+    // (whichever festival came up, run the Country Fair instead)
+    f.kind = 'countryFair';
+    f.goal = { ...FESTIVALS.countryFair.goal };
+    const out = contributeFestival(v, me.id, f.id, { eggs: 100, honey: 50, bread: 40 }, 'op-farm');
+    expect(out.ok && out.result.accepted).toEqual({ eggs: 100, honey: 50, bread: 40 });
+    expect(f.shares[me.id]).toBeCloseTo(100 * 1.8 + 50 * 2.8 + 40 * 2.2);
+    expect(festivalRemaining(f).eggs).toBe(600);
+  });
+
   it('neighbours join in', () => {
     const v = withGrounds();
     advanceValley(v, v.nextFestivalAt! + 24 * HOUR);
@@ -91,6 +105,18 @@ describe('festivals in the village', () => {
     expect(claimFestival(h.state, 9, 'harvestFestival', 1.5, h.events)).toBe(false);
     expect(h.state.trade.coins).toBe(Math.round(FESTIVALS.harvestFestival.reward.coins * 1.5));
     expect(isBuildingUnlocked(h.state, 'festivalLanterns')).toBe(true);
+  });
+
+  it('sends Eggs and Honey from the village to the Country Fair', () => {
+    const h = makeGame();
+    h.state.research.completed.push('valleyRoad');
+    h.state.valley.valleyId = 'v-f';
+    h.state.resources.eggs = 40;
+    h.state.resources.honey = 25;
+    expect(sendToFestival(h.state, 11, { eggs: 30, honey: 25 }, 'farm', h.events, FESTIVALS.countryFair.goal).ok).toBe(true);
+    expect(h.state.resources.eggs).toBe(10);
+    expect(h.state.resources.honey).toBe(0);
+    expect(h.state.valley.outbox[0].resources).toEqual({ eggs: 30, honey: 25 });
   });
 
   it('migrates version-7 saves', () => {

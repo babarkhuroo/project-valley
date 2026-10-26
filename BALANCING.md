@@ -307,18 +307,18 @@ Neighbours alone (no help from the player), seeded run over four weeks:
 | 12.3 days | Millrace Workshop → level 1 |
 | 13.5 days | Festival Grounds → level 1 |
 | 13.9 days | Trading Post → level 3 |
-| 16.5 days | Scholars' Guild → level 3 |
-| 16.6 days | Builders' Guild → level 3 |
-| 18.4 days | Cooks' Guild → level 3 |
-| 18.5 days | Millrace Workshop → level 2 |
-| 18.8 days | Miners' Guild → level 3 |
-| 19.4 days | Foresters' Lodge → level 3 |
-| 19.6 days | Festival Grounds → level 2 |
-| 20.5 days | Craftsfolk's Guild → level 3 |
-| 20.6 days | Great Library → level 3 |
-| 20.8 days | Goldfurrow Commons → level 3 |
-| 20.9 days | Hearth Hall → level 3 |
-| 22.8 days | Millrace Workshop → level 3 |
+| 15.6 days | Scholars' Guild → level 3 |
+| 16.7 days | Builders' Guild → level 3 |
+| 17.8 days | Millrace Workshop → level 2 |
+| 18.5 days | Cooks' Guild → level 3 |
+| 19.4 days | Miners' Guild → level 3 |
+| 19.5 days | Foresters' Lodge → level 3 |
+| 19.8 days | Craftsfolk's Guild → level 3 |
+| 20.2 days | Festival Grounds → level 2 |
+| 20.5 days | Great Library → level 3 |
+| 21.1 days | Goldfurrow Commons → level 3 |
+| 21.2 days | Hearth Hall → level 3 |
+| 22.7 days | Millrace Workshop → level 3 |
 | 22.8 days | Festival Grounds → level 3 |
 
 ## Valley research
@@ -346,6 +346,7 @@ Once the Festival Grounds are restored (after the Festival Charter research), a 
 | Great Construction Project | 5000 Timber, 2500 Stone | 220 coins, 50 reputation | 200 | — |
 | Expedition Supplies | 1200 Planks, 1500 Stew | 250 coins, 50 reputation | 220 | — |
 | Lantern Fair | 2500 Clay, 900 Bricks | 240 coins, 50 reputation | 200 | Festival Lanterns |
+| Country Fair | 1000 Stew, 600 Bread, 700 Eggs, 450 Honey | 260 coins, 55 reputation | 230 | — |
 
 ## Goldfurrow sowing
 

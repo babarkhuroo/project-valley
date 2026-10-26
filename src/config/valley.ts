@@ -434,7 +434,8 @@ export const NEIGHBOURS: NeighbourDef[] = [
 
 export const VALLEY_BALANCE = {
   /** Relative worth of each resource, for reputation and neighbours' parcel sizes. */
-  value: { timber: 1, clay: 1, stone: 1.5, planks: 2.5, bricks: 3, stew: 1.2, grain: 1.1 } as Partial<Record<ResourceId, number>>,
+  // (the farmyard's goods are worth what a merchant pays for them: config/trade.ts)
+  value: { timber: 1, clay: 1, stone: 1.5, planks: 2.5, bricks: 3, stew: 1.2, grain: 1.1, bread: 2.2, eggs: 1.8, honey: 2.8 } as Partial<Record<ResourceId, number>>,
   /** Reputation earned per point of contributed value. */
   reputationPerValue: 0.1,
   neighbours: {

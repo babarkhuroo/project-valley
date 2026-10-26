@@ -7,7 +7,7 @@ import type { ResourceId } from './resources';
  * If the Valley makes it, every member who helped gets the rewards.
  */
 
-export type FestivalId = 'harvestFestival' | 'greatBuild' | 'expeditionSupplies' | 'lanternFair';
+export type FestivalId = 'harvestFestival' | 'greatBuild' | 'expeditionSupplies' | 'lanternFair' | 'countryFair';
 
 export interface FestivalDef {
   id: FestivalId;
@@ -55,9 +55,18 @@ export const FESTIVALS: Record<FestivalId, FestivalDef> = {
     decor: 'festivalLanterns',
     color: '#b36fc2',
   },
+  countryFair: {
+    id: 'countryFair',
+    name: 'Country Fair',
+    description: 'Stalls of honey cake, egg pies and fresh loaves on Market Green. Bring Bread, Eggs and Honey, and Stew for the cooks.',
+    // the farmyard's goods (Bakery, Chicken Coop, Apiary); Stew lets every village help, and neighbours bring the rest
+    goal: { bread: 600, eggs: 700, honey: 450, stew: 1000 },
+    reward: { coins: 260, reputation: 55, knowledge: 230 },
+    color: '#e6b84c',
+  },
 };
 
-export const FESTIVAL_ORDER: FestivalId[] = ['harvestFestival', 'greatBuild', 'expeditionSupplies', 'lanternFair'];
+export const FESTIVAL_ORDER: FestivalId[] = ['harvestFestival', 'greatBuild', 'expeditionSupplies', 'lanternFair', 'countryFair'];
 
 export const FESTIVAL_BALANCE = {
   durationHours: 48,
