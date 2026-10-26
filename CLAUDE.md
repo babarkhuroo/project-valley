@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Project Valley (launch name **Hearthvale**: `identity.ts` `gameTitle`; repos, code and storage keys keep the old name) is a peaceful, cooperative village-building browser game (TypeScript, three.js, React, Zustand, Vite). Milestones 1–4 are done (village, economy depth, the shared Valley, real multiplayer: accounts, joining Valleys, live updates, chat); polish is under way and storage can be Postgres with several server processes; the roadmap (stone/upgrades/crafting → shared Valley → multiplayer) is in GAME_DESIGN.md. It is inspired by Everdale's gameplay structure but must never use Everdale/Supercell names, assets or UI art — all models, icons and audio are procedurally generated in code.
+Project Valley (working title; the launch name is still to be chosen, and lives in `identity.ts` `gameTitle`) is a peaceful, cooperative village-building browser game (TypeScript, three.js, React, Zustand, Vite). Milestones 1–4 are done (village, economy depth, the shared Valley, real multiplayer: accounts, joining Valleys, live updates, chat); polish is under way and storage can be Postgres with several server processes; the roadmap (stone/upgrades/crafting → shared Valley → multiplayer) is in GAME_DESIGN.md. It is inspired by Everdale's gameplay structure but must never use Everdale/Supercell names, assets or UI art — all models, icons and audio are procedurally generated in code.
 
 ## Commands
 

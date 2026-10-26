@@ -65,7 +65,7 @@ const server = createServer((req, res) => {
     else socket.destroy();
   })
   .listen(port, () => {
-    console.log(`Hearthvale server listening on http://localhost:${port} (${backend.kind} storage)`);
+    console.log(`Project Valley server listening on http://localhost:${port} (${backend.kind} storage)`);
   });
 
 // A last line of defence: log a stray rejection instead of letting it end the process.
