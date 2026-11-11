@@ -12,8 +12,6 @@ import { cropMaterial, cropPlot } from './farmModels';
  * ruined form (before restoration), scaffolding while builders work, and visible levels.
  */
 
-export type ValleyVisualStage = 'ruin' | 'restored';
-
 /** Footprint half-sizes (x, z) per model kind; used for plinths, scaffolds and hitboxes. */
 export const VALLEY_MODEL_SIZE: Record<ValleyBuildingDef['model'], { hx: number; hz: number; height: number }> = {
   hall: { hx: 4.1, hz: 3.1, height: 6.2 },

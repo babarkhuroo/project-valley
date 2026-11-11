@@ -1,4 +1,4 @@
-import { BOOSTS, type BaseBoostId, type BoostId } from '../config/trade';
+import type { BaseBoostId, BoostId } from '../config/trade';
 import { BUILDINGS } from '../config/buildings';
 import { RESOURCES, type ResourceId } from '../config/resources';
 import { canAfford, capacity, pay } from './economy';
@@ -98,5 +98,3 @@ export function settleBrewing(state: GameState, sink: EventSink): void {
     sink.push({ type: 'tonicBrewed', tonic: k.tonic });
   }
 }
-
-export const brewName = (tonic: BoostId): string => BOOSTS[tonic].name;

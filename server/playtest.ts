@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingMessage } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import type pg from 'pg';
 
@@ -295,11 +295,4 @@ export async function playtestReport(store: PlaytestStore): Promise<PlaytestRepo
     .map(([kind, f]) => ({ kind, label: f.label, players: f.sim.length, medianSimMinutes: Math.round(median(f.sim)), medianPlayMinutes: Math.round(median(f.play)) }))
     .sort((a, b) => a.medianSimMinutes - b.medianSimMinutes);
   return { players: new Set([...byPlayer.keys(), ...feedback.map((f) => f.playerId)]).size, sharing: byPlayer.size, feedback, reports, milestones, roster: roster.sort((a, b) => b.lastSeen - a.lastSeen) };
-}
-
-export function sendJsonReply(res: ServerResponse, status: number, body: unknown): void {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store');
-  res.end(JSON.stringify(body));
 }

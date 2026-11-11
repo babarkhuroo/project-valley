@@ -23,7 +23,7 @@ npx tsx scripts/probe-map.ts   # ASCII dump of the village grid + early producti
 node scripts/headless.mjs <cmd> # drive a headless Chrome (CDP on :9333) for screenshots/eval — usage in the file header
 ```
 
-Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to silence Vite 8's config-loader warning. Node is installed via nvm, so `.claude/launch.json` runs Vite through an absolute node path.
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to silence Vite 8's config-loader warning. Node is installed via nvm, so `.claude/launch.json` runs Vite with the newest node under `~/.nvm/versions/node` (found by a small `sh -c`, so a Node upgrade doesn't break it).
 
 ## Architecture
 

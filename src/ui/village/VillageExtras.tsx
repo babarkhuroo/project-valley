@@ -1,10 +1,10 @@
 import { BOOSTS, BASE_BOOST_ORDER, type BaseBoostId } from '../../config/trade';
 import { RESOURCES, type ResourceId } from '../../config/resources';
 import { canAfford } from '../../sim/economy';
-import { readyRequests, requestsCanFulfil, REQUESTS } from '../../sim/requests';
+import { requestsCanFulfil, REQUESTS } from '../../sim/requests';
 import { chestsPending } from '../../sim/chests';
 import { BREWING, brewBlocker, brewCost, brewSeconds, brewingUnlocked, herbs, kettles, maxStrength, variant } from '../../sim/brewing';
-import type { BrewingNow, GameState } from '../../sim/types';
+import type { BrewingNow } from '../../sim/types';
 import { brewTonic, deliverRequest, openNextChest, turnDownRequest } from '../actions';
 import { Bar, Cost, Section } from '../common/Bits';
 import { Icon } from '../common/Icon';
@@ -119,9 +119,6 @@ export function RequestsPanel() {
     </div>
   );
 }
-
-/** Requests showing now (for the renderer's carts). */
-export const requestsShowing = (state: GameState) => readyRequests(state);
 
 // ---------------------------------------------------------------------------
 // Level-up chest

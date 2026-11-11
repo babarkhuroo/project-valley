@@ -35,15 +35,6 @@ export function canAfford(state: GameState, bundle: ResourceBundle): boolean {
   return RESOURCE_ORDER.every((r) => state.resources[r] >= (bundle[r] ?? 0));
 }
 
-export function missingFor(state: GameState, bundle: ResourceBundle): Partial<Record<ResourceId, number>> {
-  const missing: Partial<Record<ResourceId, number>> = {};
-  for (const r of RESOURCE_ORDER) {
-    const need = (bundle[r] ?? 0) - state.resources[r];
-    if (need > 0) missing[r] = need;
-  }
-  return missing;
-}
-
 export function pay(state: GameState, bundle: ResourceBundle): void {
   for (const r of RESOURCE_ORDER) state.resources[r] -= bundle[r] ?? 0;
 }

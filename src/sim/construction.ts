@@ -6,7 +6,7 @@ import { isBuildingUnlocked, maxBuildingCount } from './modifiers';
 import { checkNewcomers } from './population';
 import { addXp } from './progression';
 import type { BuildingInstance, GameState, Rotation } from './types';
-import { becomeIdle, settleVillagers, villagerPosition } from './villagerAI';
+import { becomeIdle, settleVillagers } from './villagerAI';
 import type { World } from './world';
 
 export function countBuildings(state: GameState, id: BuildingId): number {
@@ -93,14 +93,4 @@ export function completeUpgrade(state: GameState, world: World, b: BuildingInsta
   // More storage, beds or slots may unblock waiting villagers or invite newcomers.
   settleVillagers(state, world, sink);
   checkNewcomers(state, sink);
-}
-
-export function villagersInFootprint(state: GameState, b: BuildingInstance): number[] {
-  const cells = new Set(footprintCells(b.defId, b.cellX, b.cellZ, b.rotation).map(([x, z]) => `${x},${z}`));
-  return state.villagers
-    .filter((v) => {
-      const p = villagerPosition(v, state.time);
-      return cells.has(`${Math.floor(p.x)},${Math.floor(p.z)}`);
-    })
-    .map((v) => v.id);
 }

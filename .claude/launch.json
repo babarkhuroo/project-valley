@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "project-valley",
-      "runtimeExecutable": "/Users/babar/.nvm/versions/node/v24.22.1/bin/node",
-      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173", "--strictPort"],
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "exec \"$(ls -d \"$HOME\"/.nvm/versions/node/*/bin/node | sort -V | tail -1)\" node_modules/vite/bin/vite.js --port 5173 --strictPort"],
       "port": 5173
     }
   ]

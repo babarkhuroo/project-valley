@@ -16,10 +16,6 @@ export function newCraftState(): CraftState {
   return { orders: [], current: null };
 }
 
-export function isWorkshop(b: BuildingInstance): boolean {
-  return !!BUILDINGS[b.defId].workshop && !!b.craft;
-}
-
 /** The recipe the workshop is making or will make next (falls back to its first recipe for estimates). */
 export function activeRecipe(b: BuildingInstance): RecipeId | null {
   const shop = BUILDINGS[b.defId].workshop;

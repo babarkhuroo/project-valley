@@ -106,6 +106,7 @@ export function createApiMiddleware(store: SaveStore, valleys?: ValleyService, o
       return;
     }
     try {
+      // the server's clock (the phone client asks again when it comes back from the background)
       if (url.pathname === '/api/time' && req.method === 'GET') {
         sendJson(res, 200, { now: Date.now() });
         return;

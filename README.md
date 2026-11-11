@@ -4,7 +4,7 @@ A peaceful, cooperative village-building game for the browser — TypeScript, th
 
 What's here (milestones 1–4):
 
-- **The village** — a hand-authored valley floor, villagers with pathfinding and animated work, food, construction, a five-tier research tree, population growth, a contextual tutorial and developer tools.
+- **The village** — a hand-authored valley floor, villagers with pathfinding and animated work, food, construction, a six-tier research tree, population growth, a contextual tutorial and developer tools.
 - **Economy depth** — stone, clay, planks and bricks; building upgrades with visible levels; workshops with offline crafting queues; permanent production areas; practice skills; an economy simulator that guards pacing.
 - **The shared Valley** — *The Hearthlands*, owned by the server and shared with seven simulated neighbours: communal buildings restored through contributions (with bonuses for every village), merchant ships and coins, tonics, the Reputation Road, guild training, Valley research with votes, festivals, and cooperative crafting shifts at the Millrace.
 
